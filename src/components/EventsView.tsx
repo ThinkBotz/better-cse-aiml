@@ -505,6 +505,14 @@ export default function EventsView({
   };
 
   const handleAttendance = async (regId: string, currentStatus: 'Registered' | 'Attended' | 'Absent', newStatus: 'Registered' | 'Attended' | 'Absent') => {
+    if (newStatus === 'Attended' && selectedEvent?.date) {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      if (todayStr < selectedEvent.date) {
+        alert(`Attendance check-in opens on the scheduled date (${selectedEvent.date}).`);
+        return;
+      }
+    }
     try {
       await updateRegistrationStatus(regId, newStatus);
       refreshRegistrations();

@@ -90,6 +90,29 @@ import BrandLogo from './BrandLogo';
 import HoldButton from './HoldButton';
 import { AppBranding, DEFAULT_BRANDING } from '../types';
 
+// Helper: Check if today is strictly before the event date (local date comparison)
+function isBeforeEventDate(eventDateStr?: string): boolean {
+  if (!eventDateStr) return false;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const clean = eventDateStr.trim();
+  
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    return todayStr < clean;
+  }
+  
+  try {
+    const d = new Date(clean);
+    if (!isNaN(d.getTime())) {
+      const evStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return todayStr < evStr;
+    }
+  } catch (e) {
+    return false;
+  }
+  return false;
+}
+
 interface AdminPanelViewProps {
   currentUser: UserProfile;
   allUsers: UserProfile[];
@@ -584,6 +607,12 @@ export default function AdminPanelView({
 
   
   const handleToggleAttendance = async (regId: string, present: boolean) => {
+    const activeEv = events.find(e => e.eventId === selectedEventId);
+    if (present && activeEv && isBeforeEventDate(activeEv.date)) {
+      setFeedbackErr(`Attendance Locked: Event is scheduled for ${activeEv.date}. Check-in opens on event day.`);
+      setTimeout(() => setFeedbackErr(''), 3500);
+      return;
+    }
     try {
       await updateRegistrationStatus(regId, present ? 'Attended' : 'Registered');
       refreshData();
@@ -664,6 +693,12 @@ export default function AdminPanelView({
 
   // Update attendance of registered student
   const handleUpdateStatus = async (regId: string, status: 'Registered' | 'Attended' | 'Absent') => {
+    const activeEv = events.find(e => e.eventId === selectedEventId);
+    if (status === 'Attended' && activeEv && isBeforeEventDate(activeEv.date)) {
+      setFeedbackErr(`Attendance Locked: Event is scheduled for ${activeEv.date}. Check-in opens on event day.`);
+      setTimeout(() => setFeedbackErr(''), 3500);
+      return;
+    }
     try {
       await updateRegistrationStatus(regId, status);
       refreshData();
@@ -854,6 +889,14 @@ export default function AdminPanelView({
 
     if (!selectedEventId) {
       setScanResultMsg("Please select an active event first.");
+      setScanResultType('error');
+      playFeedbackChime('error');
+      return;
+    }
+
+    const activeEv = events.find(e => e.eventId === selectedEventId);
+    if (activeEv && isBeforeEventDate(activeEv.date)) {
+      setScanResultMsg(`Check-in Locked: Event "${activeEv.title}" is scheduled for ${activeEv.date}. Attendance check-in opens on the event day.`);
       setScanResultType('error');
       playFeedbackChime('error');
       return;
@@ -1747,6 +1790,8 @@ export default function AdminPanelView({
               }
             }
 
+            const isBeforeEvent = activeEvent ? isBeforeEventDate(activeEvent.date) : false;
+
             return (
             <div className="space-y-4">
               
@@ -1784,36 +1829,64 @@ export default function AdminPanelView({
               {selectedEventId && activeEvent && (
                 <>
                   {/* Event Date Status Banner */}
-                  {!isEventToday ? (
+                  {isBeforeEvent ? (
                     <div 
-                      className="bg-[var(--nb-surface-accent)] text-xs p-3 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                      className="bg-amber-500/10 text-xs p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-2 border-amber-500/40"
+                      style={{ boxShadow: 'var(--shadow-hard-sm)' }}
                     >
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded bg-amber-400 text-black flex items-center justify-center shrink-0 border border-black font-bold">
+                          <Lock className="w-4 h-4 stroke-[2.5]" />
+                        </div>
                         <div>
-                          <span className="font-bold text-[var(--nb-content)]">Scheduled Date:</span> <span className="font-mono">{activeEvent.date}</span>
-                          <span className="text-[var(--nb-secondary)] text-[11px] ml-2">(Today: {todayStr})</span>
+                          <div className="font-mono font-bold text-xs text-[var(--nb-content)]">
+                            ATTENDANCE CHECK-IN LOCKED
+                          </div>
+                          <div className="text-[11px] text-[var(--nb-secondary)] mt-0.5">
+                            Event scheduled for <strong className="font-mono text-[var(--nb-content)]">{activeEvent.date}</strong>. Attendance opens on the event date.
+                          </div>
                         </div>
                       </div>
                       <span 
-                        className="nb-tag text-[9px] font-mono font-bold self-start sm:self-auto bg-amber-400 text-black"
-                        style={{ border: '1px solid var(--nb-ink)' }}
+                        className="nb-tag text-[9px] font-mono font-bold self-start sm:self-auto bg-amber-400 text-black border border-black uppercase"
                       >
-                        Admin Check-in Active
+                        Opens on {activeEvent.date}
+                      </span>
+                    </div>
+                  ) : isEventToday ? (
+                    <div 
+                      className="bg-emerald-500/10 text-xs p-3.5 rounded-lg flex items-center justify-between gap-2 border-2 border-emerald-500/40"
+                      style={{ boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded bg-emerald-400 text-black flex items-center justify-center shrink-0 border border-black font-bold">
+                          <CheckCircle className="w-4 h-4 stroke-[2.5]" />
+                        </div>
+                        <div>
+                          <div className="font-mono font-bold text-xs text-[var(--nb-content)]">
+                            EVENT DAY ACTIVE ({activeEvent.date})
+                          </div>
+                          <div className="text-[11px] text-[var(--nb-secondary)] mt-0.5">
+                            Live scanner and attendance verification are unlocked.
+                          </div>
+                        </div>
+                      </div>
+                      <span className="nb-tag-green text-[9px] font-mono font-bold uppercase">
+                        Live Today
                       </span>
                     </div>
                   ) : (
                     <div 
-                      className="bg-[var(--nb-surface-accent)] text-xs p-3 rounded flex items-center gap-2"
-                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                      className="bg-[var(--nb-surface-accent)] text-xs p-3 rounded-lg flex items-center justify-between gap-2 border border-[var(--nb-ink)]/20"
                     >
-                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="font-bold text-[var(--nb-content)]">Event Day Active ({activeEvent.date})</span>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-[var(--nb-secondary)] shrink-0" />
+                        <span className="text-[var(--nb-secondary)]">Concluded Event ({activeEvent.date}) — Post-Event Record Updates Active</span>
+                      </div>
                     </div>
                   )}
 
-                  {/* QR SCANNER CARD (Always available for admin check-in) */}
+                  {/* QR SCANNER CARD */}
                   <div 
                     className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3.5"
                     style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
@@ -1823,24 +1896,40 @@ export default function AdminPanelView({
                         <QrCode className="w-4 h-4 text-[var(--nb-accent)]" />
                         Quick Check-in Scanner
                       </span>
-                      <button 
-                        onClick={() => setShowQRScanner(!showQRScanner)}
-                        className={`text-xs px-3 py-1.5 font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase ${
-                          showQRScanner 
-                            ? 'nb-btn-ghost' 
-                            : 'nb-btn'
-                        }`}
-                        style={{ border: '1.5px solid var(--nb-ink)' }}
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        {showQRScanner ? 'Close Scanner' : 'Open Camera'}
-                      </button>
+                      {isBeforeEvent ? (
+                        <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border border-[var(--nb-ink)]/30 flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-amber-500" /> Locked until {activeEvent.date}
+                        </span>
+                      ) : (
+                        <button 
+                          onClick={() => setShowQRScanner(!showQRScanner)}
+                          className={`text-xs px-3 py-1.5 font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase ${
+                            showQRScanner 
+                              ? 'nb-btn-ghost' 
+                              : 'nb-btn'
+                          }`}
+                          style={{ border: '1.5px solid var(--nb-ink)' }}
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          {showQRScanner ? 'Close Scanner' : 'Open Camera'}
+                        </button>
+                      )}
                     </div>
 
-                    {showQRScanner && (
+                    {isBeforeEvent ? (
+                      <div className="py-6 px-4 text-center rounded-lg bg-[var(--nb-surface-accent)] border border-dashed border-[var(--nb-ink)]/30 space-y-2">
+                        <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30">
+                          <Lock className="w-5 h-5 stroke-[2.5]" />
+                        </div>
+                        <h5 className="nb-headline text-sm text-[var(--nb-content)]">Check-in Camera Inactive</h5>
+                        <p className="text-xs text-[var(--nb-secondary)] max-w-sm mx-auto leading-relaxed">
+                          Attendance check-in opens on the scheduled date (<strong className="font-mono text-[var(--nb-content)]">{activeEvent.date}</strong>). Neither QR scanning nor manual roll marking is permitted prior to event day.
+                        </p>
+                      </div>
+                    ) : showQRScanner && (
                       <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                         <p className="text-[10px] text-[var(--nb-secondary)]">
-                          Point the camera at student QR pass or upload a QR image to verify attendance instantly.
+                          Point camera at student QR pass or upload a photo to verify attendance instantly.
                         </p>
                         
                         <QRCameraScanner 
@@ -2028,10 +2117,18 @@ export default function AdminPanelView({
                                     {reg.status === 'Attended' ? (
                                       <button 
                                         onClick={() => handleToggleAttendance(reg.registrationId, false)}
-                                        className="text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer"
+                                        className="text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer hover:bg-rose-600"
                                         style={{ border: '1px solid var(--nb-ink)' }}
                                       >
                                         Revoke
+                                      </button>
+                                    ) : isBeforeEvent ? (
+                                      <button 
+                                        disabled
+                                        title={`Attendance check-in opens on ${activeEvent.date}`}
+                                        className="text-[9px] px-2 py-1 font-bold uppercase rounded opacity-40 bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] cursor-not-allowed border border-[var(--nb-ink)]/30"
+                                      >
+                                        Locked
                                       </button>
                                     ) : (
                                       <button 
@@ -3017,6 +3114,12 @@ export default function AdminPanelView({
                                                   <button
                                                     type="button"
                                                     onClick={async () => {
+                                                      const currentEv = events.find(e => e.eventId === currentCertEventId);
+                                                      if (reg.status !== 'Attended' && currentEv && isBeforeEventDate(currentEv.date)) {
+                                                        setFeedbackErr(`Attendance Locked: Event scheduled for ${currentEv.date}. Check-in opens on event day.`);
+                                                        setTimeout(() => setFeedbackErr(''), 3500);
+                                                        return;
+                                                      }
                                                       const next = reg.status === 'Attended' ? 'Absent' : 'Attended';
                                                       await updateRegistrationStatus(reg.registrationId, next);
                                                       refreshData();
