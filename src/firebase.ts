@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps as getSecondaryApps } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from 'firebase/auth';
 import { getDatabase, ref, get, set, push, remove, update, onValue } from 'firebase/database';
 import { 
   initializeFirestore, 
@@ -22,7 +22,8 @@ import {
   EventRegistration, 
   Album, 
   Announcement, 
-  
+  Tenant,
+  SUPER_ADMIN_EMAILS,
   UserProfile,
   TeamMember,
   UserInvitation,
@@ -45,19 +46,187 @@ export const db = initializeFirestore(app, {
 export const auth = getAuth(app);
 export const rtdb = getDatabase(app, (firebaseConfig as any).databaseURL);
 
+// ---------------- MULTI-TENANT SAAS ARCHITECTURE ----------------
+export const DEFAULT_TENANT_ID = 'cse-aiml';
+
+export const INITIAL_TENANT: Tenant = {
+  tenantId: 'cse-aiml',
+  name: 'CSE (AI & ML) Department',
+  shortCode: 'AIML',
+  adminEmail: 'syedsame2244@gmail.com',
+  institution: 'Annamacharya Institute of Tech & Sciences',
+  status: 'active',
+  branding: DEFAULT_BRANDING,
+  supportInfo: DEFAULT_SUPPORT_INFO,
+  createdAt: new Date().toISOString()
+};
+
+export async function getAllTenants(): Promise<Tenant[]> {
+  try {
+    const snap = await getDocs(collection(db, 'tenants'));
+    const list: Tenant[] = [];
+    snap.forEach((d) => list.push(d.data() as Tenant));
+    if (list.length === 0) {
+      return [INITIAL_TENANT];
+    }
+    return list;
+  } catch (error) {
+    console.error("Error fetching tenants:", error);
+    return [INITIAL_TENANT];
+  }
+}
+
+export function subscribeToTenants(callback: (tenants: Tenant[]) => void): () => void {
+  try {
+    return onSnapshot(collection(db, 'tenants'), (snapshot) => {
+      const list: Tenant[] = [];
+      snapshot.forEach((d) => list.push(d.data() as Tenant));
+      if (list.length === 0) {
+        callback([INITIAL_TENANT]);
+      } else {
+        callback(list);
+      }
+    }, (error) => {
+      console.error("Error subscribing to tenants:", error);
+      callback([INITIAL_TENANT]);
+    });
+  } catch {
+    return () => {};
+  }
+}
+
+export async function getTenant(tenantId: string): Promise<Tenant | null> {
+  const cleanId = tenantId.trim().toLowerCase();
+  try {
+    const docRef = doc(db, 'tenants', cleanId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data() as Tenant;
+    }
+    if (cleanId === 'cse-aiml') {
+      return INITIAL_TENANT;
+    }
+    return null;
+  } catch {
+    if (cleanId === 'cse-aiml') return INITIAL_TENANT;
+    return null;
+  }
+}
+
+export async function createTenant(tenant: Tenant): Promise<void> {
+  const cleanId = tenant.tenantId.trim().toLowerCase();
+  const path = `tenants/${cleanId}`;
+  try {
+    const finalTenant: Tenant = {
+      ...tenant,
+      tenantId: cleanId,
+      adminEmail: tenant.adminEmail.trim().toLowerCase(),
+      status: tenant.status || 'active',
+      branding: tenant.branding || {
+        ...DEFAULT_BRANDING,
+        appName: 'NOTX',
+        tagline: 'Connect',
+        subtitle: tenant.shortCode || tenant.name
+      },
+      supportInfo: tenant.supportInfo || DEFAULT_SUPPORT_INFO,
+      createdAt: tenant.createdAt || new Date().toISOString()
+    };
+    await setDoc(doc(db, 'tenants', cleanId), cleanUndefined(finalTenant));
+
+    // Provision default tenant admin user profile in Firestore
+    const adminUid = `admin_${cleanId}_${Date.now()}`;
+    const adminUser: UserProfile = {
+      uid: adminUid,
+      name: `${tenant.shortCode || tenant.name} Admin`,
+      email: finalTenant.adminEmail,
+      googleEmail: finalTenant.adminEmail,
+      role: 'admin',
+      tenantId: cleanId,
+      position: 'Department Admin',
+      department: tenant.name,
+      responsibilities: `Administrative control for ${tenant.name}`,
+      created_at: new Date().toISOString()
+    };
+    await setDoc(doc(db, 'users', adminUid), cleanUndefined(adminUser));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+    throw error;
+  }
+}
+
+export async function updateTenant(tenantId: string, updates: Partial<Tenant>): Promise<void> {
+  const cleanId = tenantId.trim().toLowerCase();
+  const path = `tenants/${cleanId}`;
+  try {
+    await updateDoc(doc(db, 'tenants', cleanId), cleanUndefined(updates));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+    throw error;
+  }
+}
+
+export async function findTenantByAdminEmail(email: string): Promise<Tenant | null> {
+  const clean = email.trim().toLowerCase();
+  try {
+    const q = query(collection(db, 'tenants'), where('adminEmail', '==', clean));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs[0].data() as Tenant;
+    }
+    if (clean === 'syedsame2244@gmail.com') {
+      return INITIAL_TENANT;
+    }
+    return null;
+  } catch {
+    if (clean === 'syedsame2244@gmail.com') return INITIAL_TENANT;
+    return null;
+  }
+}
+
+// Create synthetic student user in Firebase Auth using secondary isolated app instance so active admin session is preserved
+export async function createStudentAuthAccount(
+  rollNumber: string,
+  tenantId: string,
+  password: string
+): Promise<{ email: string; uid?: string }> {
+  const cleanRoll = rollNumber.trim().toLowerCase();
+  const cleanTenant = (tenantId || DEFAULT_TENANT_ID).trim().toLowerCase();
+  const syntheticEmail = `${cleanRoll}.${cleanTenant}@notx.com`;
+  
+  try {
+    const existingApps = getSecondaryApps();
+    const appName = "SecondaryStudentAuthApp";
+    const secApp = existingApps.find(a => a.name === appName) || initializeApp(firebaseConfig, appName);
+    const secAuth = getAuth(secApp);
+    
+    const userCredential = await createUserWithEmailAndPassword(secAuth, syntheticEmail, password);
+    await signOutSecondary(secAuth);
+    return { email: syntheticEmail, uid: userCredential.user.uid };
+  } catch (error: any) {
+    if (error?.code === 'auth/email-already-in-use') {
+      return { email: syntheticEmail };
+    }
+    console.warn("Firebase Auth secondary account registration note:", error?.message);
+    return { email: syntheticEmail };
+  }
+}
+
 // Initial Seeding Data
 const INITIAL_USERS: UserProfile[] = [
   {
     uid: "user_admin_syed",
-    name: "Sameer Ahmed (Admin)",
+    name: "Sameer Ahmed (Super Admin)",
     email: "syedsame2244@gmail.com",
+    googleEmail: "syedsame2244@gmail.com",
     role: "admin",
+    tenantId: "cse-aiml",
+    isSuperAdmin: true,
     phone: "+91 9999999999",
     profile_pic: "",
     rollNumber: "ADMIN001",
-    position: "Chief Admin (Student President)",
+    position: "Super Admin & Student President",
     department: "CSE (AI & ML)",
-    responsibilities: "Administrator of NOTX Connect, HOD Executive coordinator, and technical/event approvals lead.",
+    responsibilities: "Administrator of NOTX Multi-Tenant SaaS and HOD Executive coordinator.",
     created_at: new Date().toISOString()
   },
   {
@@ -238,12 +407,21 @@ export async function seedDatabaseIfEmpty() {
     }
 
     console.log("Seeding database with default department ecosystem data...");
+
+    // Seed Tenants if empty
+    const tenantsSnap = await getDocs(collection(db, 'tenants'));
+    if (tenantsSnap.empty) {
+      await setDoc(doc(db, 'tenants', INITIAL_TENANT.tenantId), cleanUndefined(INITIAL_TENANT));
+    }
     
     // Seed Users if empty
     const usersSnap = await getDocs(collection(db, 'users'));
     if (usersSnap.empty) {
       for (const user of INITIAL_USERS) {
-        await setDoc(doc(db, 'users', user.uid), user);
+        await setDoc(doc(db, 'users', user.uid), cleanUndefined({
+          ...user,
+          tenantId: user.tenantId || DEFAULT_TENANT_ID
+        }));
       }
     }
 
@@ -251,7 +429,10 @@ export async function seedDatabaseIfEmpty() {
     const eventsSnap = await getDocs(collection(db, 'events'));
     if (eventsSnap.empty) {
       for (const event of INITIAL_EVENTS) {
-        await setDoc(doc(db, 'events', event.eventId), event);
+        await setDoc(doc(db, 'events', event.eventId), cleanUndefined({
+          ...event,
+          tenantId: event.tenantId || DEFAULT_TENANT_ID
+        }));
       }
     }
 
@@ -259,7 +440,10 @@ export async function seedDatabaseIfEmpty() {
     const announceSnap = await getDocs(collection(db, 'announcements'));
     if (announceSnap.empty) {
       for (const announce of INITIAL_ANNOUNCEMENTS) {
-        await setDoc(doc(db, 'announcements', announce.announcementId), announce);
+        await setDoc(doc(db, 'announcements', announce.announcementId), cleanUndefined({
+          ...announce,
+          tenantId: announce.tenantId || DEFAULT_TENANT_ID
+        }));
       }
     }
 
@@ -267,7 +451,10 @@ export async function seedDatabaseIfEmpty() {
     const albumsSnap = await getDocs(collection(db, 'albums'));
     if (albumsSnap.empty) {
       for (const gallery of INITIAL_ALBUMS) {
-        await setDoc(doc(db, 'albums', gallery.albumId), gallery);
+        await setDoc(doc(db, 'albums', gallery.albumId), cleanUndefined({
+          ...gallery,
+          tenantId: gallery.tenantId || DEFAULT_TENANT_ID
+        }));
       }
     }
 
@@ -523,12 +710,15 @@ function cleanUndefined<T>(obj: T): T {
 // ---------------- DATABASE ACTIONS ----------------
 
 // Users
-export async function fetchUsers(): Promise<UserProfile[]> {
+export async function fetchUsers(tenantId?: string): Promise<UserProfile[]> {
   try {
     const querySnapshot = await getDocs(collection(db, 'users'));
     const users: UserProfile[] = [];
     querySnapshot.forEach((doc) => {
-      users.push(doc.data() as UserProfile);
+      const u = doc.data() as UserProfile;
+      if (!tenantId || u.tenantId === tenantId || (!u.tenantId && tenantId === DEFAULT_TENANT_ID) || u.isSuperAdmin) {
+        users.push(u);
+      }
     });
     return users;
   } catch (error) {
@@ -599,17 +789,30 @@ export async function createMultipleUserProfiles(profiles: UserProfile[]): Promi
   }
 }
 
-export async function findUserForLogin(identifier: string): Promise<UserProfile | null> {
+export async function findUserForLogin(identifier: string, tenantId?: string): Promise<UserProfile | null> {
   const cleanId = identifier.trim();
   const lowerId = cleanId.toLowerCase();
   const upperId = cleanId.toUpperCase();
+  const cleanTenant = (tenantId || '').trim().toLowerCase();
+  const syntheticEmail = cleanTenant ? `${lowerId}.${cleanTenant}@notx.com` : '';
 
   // 1. Check direct doc lookup by student roll ID pattern
   try {
-    const docRef = doc(db, 'users', `user_student_${lowerId}`);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as UserProfile;
+    const directDocIds = [
+      `user_student_${lowerId}_${cleanTenant}`,
+      `user_student_${lowerId}`,
+      `admin_${cleanTenant}`,
+      `user_admin_syed`
+    ];
+    for (const dId of directDocIds) {
+      const docRef = doc(db, 'users', dId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const u = docSnap.data() as UserProfile;
+        if (!cleanTenant || u.tenantId === cleanTenant || (!u.tenantId && cleanTenant === DEFAULT_TENANT_ID) || u.isSuperAdmin) {
+          return u;
+        }
+      }
     }
   } catch {
     // proceed
@@ -620,7 +823,15 @@ export async function findUserForLogin(identifier: string): Promise<UserProfile 
     const qRoll = query(collection(db, 'users'), where('rollNumber', 'in', [upperId, cleanId, lowerId]));
     const snapRoll = await getDocs(qRoll);
     if (!snapRoll.empty) {
-      return snapRoll.docs[0].data() as UserProfile;
+      if (cleanTenant) {
+        const tenantMatch = snapRoll.docs.find(d => {
+          const u = d.data() as UserProfile;
+          return u.tenantId === cleanTenant || (!u.tenantId && cleanTenant === DEFAULT_TENANT_ID) || u.isSuperAdmin;
+        });
+        if (tenantMatch) return tenantMatch.data() as UserProfile;
+      } else {
+        return snapRoll.docs[0].data() as UserProfile;
+      }
     }
   } catch {
     // proceed
@@ -628,10 +839,20 @@ export async function findUserForLogin(identifier: string): Promise<UserProfile 
 
   // 3. Query by email
   try {
-    const qEmail = query(collection(db, 'users'), where('email', 'in', [lowerId, cleanId]));
+    const searchEmails = [lowerId, cleanId];
+    if (syntheticEmail) searchEmails.push(syntheticEmail);
+    const qEmail = query(collection(db, 'users'), where('email', 'in', searchEmails));
     const snapEmail = await getDocs(qEmail);
     if (!snapEmail.empty) {
-      return snapEmail.docs[0].data() as UserProfile;
+      if (cleanTenant) {
+        const tenantMatch = snapEmail.docs.find(d => {
+          const u = d.data() as UserProfile;
+          return u.tenantId === cleanTenant || (!u.tenantId && cleanTenant === DEFAULT_TENANT_ID) || u.isSuperAdmin;
+        });
+        if (tenantMatch) return tenantMatch.data() as UserProfile;
+      } else {
+        return snapEmail.docs[0].data() as UserProfile;
+      }
     }
   } catch {
     // proceed
@@ -641,12 +862,15 @@ export async function findUserForLogin(identifier: string): Promise<UserProfile 
 }
 
 // Events
-export async function fetchEvents(): Promise<DepartmentEvent[]> {
+export async function fetchEvents(tenantId?: string): Promise<DepartmentEvent[]> {
   try {
     const querySnapshot = await getDocs(collection(db, 'events'));
     const events: DepartmentEvent[] = [];
     querySnapshot.forEach((doc) => {
-      events.push(doc.data() as DepartmentEvent);
+      const ev = doc.data() as DepartmentEvent;
+      if (!tenantId || ev.tenantId === tenantId || (!ev.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+        events.push(ev);
+      }
     });
     // Sort by date ascending
     return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -655,23 +879,38 @@ export async function fetchEvents(): Promise<DepartmentEvent[]> {
   }
 }
 
+export function getActiveTenantId(): string {
+  try {
+    return localStorage.getItem('notx_active_tenant') || DEFAULT_TENANT_ID;
+  } catch {
+    return DEFAULT_TENANT_ID;
+  }
+}
+
 export async function createEvent(event: DepartmentEvent): Promise<void> {
   const path = `events/${event.eventId}`;
   try {
     const docRef = doc(db, 'events', event.eventId);
-    await setDoc(docRef, cleanUndefined(event));
+    const finalEvent = {
+      ...event,
+      tenantId: event.tenantId || getActiveTenantId()
+    };
+    await setDoc(docRef, cleanUndefined(finalEvent));
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
   }
 }
 
 // Registrations
-export async function fetchRegistrations(): Promise<EventRegistration[]> {
+export async function fetchRegistrations(tenantId?: string): Promise<EventRegistration[]> {
   try {
     const querySnapshot = await getDocs(collection(db, 'registrations'));
     const registrations: EventRegistration[] = [];
     querySnapshot.forEach((doc) => {
-      registrations.push(doc.data() as EventRegistration);
+      const reg = doc.data() as EventRegistration;
+      if (!tenantId || reg.tenantId === tenantId || (!reg.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+        registrations.push(reg);
+      }
     });
     return registrations;
   } catch (error) {
@@ -711,7 +950,11 @@ export async function createRegistration(reg: EventRegistration): Promise<void> 
   const path = `registrations/${reg.registrationId}`;
   try {
     const docRef = doc(db, 'registrations', reg.registrationId);
-    await setDoc(docRef, cleanUndefined(reg));
+    const finalReg = {
+      ...reg,
+      tenantId: reg.tenantId || getActiveTenantId()
+    };
+    await setDoc(docRef, cleanUndefined(finalReg));
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
   }
@@ -748,12 +991,15 @@ export async function deleteRegistration(registrationId: string): Promise<void> 
 }
 
 // Gallery
-export async function fetchAlbums(): Promise<Album[]> {
+export async function fetchAlbums(tenantId?: string): Promise<Album[]> {
   try {
     const querySnapshot = await getDocs(collection(db, 'albums'));
     const items: Album[] = [];
     querySnapshot.forEach((doc) => {
-      items.push(doc.data() as Album);
+      const alb = doc.data() as Album;
+      if (!tenantId || alb.tenantId === tenantId || (!alb.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+        items.push(alb);
+      }
     });
     return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error) {
@@ -765,7 +1011,11 @@ export async function addAlbum(item: Album): Promise<void> {
   const path = `albums/${item.albumId}`;
   try {
     const docRef = doc(db, 'albums', item.albumId);
-    await setDoc(docRef, cleanUndefined(item));
+    const finalAlbum = {
+      ...item,
+      tenantId: item.tenantId || getActiveTenantId()
+    };
+    await setDoc(docRef, cleanUndefined(finalAlbum));
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
   }
@@ -792,12 +1042,15 @@ export async function deleteAlbum(albumId: string): Promise<void> {
 }
 
 // Announcements
-export async function fetchAnnouncements(): Promise<Announcement[]> {
+export async function fetchAnnouncements(tenantId?: string): Promise<Announcement[]> {
   try {
     const querySnapshot = await getDocs(collection(db, 'announcements'));
     const items: Announcement[] = [];
     querySnapshot.forEach((doc) => {
-      items.push(doc.data() as Announcement);
+      const ann = doc.data() as Announcement;
+      if (!tenantId || ann.tenantId === tenantId || (!ann.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+        items.push(ann);
+      }
     });
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (error) {
@@ -809,7 +1062,11 @@ export async function createAnnouncement(announce: Announcement): Promise<void> 
   const path = `announcements/${announce.announcementId}`;
   try {
     const docRef = doc(db, 'announcements', announce.announcementId);
-    await setDoc(docRef, cleanUndefined(announce));
+    const finalAnnounce = {
+      ...announce,
+      tenantId: announce.tenantId || getActiveTenantId()
+    };
+    await setDoc(docRef, cleanUndefined(finalAnnounce));
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
   }

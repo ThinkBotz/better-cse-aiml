@@ -1,3 +1,18 @@
+export const SUPER_ADMIN_EMAILS: string[] = ['syedsame2244@gmail.com'];
+
+export interface Tenant {
+  tenantId: string;
+  name: string;
+  shortCode: string;
+  adminEmail: string;
+  institution?: string;
+  status: 'active' | 'inactive';
+  branding?: AppBranding;
+  supportInfo?: SupportInfo;
+  createdAt: string;
+  createdBy?: string;
+}
+
 export type UserRole = 'admin' | 'president' | 'associate' | 'coordinator' | 'student' | 'faculty';
 
 export interface AssociatePowers {
@@ -12,6 +27,8 @@ export interface UserProfile {
   name: string;
   email: string;
   role: UserRole;
+  tenantId?: string;
+  isSuperAdmin?: boolean;
   phone?: string;
   profile_pic?: string;
   rollNumber?: string;
@@ -32,6 +49,7 @@ export interface UserProfile {
 }
 
 export interface DepartmentEvent {
+  tenantId?: string;
   images?: string[];
   eventId: string;
   title: string;
@@ -65,6 +83,7 @@ export interface TeamMember {
 }
 
 export interface EventRegistration {
+  tenantId?: string;
   registrationId: string;
   studentId: string;
   eventId: string;
@@ -80,6 +99,7 @@ export interface EventRegistration {
 }
 
 export interface Album {
+  tenantId?: string;
   albumId: string;
   title: string;
   description: string;
@@ -91,6 +111,7 @@ export interface Album {
 }
 
 export interface Announcement {
+  tenantId?: string;
   images?: string[];
   announcementId: string;
   title: string;
@@ -102,6 +123,7 @@ export interface Announcement {
 
 
 export interface UserInvitation {
+  tenantId?: string;
   invitationId: string;
   senderUid: string;
   senderName: string;
@@ -117,6 +139,7 @@ export interface UserInvitation {
 }
 
 export interface ChatRoom {
+  tenantId?: string;
   chatId: string;
   participants: string[];
   messages: UserInvitation[];
@@ -215,6 +238,7 @@ export const DEFAULT_BRANDING: AppBranding = {
 
 export interface AppConfig {
   configId?: string;
+  tenantId?: string;
   isChatEnabled: boolean;
   isCertificatesEnabled?: boolean;
   certificateTemplate?: CertificateTemplate;
@@ -223,6 +247,7 @@ export interface AppConfig {
 }
 
 export interface IssuedCertificate {
+  tenantId?: string;
   certificateId: string; // Unique Certificate ID e.g. CERT-AIML-22A91A0501-E87D
   eventId: string;
   eventTitle: string;
@@ -242,6 +267,7 @@ export interface IssuedCertificate {
 }
 
 export interface EventWinner {
+  tenantId?: string;
   winnerId: string;
   eventId: string;
   eventTitle: string;

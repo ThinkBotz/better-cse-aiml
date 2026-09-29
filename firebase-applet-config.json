@@ -1,10 +1,10 @@
 {
-  "projectId": "notx54",
-  "appId": "1:968028221402:web:a176bc7a034f4c1fdc5ae3",
-  "apiKey": "AIzaSyAfRFkjEVfL5Ou1zExkw9RqhtbnkO20W6M",
-  "authDomain": "notx54.firebaseapp.com",
-  "databaseURL": "https://notx54-default-rtdb.asia-southeast1.firebasedatabase.app",
-  "storageBucket": "notx54.firebasestorage.app",
-  "messagingSenderId": "968028221402",
-  "measurementId": "G-7SH6BJRMSE"
+  "projectId": "notx-saas",
+  "appId": "1:1045406170984:web:8d853f33b7500bcd16e0dd",
+  "apiKey": "AIzaSyB1M8_j-zG8mrP8SHqruOEuBRoveg7BVJs",
+  "authDomain": "notx-saas.firebaseapp.com",
+  "storageBucket": "notx-saas.firebasestorage.app",
+  "messagingSenderId": "1045406170984",
+  "measurementId": "G-NDZYZLJYHH",
+  "databaseURL": "https://notx-saas-default-rtdb.firebaseio.com"
 }

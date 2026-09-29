@@ -76,7 +76,9 @@ import {
   generateBatchCertificatesForEvent,
   revokeBatchCertificatesForEvent,
   exportAllDatabaseData,
-  subscribeToAppConfig
+  subscribeToAppConfig,
+  createStudentAuthAccount,
+  DEFAULT_TENANT_ID
 } from '../firebase';
 import QRCameraScanner from "./QRCameraScanner";
 import EditSupportBoxModal from './EditSupportBoxModal';
@@ -749,9 +751,10 @@ export default function AdminPanelView({
     try {
       let skippedCount = 0;
       const profilesToCreate: UserProfile[] = [];
+      const activeTenant = currentUser.tenantId || DEFAULT_TENANT_ID;
 
       for (const roll of rollsToCreate) {
-        const exists = allUsers.some(u => u.rollNumber?.toLowerCase() === roll.toLowerCase());
+        const exists = allUsers.some(u => u.rollNumber?.toLowerCase() === roll.toLowerCase() && (u.tenantId === activeTenant || !u.tenantId));
         if (exists) {
           skippedCount++;
           continue;
@@ -761,7 +764,7 @@ export default function AdminPanelView({
         if (passwordOption === 'roll') {
           pwd = roll;
         } else if (passwordOption === 'preset') {
-          pwd = presetPassword || 'Welcome@123';
+          pwd = presetPassword || 'notx@123';
         } else {
           const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
           for (let c = 0; c < 6; c++) {
@@ -769,14 +772,19 @@ export default function AdminPanelView({
           }
         }
 
+        // Provision synthetic account in Firebase Auth
+        const authRes = await createStudentAuthAccount(roll, activeTenant, pwd);
+        const syntheticEmail = authRes.email || `${roll.toLowerCase()}.${activeTenant.toLowerCase()}@notx.com`;
+
         const newProfile: UserProfile = {
-          uid: `user_student_${roll.toLowerCase()}`,
+          uid: authRes.uid || `user_student_${roll.toLowerCase()}_${activeTenant}`,
           name: `Student (${roll})`,
-          email: `${roll.toLowerCase()}@aits.edu`,
+          email: syntheticEmail,
           role: 'student',
+          tenantId: activeTenant,
           phone: '',
           rollNumber: roll,
-          branch: 'CSE (AI & ML)',
+          branch: branding.appName || 'Engineering',
           year: '3rd Year',
           section: 'A',
           skills: '',

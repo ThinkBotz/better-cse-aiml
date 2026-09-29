@@ -1,49 +1,85 @@
 /// <reference types="vite/client" />
-import React, { useState } from 'react';
-import { Cpu, Lock, Mail, Phone, User, Award, ShieldAlert, KeyRound, Sparkles, Eye, EyeOff } from 'lucide-react';
-import { UserProfile, UserRole, AppBranding, DEFAULT_BRANDING } from '../types';
+import React, { useState, useEffect } from 'react';
+import { 
+  Building2, 
+  Lock, 
+  User, 
+  ShieldAlert, 
+  KeyRound, 
+  Eye, 
+  EyeOff, 
+  ChevronDown, 
+  Layers, 
+  Sparkles,
+  School
+} from 'lucide-react';
+import { UserProfile, AppBranding, DEFAULT_BRANDING, Tenant, SUPER_ADMIN_EMAILS } from '../types';
 import BrandLogo from './BrandLogo';
-import { auth } from '../firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { fetchUsers, createUserProfile, updateUserProfile, findUserForLogin } from '../firebase';
+import { 
+  auth, 
+  subscribeToTenants, 
+  findTenantByAdminEmail, 
+  findUserForLogin, 
+  createUserProfile, 
+  updateUserProfile,
+  DEFAULT_TENANT_ID
+} from '../firebase';
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserProfile) => void;
   allUsers: UserProfile[];
   refreshUsers: () => void;
   branding?: AppBranding;
+  activeTenantId?: string;
+  onSelectTenant?: (tenantId: string) => void;
 }
 
 export default function LoginView({ 
   onLoginSuccess, 
   allUsers, 
   refreshUsers,
-  branding = DEFAULT_BRANDING
+  branding = DEFAULT_BRANDING,
+  activeTenantId = DEFAULT_TENANT_ID,
+  onSelectTenant
 }: LoginViewProps) {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [emailOrRoll, setEmailOrRoll] = useState('');
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [selectedTenantId, setSelectedTenantId] = useState<string>(() => {
+    return localStorage.getItem('notx_active_tenant') || activeTenantId || DEFAULT_TENANT_ID;
+  });
+
+  const [rollNumberInput, setRollNumberInput] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Sign up fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [rollNumber, setRollNumber] = useState('');
-  const [phone, setPhone] = useState('');
-  const [year, setYear] = useState('3rd Year');
-  const [section, setSection] = useState('A');
-  const [skills, setSkills] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
-
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Admin PIN states
-  const [showPinPrompt, setShowPinPrompt] = useState(false);
+  // Subscribe to real-time tenants
+  useEffect(() => {
+    const unsub = subscribeToTenants((list) => {
+      setTenants(list);
+      // If selected tenant not in list and list not empty, default to first
+      if (list.length > 0 && !list.some(t => t.tenantId === selectedTenantId)) {
+        setSelectedTenantId(list[0].tenantId);
+      }
+    });
+    return () => unsub();
+  }, [selectedTenantId]);
+
+  const handleTenantChange = (tenantId: string) => {
+    setSelectedTenantId(tenantId);
+    localStorage.setItem('notx_active_tenant', tenantId);
+    if (onSelectTenant) {
+      onSelectTenant(tenantId);
+    }
+  };
+
+  const selectedTenant = tenants.find(t => t.tenantId === selectedTenantId) || tenants[0];
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailOrRoll || !password) {
-      setError('Please fill in all fields');
+    if (!rollNumberInput || !password) {
+      setError('Please enter both your Roll Number and Password');
       return;
     }
 
@@ -51,23 +87,22 @@ export default function LoginView({
     setError('');
 
     try {
-      // Look for user with matching email or roll number
-      let foundUser = allUsers.find(
-        u => (u.email.toLowerCase() === emailOrRoll.toLowerCase() || 
-             (u.rollNumber && u.rollNumber.toLowerCase() === emailOrRoll.toLowerCase()))
-      );
+      const cleanRoll = rollNumberInput.trim();
+      const syntheticEmail = `${cleanRoll.toLowerCase()}.${selectedTenantId.toLowerCase()}@notx.com`;
 
-      // Check environment variables for super admin override
+      // 1. Check environment variables for super admin override
       const envAdminUser = import.meta.env.VITE_ADMIN_USERNAME;
       const envAdminPass = import.meta.env.VITE_ADMIN_PASSWORD;
 
-      if (envAdminUser && emailOrRoll === envAdminUser && password === envAdminPass) {
-        if (!foundUser) {
-          const newAdmin: UserProfile = {
+      if (envAdminUser && cleanRoll.toLowerCase() === envAdminUser.toLowerCase() && password === envAdminPass) {
+        let masterAdmin = allUsers.find(u => u.email.toLowerCase() === envAdminUser.toLowerCase());
+        if (!masterAdmin) {
+          masterAdmin = {
             uid: "admin_master",
             name: "System Admin",
             email: envAdminUser,
             role: "admin",
+            isSuperAdmin: true,
             phone: "",
             profile_pic: "",
             rollNumber: envAdminUser,
@@ -77,43 +112,55 @@ export default function LoginView({
             password: envAdminPass,
             created_at: new Date().toISOString()
           };
-          await createUserProfile(newAdmin);
-          foundUser = newAdmin;
-          refreshUsers();
-        } else if (foundUser.role !== 'admin') {
-          await updateUserProfile(foundUser.uid, { role: 'admin' });
-          foundUser.role = 'admin';
+          await createUserProfile(masterAdmin);
           refreshUsers();
         }
+        onLoginSuccess(masterAdmin);
+        setLoading(false);
+        return;
       }
 
-      // If user was not yet in local allUsers memory (e.g. freshly created on another device),
-      // look up live in Firestore directly so there is zero delay across devices
+      // 2. Try Firebase Auth with synthetic email
+      let authUserSuccess = false;
+      try {
+        await signInWithEmailAndPassword(auth, syntheticEmail, password);
+        authUserSuccess = true;
+      } catch (authErr: any) {
+        // Fall back to direct profile lookup
+      }
+
+      // 3. Find user in memory or live Firestore
+      let foundUser = allUsers.find(u => 
+        (u.rollNumber?.toLowerCase() === cleanRoll.toLowerCase() || 
+         u.email.toLowerCase() === cleanRoll.toLowerCase() ||
+         u.email.toLowerCase() === syntheticEmail) &&
+        (u.tenantId === selectedTenantId || !u.tenantId || u.isSuperAdmin)
+      );
+
       if (!foundUser) {
-        const liveUser = await findUserForLogin(emailOrRoll);
-        if (liveUser) {
-          foundUser = liveUser;
-          refreshUsers();
-        }
+        foundUser = await findUserForLogin(cleanRoll, selectedTenantId);
       }
 
       if (foundUser) {
-        if (foundUser.password && foundUser.password !== password) {
+        // If password does not match
+        if (foundUser.password && foundUser.password !== password && !authUserSuccess) {
           setError('Invalid password. Please check your credentials.');
           setLoading(false);
           return;
         }
-        // If password wasn't set (e.g. legacy/seeded profiles), set it on first login
+
+        // If password was empty (first time login for seeded profiles)
         if (!foundUser.password) {
-          await updateUserProfile(foundUser.uid, { password: password });
+          await updateUserProfile(foundUser.uid, { password });
           foundUser.password = password;
           refreshUsers();
         }
+
         onLoginSuccess(foundUser);
       } else {
-        setError('Invalid Roll Number/Email or password. Please check your credentials.');
+        setError(`No user found with Roll Number "${cleanRoll}" in ${selectedTenant?.name || 'this department'}.`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setError('Login error occurred. Please try again.');
     } finally {
@@ -121,87 +168,80 @@ export default function LoginView({
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !email || !rollNumber || !phone || !signUpPassword) {
-      setError('Please fill in all required fields including password');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      // Check if user already exists
-      const exists = allUsers.some(
-        u => u.email.toLowerCase() === email.toLowerCase() || 
-             (u.rollNumber && u.rollNumber.toLowerCase() === rollNumber.toLowerCase())
-      );
-
-      if (exists) {
-        setError('User with this Email or Roll Number already registered.');
-        setLoading(false);
-        return;
-      }
-
-      const newUid = `user_student_${Date.now()}`;
-      
-      const newProfile: UserProfile = {
-        uid: newUid,
-        name,
-        email,
-        role: 'student',
-        phone,
-        rollNumber: rollNumber.toUpperCase(),
-        branch: 'CSE (AI & ML)',
-        year,
-        section,
-        skills,
-        password: signUpPassword,
-        profile_pic: "",
-        department: "CSE (AI & ML)",
-        created_at: new Date().toISOString()
-      };
-
-      await createUserProfile(newProfile);
-      refreshUsers();
-      onLoginSuccess(newProfile);
-    } catch (err) {
-      setError('Error creating account. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-
-
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      const googleEmail = result.user.email;
+      const googleEmail = result.user.email?.toLowerCase();
       
       if (!googleEmail) {
         setError('No email found in Google account.');
         setLoading(false);
         return;
       }
-      
-      // Look for user whose googleEmail matches or email matches
-      const foundUser = allUsers.find(
-        u => (u.googleEmail && u.googleEmail.toLowerCase() === googleEmail.toLowerCase()) || 
-             (u.email.toLowerCase() === googleEmail.toLowerCase())
-      );
-      
-      if (foundUser) {
-        onLoginSuccess(foundUser);
-      } else {
-        setError('No account linked to this Google email. Please login with your Roll Number first and connect your Google account in Profile Settings.');
+
+      // 1. Check Super Admin
+      const isSuper = SUPER_ADMIN_EMAILS.some(e => e.toLowerCase() === googleEmail);
+      if (isSuper) {
+        let superAdmin = allUsers.find(u => u.email.toLowerCase() === googleEmail && u.isSuperAdmin);
+        if (!superAdmin) {
+          superAdmin = {
+            uid: result.user.uid,
+            name: result.user.displayName || "Super Admin",
+            email: googleEmail,
+            googleEmail: googleEmail,
+            role: 'admin',
+            isSuperAdmin: true,
+            tenantId: selectedTenantId || DEFAULT_TENANT_ID,
+            profile_pic: result.user.photoURL || "",
+            position: "SaaS Super Administrator",
+            department: "NOTX Global Administration",
+            responsibilities: "Platform control and tenant oversight",
+            created_at: new Date().toISOString()
+          };
+          await createUserProfile(superAdmin);
+          refreshUsers();
+        }
+        onLoginSuccess(superAdmin);
+        return;
       }
+
+      // 2. Check if this is an authorized Tenant Admin for any department
+      const tenant = await findTenantByAdminEmail(googleEmail);
+      if (tenant) {
+        let tenantAdmin = allUsers.find(u => u.email.toLowerCase() === googleEmail && u.tenantId === tenant.tenantId);
+        if (!tenantAdmin) {
+          tenantAdmin = {
+            uid: result.user.uid,
+            name: result.user.displayName || `${tenant.shortCode} Admin`,
+            email: googleEmail,
+            googleEmail: googleEmail,
+            role: 'admin',
+            tenantId: tenant.tenantId,
+            profile_pic: result.user.photoURL || "",
+            position: "Department Administrator",
+            department: tenant.name,
+            responsibilities: `Administrative access for ${tenant.name}`,
+            created_at: new Date().toISOString()
+          };
+          await createUserProfile(tenantAdmin);
+          refreshUsers();
+        }
+        onLoginSuccess(tenantAdmin);
+        return;
+      }
+
+      // 3. Check if user already manually linked their Google email in their profile
+      const linkedStudent = allUsers.find(u => u.googleEmail?.toLowerCase() === googleEmail);
+      if (linkedStudent) {
+        onLoginSuccess(linkedStudent);
+        return;
+      }
+
+      // 4. If no linked account exists for this student
+      setError(`No account is linked to this Google email (${googleEmail}). Students must sign in using their Roll Number first and connect Google in Profile Settings.`);
     } catch (err: any) {
       console.error(err);
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
@@ -217,7 +257,7 @@ export default function LoginView({
 
       {/* ── LEFT / TOP HERO STRIP ── Bold saturated yellow with ink typography & stickers ── */}
       <div
-        className="flex-shrink-0 flex flex-col items-start justify-between p-6 sm:p-10 sm:w-[44%] sm:min-h-full min-h-[220px]"
+        className="flex-shrink-0 flex flex-col items-start justify-between p-6 sm:p-10 sm:w-[44%] sm:min-h-full min-h-[240px]"
         style={{ 
           background: 'var(--nb-yellow)', 
           borderRight: '2.5px solid var(--nb-ink)', 
@@ -225,17 +265,22 @@ export default function LoginView({
           color: '#111111' 
         }}
       >
-        {/* Logo + wordmark */}
+        {/* Logo + SaaS wordmark */}
         <div className="flex items-center gap-3">
           <div className="p-1 rounded-md bg-white border-2 border-black shadow-[2px_2px_0_#111]">
-            <BrandLogo branding={branding} size="md" />
+            <BrandLogo branding={selectedTenant?.branding || branding} size="md" />
           </div>
           <div>
-            <span className="nb-pill-coral text-[10px] font-mono font-bold uppercase inline-block mb-0.5">
-              {branding.subtitle || 'CSE (AI & ML)'}
-            </span>
-            <p className="font-display text-lg tracking-wider text-[#111111]">
-              {branding.appName || 'NOTX'}
+            <div className="flex items-center gap-1.5">
+              <span className="nb-pill-coral text-[9px] font-mono font-bold uppercase inline-block">
+                SAAS PLATFORM
+              </span>
+              <span className="nb-pill-cyan text-[9px] font-mono font-bold uppercase inline-block">
+                {selectedTenant?.shortCode || 'AIML'}
+              </span>
+            </div>
+            <p className="font-display text-lg tracking-wider text-[#111111] font-black">
+              NOTX
             </p>
           </div>
         </div>
@@ -244,24 +289,24 @@ export default function LoginView({
         <div className="mt-8 sm:mt-0 space-y-3">
           <div className="flex flex-wrap gap-2">
             <span className="nb-pill-pink text-[10px] font-mono font-bold shadow-[2px_2px_0_#111]">
-              ⚡ DIGITAL PASSES
+              ⚡ MULTI-TENANT
             </span>
-            <span className="nb-pill-cyan text-[10px] font-mono font-bold shadow-[2px_2px_0_#111]">
-              🏆 WALL OF FAME
+            <span className="nb-pill-purple text-[10px] font-mono font-bold text-white shadow-[2px_2px_0_#111]">
+              🏛 {selectedTenant?.shortCode || 'CSE-AIML'}
             </span>
           </div>
 
           <h1
             className="nb-headline leading-none text-[#111111]"
-            style={{ fontSize: 'clamp(2.75rem, 8vw, 4.25rem)' }}
+            style={{ fontSize: 'clamp(2.5rem, 7vw, 4rem)' }}
           >
-            {branding.tagline || 'Connect'}
+            {selectedTenant?.name || 'Department Connect'}
           </h1>
           
           <p
             className="text-xs sm:text-sm font-semibold leading-relaxed max-w-[280px] text-neutral-800"
           >
-            Your high-octane departmental hub. Instant pass verification, live notices, and association events.
+            Universal department pass verification, live notifications, and digital credentials.
           </p>
         </div>
 
@@ -269,47 +314,83 @@ export default function LoginView({
         <div
           className="mt-6 sm:mt-0 font-mono font-bold text-xs uppercase px-3.5 py-1.5 rounded-md bg-[#111111] text-[#FFE600] border-2 border-black shadow-[2.5px_2.5px_0_rgba(0,0,0,0.3)] self-start"
         >
-          {branding.subtitle ? `${branding.subtitle} Association` : 'Association Ecosystem'}
+          {selectedTenant?.institution || 'Academic SaaS Ecosystem'}
         </div>
       </div>
 
-      {/* ── RIGHT / BOTTOM FORM PANEL ── crisp surface with bold ink accents ── */}
+      {/* ── RIGHT / BOTTOM FORM PANEL ── */}
       <div className="flex-1 flex flex-col justify-center p-6 sm:p-12 bg-[var(--nb-surface)]">
 
         {/* Error banner */}
         {error && (
-          <div className="mb-5 flex items-start gap-2.5 p-3.5 border-2 border-[var(--nb-ink)] rounded-md nb-pill-coral font-bold shadow-[3px_3px_0_var(--nb-ink)]">
+          <div className="mb-5 flex items-start gap-2.5 p-3.5 border-2 border-[var(--nb-ink)] rounded-md nb-pill-coral font-bold shadow-[3px_3px_0_var(--nb-ink)] max-w-md w-full mx-auto">
             <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span className="text-xs sm:text-sm">{error}</span>
+            <span className="text-xs sm:text-sm leading-snug">{error}</span>
           </div>
         )}
 
         {/* Login form */}
         <form onSubmit={handleLogin} className="space-y-4 max-w-md w-full mx-auto">
           <div className="border-b-2 border-[var(--nb-ink)] pb-3 mb-2">
-            <h2 className="nb-headline text-2xl text-[var(--nb-content)]">SIGN IN</h2>
-            <p className="nb-label text-xs text-[var(--nb-secondary)] mt-0.5">Use your University Roll Number or Department Email</p>
+            <div className="flex items-center justify-between">
+              <h2 className="nb-headline text-2xl text-[var(--nb-content)]">SIGN IN</h2>
+              <span className="nb-pill-yellow text-[9px] font-mono font-bold text-neutral-900 border border-[var(--nb-ink)] px-2 py-0.5">
+                NOTX SAAS
+              </span>
+            </div>
+            <p className="nb-label text-xs text-[var(--nb-secondary)] mt-0.5">
+              Select your department tenant and enter your credentials
+            </p>
           </div>
 
-          {/* Roll / Email */}
+          {/* 1. Tenant Selector */}
           <div>
-            <label className="nb-label block mb-1.5 font-bold">Roll Number or Email</label>
+            <label className="nb-label block mb-1.5 font-bold flex items-center justify-between">
+              <span>SELECT ASSOCIATION / TENANT</span>
+              <span className="text-[9px] font-mono text-[var(--nb-secondary)]">Scope</span>
+            </label>
+            <div className="relative">
+              <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
+              <select
+                value={selectedTenantId}
+                onChange={(e) => handleTenantChange(e.target.value)}
+                className="nb-input !pl-10 !pr-10 font-bold text-xs rounded-md w-full cursor-pointer appearance-none bg-[var(--nb-surface)]"
+              >
+                {tenants.map(t => (
+                  <option key={t.tenantId} value={t.tenantId}>
+                    {t.name} ({t.shortCode || t.tenantId})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--nb-secondary)]" />
+            </div>
+          </div>
+
+          {/* 2. Roll Number */}
+          <div>
+            <label className="nb-label block mb-1.5 font-bold flex items-center justify-between">
+              <span>ROLL NUMBER</span>
+              <span className="text-[9px] font-mono text-[var(--nb-secondary)]">e.g. 23HM1A3354</span>
+            </label>
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
               <input
                 type="text"
-                value={emailOrRoll}
-                onChange={(e) => setEmailOrRoll(e.target.value)}
-                placeholder="e.g. 23A81A4202"
-                className="nb-input !pl-10 font-mono text-xs rounded-md"
+                value={rollNumberInput}
+                onChange={(e) => setRollNumberInput(e.target.value.toUpperCase())}
+                placeholder="e.g. 23HM1A3354"
+                className="nb-input !pl-10 font-mono text-xs rounded-md uppercase"
                 autoComplete="username"
               />
             </div>
           </div>
 
-          {/* Password */}
+          {/* 3. Password */}
           <div>
-            <label className="nb-label block mb-1.5 font-bold">Access Password</label>
+            <label className="nb-label block mb-1.5 font-bold flex items-center justify-between">
+              <span>PASSWORD</span>
+              <span className="text-[9px] font-mono text-[var(--nb-secondary)]">Default = Roll or Temp Pass</span>
+            </label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
               <input
@@ -342,7 +423,7 @@ export default function LoginView({
             ) : (
               <>
                 <KeyRound className="w-4 h-4" />
-                Sign In To Portal
+                Sign In To {selectedTenant?.shortCode || 'Association'}
               </>
             )}
           </button>
@@ -353,8 +434,7 @@ export default function LoginView({
             style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '2px 2px 0 var(--nb-ink)' }}
           >
             <p className="text-xs font-medium leading-relaxed">
-              Default password is your <strong>Roll Number</strong>. Contact{' '}
-              <strong className="underline">HOD or Association President</strong> if you need an access reset.
+              Default password is your <strong>Roll Number</strong> or temporary password <strong>notx@123</strong>.
             </p>
           </div>
 
@@ -362,12 +442,12 @@ export default function LoginView({
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-[2px] bg-[var(--nb-divider)]" />
             <span className="nb-label text-[11px] font-mono font-bold px-2 py-0.5 bg-[var(--nb-surface-accent)] rounded border border-[var(--nb-ink)]">
-              OR
+              ADMIN & LINKED GOOGLE SIGN-IN
             </span>
             <div className="flex-1 h-[2px] bg-[var(--nb-divider)]" />
           </div>
 
-          {/* Google login */}
+          {/* Google Sign-in */}
           <button
             type="button"
             onClick={handleGoogleLogin}
@@ -380,8 +460,11 @@ export default function LoginView({
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Sign in with Google
+            Continue with Google
           </button>
+          <p className="text-[10px] text-center font-mono text-[var(--nb-secondary)]">
+            Auto-detects Super Admin / Tenant Admin. Students must link Google in Profile first.
+          </p>
         </form>
       </div>
     </div>

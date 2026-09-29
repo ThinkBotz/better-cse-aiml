@@ -17,7 +17,7 @@ import {
 
 import { onSnapshot, collection, doc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
-import { UserProfile, DepartmentEvent, EventRegistration, Album, Announcement, UserInvitation, ChatRoom, AppConfig, SupportInfo, DEFAULT_SUPPORT_INFO, AppBranding, DEFAULT_BRANDING } from './types';
+import { UserProfile, DepartmentEvent, EventRegistration, Album, Announcement, UserInvitation, ChatRoom, AppConfig, SupportInfo, DEFAULT_SUPPORT_INFO, AppBranding, DEFAULT_BRANDING, Tenant, SUPER_ADMIN_EMAILS } from './types';
 import BrandLogo, { ACCENT_THEMES, getCssAccent, getCssAccentFg } from './components/BrandLogo';
 import { 
   fetchUsers, 
@@ -27,11 +27,14 @@ import {
   fetchAnnouncements, 
   fetchReceivedInvitations,
   getAppConfig,
-  seedDatabaseIfEmpty
+  seedDatabaseIfEmpty,
+  DEFAULT_TENANT_ID,
+  getTenant
 } from './firebase';
 
 // Views
 import DashboardView from './components/DashboardView';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
 
 // Optimized Lazy-Loaded Views for Code-Splitting
 const LoginView = React.lazy(() => import('./components/LoginView'));
@@ -141,6 +144,47 @@ export default function App() {
     seedDatabaseIfEmpty().catch(err => console.error("Database seeding check:", err));
   }, []);
 
+  // Multi-Tenant States
+  const [activeTenantId, setActiveTenantId] = useState<string>(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromUrl = urlParams.get('tenant') || urlParams.get('t');
+    if (fromUrl) {
+      localStorage.setItem('notx_active_tenant', fromUrl);
+      return fromUrl;
+    }
+    return localStorage.getItem('notx_active_tenant') || DEFAULT_TENANT_ID;
+  });
+
+  const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
+
+  const [isOverseeingTenant, setIsOverseeingTenant] = useState<boolean>(() => {
+    return localStorage.getItem('notx_is_overseeing') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('notx_active_tenant', activeTenantId);
+  }, [activeTenantId]);
+
+  useEffect(() => {
+    localStorage.setItem('notx_is_overseeing', String(isOverseeingTenant));
+  }, [isOverseeingTenant]);
+
+  // Load active tenant data and apply branding
+  useEffect(() => {
+    getTenant(activeTenantId).then((t) => {
+      if (t) {
+        setActiveTenant(t);
+        if (t.branding) {
+          setAppConfig(prev => ({
+            ...prev,
+            branding: t.branding,
+            supportInfo: t.supportInfo || prev.supportInfo
+          }));
+        }
+      }
+    });
+  }, [activeTenantId]);
+
   // Firestore States
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [events, setEvents] = useState<DepartmentEvent[]>([]);
@@ -219,9 +263,6 @@ export default function App() {
     async function initializeApp() {
       try {
         setIsDataLoading(true);
-        // Seed if first time
-        
-        // Fetch all elements
         await refreshAllData();
       } catch (err) {
         console.error("Initialization failed: ", err);
@@ -286,7 +327,6 @@ export default function App() {
         if (room.messages) {
           const hasUnread = room.messages.some(m => m.recipientRoll.toUpperCase() === userRoll && m.type === 'chat' && !m.isRead);
           if (hasUnread) {
-            // Count all unread messages in this room instead of just marking the room as having unread
             const roomUnreadCount = room.messages.filter(m => m.recipientRoll.toUpperCase() === userRoll && m.type === 'chat' && !m.isRead).length;
             unread += roomUnreadCount;
           }
@@ -297,7 +337,8 @@ export default function App() {
     return () => unsubscribe();
   }, [currentUser?.rollNumber]);
 
-  const refreshAllData = async () => {
+  const refreshAllData = async (targetTenantId?: string) => {
+    const tId = targetTenantId || activeTenantId;
     try {
       setIsDataLoading(true);
       
@@ -305,14 +346,15 @@ export default function App() {
         ? fetchReceivedInvitations(currentUser.rollNumber) 
         : Promise.resolve([]);
 
-      const [u, e, r, g, a, invites, config] = await Promise.all([
-        fetchUsers(),
-        fetchEvents(),
-        fetchRegistrations(),
-        fetchAlbums(),
-        fetchAnnouncements(),
+      const [u, e, r, g, a, invites, config, tenantData] = await Promise.all([
+        fetchUsers(tId),
+        fetchEvents(tId),
+        fetchRegistrations(tId),
+        fetchAlbums(tId),
+        fetchAnnouncements(tId),
         invitesPromise,
-        getAppConfig()
+        getAppConfig(),
+        getTenant(tId)
       ]);
       setAllUsers(u);
       setEvents(e);
@@ -320,7 +362,21 @@ export default function App() {
       setAlbums(g);
       setAnnouncements(a);
       setReceivedInvitations(invites || []);
-      setAppConfig(config);
+      
+      if (tenantData) {
+        setActiveTenant(tenantData);
+        if (tenantData.branding) {
+          setAppConfig({
+            ...config,
+            branding: tenantData.branding,
+            supportInfo: tenantData.supportInfo || config.supportInfo
+          });
+        } else {
+          setAppConfig(config);
+        }
+      } else {
+        setAppConfig(config);
+      }
 
       // If currentUser is logged in, refresh their profile state as well
       if (currentUser) {
@@ -340,13 +396,24 @@ export default function App() {
   const handleLoginSuccess = (user: UserProfile) => {
     setCurrentUser(user);
     localStorage.setItem('notx_user', JSON.stringify(user));
+    if (user.tenantId) {
+      setActiveTenantId(user.tenantId);
+      localStorage.setItem('notx_active_tenant', user.tenantId);
+    }
+    const isSuper = user.isSuperAdmin || SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
+    if (isSuper) {
+      setIsOverseeingTenant(false);
+    }
     setActiveTab('home');
+    refreshAllData(user.tenantId || activeTenantId);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setIsOverseeingTenant(false);
     localStorage.removeItem('notx_user');
     localStorage.removeItem('notx_active_tab');
+    localStorage.removeItem('notx_is_overseeing');
     setActiveTab('home');
   };
 
@@ -385,11 +452,26 @@ export default function App() {
         <React.Suspense fallback={<ViewLoadingFallback />}>
           <LoginView 
             branding={currentBranding}
+            activeTenantId={activeTenantId}
+            onSelectTenant={(tId) => {
+              setActiveTenantId(tId);
+              refreshAllData(tId);
+            }}
             onLoginSuccess={handleLoginSuccess} 
             allUsers={allUsers}
-            refreshUsers={refreshAllData}
+            refreshUsers={() => refreshAllData(activeTenantId)}
           />
         </React.Suspense>
+      ) : (currentUser.isSuperAdmin || SUPER_ADMIN_EMAILS.includes(currentUser.email.toLowerCase())) && !isOverseeingTenant ? (
+        <SuperAdminDashboard
+          currentUser={currentUser}
+          onEnterTenant={(tId) => {
+            setActiveTenantId(tId);
+            setIsOverseeingTenant(true);
+            refreshAllData(tId);
+          }}
+          onLogout={handleLogout}
+        />
       ) : currentUser.isFirstLogin ? (
         <React.Suspense fallback={<ViewLoadingFallback />}>
           <FirstTimeSetupView 
@@ -400,6 +482,28 @@ export default function App() {
       ) : (
         /* Authenticated Application shell */
         <div className="h-full w-full flex flex-col bg-[var(--nb-bg)] text-[var(--nb-content)] overflow-hidden">
+
+          {/* Super Admin Floating Oversight Bar */}
+          {(currentUser.isSuperAdmin || SUPER_ADMIN_EMAILS.includes(currentUser.email.toLowerCase())) && isOverseeingTenant && (
+            <div 
+              className="bg-[var(--nb-yellow)] text-neutral-900 border-b-2 border-[var(--nb-ink)] px-4 py-2 flex items-center justify-between text-xs font-bold z-50 sticky top-0 shadow-[0_2px_0_var(--nb-ink)] flex-shrink-0"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="nb-pill-coral text-[9px] font-mono font-bold uppercase px-2 py-0.5 shadow-[1.5px_1.5px_0_#000] flex-shrink-0">
+                  SUPER ADMIN OVERSIGHT
+                </span>
+                <span className="text-xs font-bold truncate">
+                  Supervising: <strong>{activeTenant?.name || activeTenantId}</strong> ({activeTenantId})
+                </span>
+              </div>
+              <button
+                onClick={() => setIsOverseeingTenant(false)}
+                className="nb-btn-ghost text-[10px] font-mono font-bold uppercase py-1 px-3 bg-white text-neutral-900 border border-black cursor-pointer shadow-[1.5px_1.5px_0_#000] hover:bg-neutral-100 flex-shrink-0"
+              >
+                ← Control Center
+              </button>
+            </div>
+          )}
 
           {/* ── Top Header ── flat, no blur, 2px ink border-bottom */}
           <header
