@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getDatabase, ref, get, set, push, remove, update, onValue } from 'firebase/database';
 import { 
   initializeFirestore, 
   collection, 
@@ -42,6 +43,7 @@ export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 });
 export const auth = getAuth(app);
+export const rtdb = getDatabase(app);
 
 // Initial Seeding Data
 const INITIAL_USERS: UserProfile[] = [
@@ -903,7 +905,7 @@ export async function deleteAnnouncement(announcementId: string): Promise<void> 
   }
 }
 
-// ---------------- UNIFIED CHATS COLLECTION (USER'S JSON/ARRAY CHAT MODEL) ----------------
+// ---------------- UNIFIED CHATS COLLECTION (REALTIME DATABASE RTDB MODEL) ----------------
 
 export function getChatRoomId(rollA: string, rollB: string): string {
   const rA = rollA.trim().toUpperCase();
@@ -927,32 +929,23 @@ export async function sendChatMessage(
   const sRoll = sender.rollNumber.trim().toUpperCase();
   const chatId = getChatRoomId(sRoll, rRoll);
   
-  const path = `chats/${chatId}`;
-  
   try {
-    const chatDocRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatDocRef);
-    
-    let currentMessages: UserInvitation[] = [];
+    const chatRef = ref(rtdb, `chats/${chatId}`);
+    const snapshot = await get(chatRef);
     let isNewChat = true;
-
-    if (chatSnap.exists()) {
-      const data = chatSnap.data() as ChatRoom;
-      if (Array.isArray(data.messages)) {
-        currentMessages = data.messages;
-      }
-      
-      // If there are existing messages, it's not a new chat (unless they were all deleted, which counts as new chat again)
-      if (currentMessages.length > 0) {
+    
+    if (snapshot.exists()) {
+      const val = snapshot.val();
+      if (val.messages && Object.keys(val.messages).length > 0) {
         isNewChat = false;
       }
     }
-    
-    // Force type to invite if this is a new chat to enforce request acceptance
+
     const actualType = isNewChat ? 'invite' : type;
+    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     
     const newInvite: UserInvitation = {
-      invitationId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      invitationId: msgId,
       senderUid: sender.uid,
       senderName: sender.name,
       senderRoll: sRoll,
@@ -966,19 +959,16 @@ export async function sendChatMessage(
       isRead: false
     };
 
-    // Append new message
-    currentMessages.push(newInvite);
-    
-    const updatedRoom: ChatRoom = {
-      chatId,
-      participants: [sRoll, rRoll],
-      messages: currentMessages,
-      lastMessageAt: newInvite.createdAt
-    };
+    const updates: Record<string, any> = {};
+    updates[`chats/${chatId}/participants`] = [sRoll, rRoll];
+    updates[`chats/${chatId}/chatId`] = chatId;
+    updates[`chats/${chatId}/lastMessageAt`] = newInvite.createdAt;
+    updates[`chats/${chatId}/messages/${msgId}`] = cleanUndefined(newInvite);
 
-    await setDoc(chatDocRef, cleanUndefined(updatedRoom));
+    await update(ref(rtdb), updates);
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
+    console.error("Error sending chat message via RTDB:", error);
+    throw error;
   }
 }
 
@@ -987,37 +977,27 @@ export async function markMessagesAsRead(
   classmateRoll: string
 ): Promise<void> {
   const chatId = getChatRoomId(userRoll, classmateRoll);
-  const path = `chats/${chatId}`;
+  const userRollUpper = userRoll.trim().toUpperCase();
   
   try {
-    const chatDocRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatDocRef);
-    if (!chatSnap.exists()) return;
-    
-    const data = chatSnap.data() as ChatRoom;
-    if (!Array.isArray(data.messages)) return;
-    
-    const userRollUpper = userRoll.trim().toUpperCase();
-    let updated = false;
-    
-    const updatedMessages = data.messages.map(msg => {
-      const isRecipient = msg.recipientRoll.toUpperCase() === userRollUpper;
-      const isChat = msg.type === 'chat';
-      
-      if (isRecipient && isChat && !msg.isRead) {
-        updated = true;
-        return { ...msg, isRead: true };
+    const msgsRef = ref(rtdb, `chats/${chatId}/messages`);
+    const snapshot = await get(msgsRef);
+    if (!snapshot.exists()) return;
+
+    const msgs = snapshot.val() || {};
+    const updates: Record<string, any> = {};
+
+    Object.entries(msgs).forEach(([msgId, msg]: [string, any]) => {
+      if (msg.recipientRoll?.toUpperCase() === userRollUpper && msg.type === 'chat' && !msg.isRead) {
+        updates[`chats/${chatId}/messages/${msgId}/isRead`] = true;
       }
-      return msg;
     });
-    
-    if (updated) {
-      await updateDoc(chatDocRef, {
-        messages: cleanUndefined(updatedMessages)
-      });
+
+    if (Object.keys(updates).length > 0) {
+      await update(ref(rtdb), updates);
     }
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
+    console.error("Error marking messages as read via RTDB:", error);
   }
 }
 
@@ -1026,37 +1006,19 @@ export async function respondToChatInvite(
   messageId: string,
   status: 'Accepted' | 'Declined'
 ): Promise<void> {
-  const path = `chats/${chatId}`;
   try {
-    const chatDocRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatDocRef);
-    if (!chatSnap.exists()) return;
-    
-    const data = chatSnap.data() as ChatRoom;
-    if (!Array.isArray(data.messages)) return;
-    
-    const updatedMessages = data.messages.map(msg => {
-      if (msg.invitationId === messageId) {
-        return { ...msg, status };
-      }
-      return msg;
-    });
-    
-    await updateDoc(chatDocRef, {
-      messages: cleanUndefined(updatedMessages)
-    });
+    const msgRef = ref(rtdb, `chats/${chatId}/messages/${messageId}/status`);
+    await set(msgRef, status);
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
+    console.error("Error responding to chat invite via RTDB:", error);
   }
 }
 
 export async function deleteChatRoom(chatId: string): Promise<void> {
-  const path = `chats/${chatId}`;
   try {
-    const chatDocRef = doc(db, 'chats', chatId);
-    await deleteDoc(chatDocRef);
+    await remove(ref(rtdb, `chats/${chatId}`));
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, path);
+    console.error("Error deleting chat room via RTDB:", error);
   }
 }
 
@@ -1064,24 +1026,10 @@ export async function deleteChatMessage(
   chatId: string,
   messageId: string
 ): Promise<void> {
-  const path = `chats/${chatId}`;
   try {
-    const chatDocRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatDocRef);
-    if (!chatSnap.exists()) return;
-
-    const data = chatSnap.data() as ChatRoom;
-    if (!Array.isArray(data.messages)) return;
-
-    const updatedMessages = data.messages.filter(msg => msg.invitationId !== messageId);
-    const lastMsg = updatedMessages[updatedMessages.length - 1];
-
-    await updateDoc(chatDocRef, {
-      messages: cleanUndefined(updatedMessages),
-      lastMessageAt: lastMsg ? lastMsg.createdAt : new Date().toISOString()
-    });
+    await remove(ref(rtdb, `chats/${chatId}/messages/${messageId}`));
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
+    console.error("Error deleting chat message via RTDB:", error);
   }
 }
 
@@ -1090,24 +1038,16 @@ export async function updateTypingStatus(
   rollNumber: string,
   isTyping: boolean
 ): Promise<void> {
-  const path = `chats/${chatId}`;
+  const cleanRoll = rollNumber.trim().toUpperCase();
   try {
-    const chatDocRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatDocRef);
-    if (!chatSnap.exists()) return;
-
-    const data = chatSnap.data() as ChatRoom;
-    let typing = Array.isArray(data.typing) ? [...data.typing] : [];
-
+    const typingRef = ref(rtdb, `chats/${chatId}/typing/${cleanRoll}`);
     if (isTyping) {
-      if (!typing.includes(rollNumber)) typing.push(rollNumber);
+      await set(typingRef, true);
     } else {
-      typing = typing.filter(r => r !== rollNumber);
+      await remove(typingRef);
     }
-
-    await updateDoc(chatDocRef, { typing: cleanUndefined(typing) });
   } catch (error) {
-    console.error('Error updating typing status:', error);
+    console.error('Error updating typing status via RTDB:', error);
   }
 }
 

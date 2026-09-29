@@ -5,6 +5,7 @@ import {
   HelpCircle, AlertCircle, ChevronRight, CornerDownRight, User, Trash2, AlertTriangle
 } from 'lucide-react';
 import { onSnapshot, collection, query, where } from 'firebase/firestore';
+import { ref, onValue } from 'firebase/database';
 import { UserProfile, UserInvitation, ChatRoom } from '../types';
 import HoldButton from './HoldButton';
 import { 
@@ -15,7 +16,8 @@ import {
   updateTypingStatus,
   deleteChatRoom,
   deleteChatMessage,
-  db
+  db,
+  rtdb
 } from '../firebase';
 
 interface MessagesViewProps {
@@ -83,48 +85,70 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
   }, [initialTargetRoll, onTargetHandled, conversations, allUsers]);
 
 
-  // Real-time listener for the unified chats where user is a participant
+  // Real-time listener for RTDB chats where user is a participant
   useEffect(() => {
     if (!user || !user.rollNumber) return;
     
     setIsLoading(true);
-    
-    const qChats = query(
-      collection(db, 'chats'),
-      where('participants', 'array-contains', user.rollNumber.trim().toUpperCase())
-    );
+    const userRollUpper = user.rollNumber.trim().toUpperCase();
+    const chatsRef = ref(rtdb, 'chats');
 
-    const unsubscribe = onSnapshot(qChats, (snapshot) => {
+    const unsubscribe = onValue(chatsRef, (snapshot) => {
       const list: Conversation[] = [];
-      snapshot.forEach((docSnap) => {
-        const room = docSnap.data() as ChatRoom;
-        
+      const val = snapshot.val() || {};
+
+      Object.values(val).forEach((roomAny: any) => {
+        const room = roomAny as {
+          chatId?: string;
+          participants?: string[];
+          messages?: Record<string, UserInvitation> | UserInvitation[];
+          lastMessageAt?: string;
+          typing?: Record<string, boolean> | string[];
+        };
+
+        const participants = Array.isArray(room.participants) ? room.participants : [];
+        if (!participants.some(p => p.toUpperCase() === userRollUpper)) return;
+
         // Find classmate's roll number (the other participant)
-        const classmateRoll = room.participants.find(
-          roll => roll.toUpperCase() !== user.rollNumber!.trim().toUpperCase()
-        ) || user.rollNumber!.trim().toUpperCase(); // fallback to self if chatting with self
-        
-        // Find classmate's profile in allUsers
+        const classmateRoll = participants.find(
+          roll => roll.toUpperCase() !== userRollUpper
+        ) || userRollUpper;
+
+        // Find classmate profile
         const classmateProfile = allUsers.find(
           u => u.rollNumber && u.rollNumber.toUpperCase() === classmateRoll.toUpperCase()
         );
-        
+
+        // Convert messages object/array to array
+        let rawMsgs: UserInvitation[] = [];
+        if (Array.isArray(room.messages)) {
+          rawMsgs = room.messages;
+        } else if (room.messages && typeof room.messages === 'object') {
+          rawMsgs = Object.values(room.messages);
+        }
+
+        const sortedMsgs = rawMsgs.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+
         // Find classmate name
         let classmateName = 'Unknown Student';
         if (classmateProfile) {
           classmateName = classmateProfile.name;
         } else {
-          // Fallback from messages
-          const firstOtherMsg = room.messages.find(m => m.senderRoll.toUpperCase() === classmateRoll.toUpperCase());
-          const firstMyMsg = room.messages.find(m => m.recipientRoll.toUpperCase() === classmateRoll.toUpperCase());
+          const firstOtherMsg = sortedMsgs.find(m => m.senderRoll.toUpperCase() === classmateRoll.toUpperCase());
+          const firstMyMsg = sortedMsgs.find(m => m.recipientRoll.toUpperCase() === classmateRoll.toUpperCase());
           if (firstOtherMsg) classmateName = firstOtherMsg.senderName;
           else if (firstMyMsg) classmateName = firstMyMsg.recipientName;
         }
-        
-        // Sort messages in this conversation ascending by date
-        const sortedMsgs = [...(room.messages || [])].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
+
+        // Convert typing status object/array to array of active roll numbers
+        let typingArr: string[] = [];
+        if (Array.isArray(room.typing)) {
+          typingArr = room.typing;
+        } else if (room.typing && typeof room.typing === 'object') {
+          typingArr = Object.keys(room.typing).filter(k => (room.typing as Record<string, boolean>)[k] === true);
+        }
 
         list.push({
           classmateRoll,
@@ -132,17 +156,16 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
           classmateProfile,
           messages: sortedMsgs,
           lastMessageAt: room.lastMessageAt || new Date().toISOString(),
-          typing: room.typing || []
+          typing: typingArr
         });
       });
-      
+
       // Sort conversations descending by the time of the last message
       list.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
-      
       setConversations(list);
       setIsLoading(false);
     }, (error) => {
-      console.error("Error listening to chats:", error);
+      console.error("Error listening to RTDB chats:", error);
       setIsLoading(false);
     });
 

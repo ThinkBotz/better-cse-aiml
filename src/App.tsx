@@ -26,7 +26,8 @@ import {
   fetchAlbums, 
   fetchAnnouncements, 
   fetchReceivedInvitations,
-  getAppConfig
+  getAppConfig,
+  seedDatabaseIfEmpty
 } from './firebase';
 
 // Views
@@ -125,6 +126,11 @@ export default function App() {
       localStorage.removeItem('notx_user');
     }
   }, [currentUser]);
+
+  // Automatic database seeding on fresh project
+  useEffect(() => {
+    seedDatabaseIfEmpty().catch(err => console.error("Database seeding check:", err));
+  }, []);
 
   // Firestore States
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
