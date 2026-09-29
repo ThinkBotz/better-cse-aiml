@@ -266,7 +266,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
     return (
       <div className="flex-1 overflow-y-auto bg-background text-content pb-36 sm:pb-32">
         {/* Album Header Bar */}
-        <div className="sticky top-0 bg-surface/90 backdrop-blur-md z-10 border-b border-divider p-4">
+        <div className="sticky top-0 bg-surface/95 backdrop-blur-md z-30 border-b border-divider p-4 shadow-sm">
           <div className="flex justify-between items-start sm:items-center gap-3 flex-wrap">
             <div>
               <div className="flex items-center gap-2">
@@ -376,7 +376,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                         e.stopPropagation();
                         setPhotoToDeleteIdx(idx);
                       }}
-                      className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-rose-600 text-white rounded-xl backdrop-blur-md transition-all shadow-md z-10 border border-white/10 cursor-pointer opacity-90 group-hover:opacity-100 active:scale-95"
+                      className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-rose-600 text-white rounded-xl backdrop-blur-md transition-all shadow-md z-[2] border border-white/10 cursor-pointer opacity-90 group-hover:opacity-100 active:scale-95"
                       title="Delete this photo"
                       aria-label="Delete this photo"
                     >
@@ -515,7 +515,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                 
                 {/* Management Action Buttons (Edit + Delete) */}
                 {hasRights && (
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-[2]">
                     <button 
                       type="button"
                       onClick={(e) => openEditModal(album, e)}
