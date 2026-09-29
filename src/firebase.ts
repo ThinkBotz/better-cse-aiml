@@ -43,7 +43,7 @@ export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 });
 export const auth = getAuth(app);
-export const rtdb = getDatabase(app);
+export const rtdb = getDatabase(app, (firebaseConfig as any).databaseURL);
 
 // Initial Seeding Data
 const INITIAL_USERS: UserProfile[] = [
