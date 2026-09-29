@@ -113,39 +113,52 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs">
-      <div className="bg-background border border-divider/80 rounded-3xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 animate-fadeIn">
+      <div 
+        className="bg-[var(--nb-surface)] rounded-lg w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+      >
         
         {/* Header */}
-        <div className="p-4 border-b border-divider flex items-center justify-between bg-surface">
+        <div 
+          className="p-4 border-b-2 border-[var(--nb-ink)] flex items-center justify-between bg-[var(--nb-surface-accent)] shrink-0"
+        >
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div 
+              className="w-8 h-8 rounded bg-[var(--nb-surface)] flex items-center justify-center text-[var(--nb-accent)]"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-content flex items-center gap-2">
+              <h2 className="nb-headline text-base text-[var(--nb-content)] flex items-center gap-2">
                 Avatar Models Gallery
-                <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                <span 
+                  className="nb-tag text-[10px] font-mono font-bold"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
                   {filteredAvatars.length} Models
                 </span>
               </h2>
-              <p className="text-[10px] text-secondary font-mono">120+ SVG styles and custom variants</p>
+              <p className="nb-label text-[10px] text-[var(--nb-secondary)]">120+ SVG STYLES AND CUSTOM SEED VARIANTS</p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
             <button
               onClick={handleRandomize}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-secondary hover:text-content border border-divider text-xs font-semibold transition-all cursor-pointer"
+              className="nb-btn-ghost flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
               title="Shuffle avatar variations"
             >
-              <RefreshCw className="w-3 h-3 text-indigo-400" />
-              <span className="hidden sm:inline text-[11px]">Shuffle</span>
+              <RefreshCw className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
+              <span className="hidden sm:inline font-mono">Shuffle</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-1.5 text-secondary hover:text-content rounded-xl bg-surface-accent hover:bg-divider transition-colors cursor-pointer"
+              className="nb-btn-ghost w-7 h-7 flex items-center justify-center rounded cursor-pointer"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -153,18 +166,24 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="p-3 border-b border-divider bg-background flex flex-col sm:flex-row gap-2.5 items-center justify-between">
+        <div 
+          className="p-3 border-b-2 border-[var(--nb-ink)] bg-[var(--nb-surface)] flex flex-col sm:flex-row gap-2.5 items-center justify-between"
+        >
           {/* Categories */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1 rounded text-xs font-bold uppercase transition-all cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 font-bold'
-                    : 'bg-surface text-secondary hover:text-content hover:bg-surface-accent border border-divider'
+                    ? 'bg-[var(--nb-accent)] text-white'
+                    : 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)] hover:bg-[var(--nb-surface)]'
                 }`}
+                style={{
+                  border: '1.5px solid var(--nb-ink)',
+                  boxShadow: selectedCategory === cat ? 'var(--shadow-hard-sm)' : 'none'
+                }}
               >
                 {cat}
               </button>
@@ -173,19 +192,20 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
 
           {/* Search box */}
           <div className="relative w-full sm:w-60">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -tranneutral-y-1/2 text-tertiary" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--nb-secondary)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search avatar..."
-              className="w-full bg-surface border border-divider rounded-xl pl-8 pr-3 py-1.5 text-xs text-content placeholder:text-tertiary focus:outline-none focus:border-indigo-500/50 font-sans"
+              className="w-full bg-[var(--nb-surface-accent)] rounded pl-8 pr-3 py-1.5 text-xs font-bold text-[var(--nb-content)] outline-none"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             />
           </div>
         </div>
 
         {/* Avatar Grid */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2.5 bg-background">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2.5 bg-[var(--nb-bg)]">
           {filteredAvatars.map((av) => {
             const isSelected = currentUrl === av.url;
             return (
@@ -195,26 +215,36 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
                   onSelectAvatar(av.url);
                   onClose();
                 }}
-                className={`group relative flex flex-col items-center p-2 rounded-2xl border transition-all cursor-pointer bg-surface ${
+                className={`group relative flex flex-col items-center p-2 rounded transition-all cursor-pointer bg-[var(--nb-surface)] ${
                   isSelected
-                    ? 'border-indigo-500 ring-2 ring-indigo-500/40 scale-105 shadow-lg shadow-indigo-600/20 bg-indigo-950/20'
-                    : 'border-divider/80 hover:border-divider hover:scale-102 hover:bg-surface-accent'
+                    ? 'bg-[var(--nb-surface-accent)]'
+                    : 'hover:bg-[var(--nb-surface-accent)]'
                 }`}
+                style={{
+                  border: isSelected ? '2px solid var(--nb-accent)' : '1.5px solid var(--nb-ink)',
+                  boxShadow: isSelected ? 'var(--shadow-hard-sm)' : 'none'
+                }}
               >
-                <div className="w-full aspect-square rounded-xl overflow-hidden bg-surface border border-divider flex items-center justify-center relative">
+                <div 
+                  className="w-full aspect-square rounded overflow-hidden bg-[var(--nb-surface)] flex items-center justify-center relative"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
                   <img
                     src={av.url}
                     alt={av.name}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     loading="lazy"
                   />
                   {isSelected && (
-                    <div className="absolute top-1 right-1 bg-indigo-600 text-white p-0.5 rounded-full shadow">
+                    <div 
+                      className="absolute top-1 right-1 bg-[var(--nb-accent)] text-white p-0.5 rounded shadow"
+                      style={{ border: '1px solid var(--nb-ink)' }}
+                    >
                       <Check className="w-2.5 h-2.5" />
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-medium text-secondary group-hover:text-content mt-1.5 truncate w-full text-center">
+                <span className="nb-label text-[9.5px] text-[var(--nb-content)] mt-1.5 truncate w-full text-center">
                   {av.name}
                 </span>
               </button>
@@ -223,15 +253,18 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
         </div>
 
         {/* Footer with Custom URL Option */}
-        <div className="p-3 border-t border-divider bg-surface flex flex-col sm:flex-row items-center justify-between gap-2.5">
+        <div 
+          className="p-3 border-t-2 border-[var(--nb-ink)] bg-[var(--nb-surface-accent)] flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0"
+        >
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs text-secondary whitespace-nowrap">Custom URL:</span>
+            <span className="nb-label text-[11px] text-[var(--nb-secondary)] whitespace-nowrap">CUSTOM URL:</span>
             <input
               type="text"
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               placeholder="https://..."
-              className="bg-background border border-divider rounded-xl px-2.5 py-1 text-xs text-content w-full sm:w-72 outline-none focus:border-indigo-500"
+              className="bg-[var(--nb-surface)] rounded px-2.5 py-1 text-xs font-bold text-[var(--nb-content)] w-full sm:w-72 outline-none"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             />
             {customInput && (
               <button
@@ -239,7 +272,8 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
                   onSelectAvatar(customInput);
                   onClose();
                 }}
-                className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold whitespace-nowrap cursor-pointer transition-colors"
+                className="nb-btn px-3 py-1 rounded text-xs font-bold uppercase tracking-wider cursor-pointer whitespace-nowrap"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
                 Apply
               </button>
@@ -248,7 +282,8 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-primary text-xs font-semibold cursor-pointer transition-colors"
+            className="w-full sm:w-auto nb-btn-ghost px-4 py-1.5 rounded text-xs font-bold uppercase cursor-pointer"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
             Close Gallery
           </button>
@@ -258,3 +293,4 @@ export const AvatarGalleryModal: React.FC<AvatarGalleryModalProps> = ({
     </div>
   );
 };
+export default AvatarGalleryModal;

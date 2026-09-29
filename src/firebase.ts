@@ -737,6 +737,16 @@ export async function updateRegistrationTeamMembers(regId: string, teamMembers: 
   }
 }
 
+export async function deleteRegistration(registrationId: string): Promise<void> {
+  const path = `registrations/${registrationId}`;
+  try {
+    const docRef = doc(db, 'registrations', registrationId);
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
 // Gallery
 export async function fetchAlbums(): Promise<Album[]> {
   try {

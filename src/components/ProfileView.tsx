@@ -20,6 +20,7 @@ import { AvatarGalleryModal } from './AvatarGalleryModal';
 import EditSupportBoxModal from './EditSupportBoxModal';
 import CertificateRecipientsModal from './CertificateRecipientsModal';
 import CertificateVerificationModal from './CertificateVerificationModal';
+import EventTicketModal from './EventTicketModal';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -38,164 +39,6 @@ interface ProfileViewProps {
   isCertificatesEnabled?: boolean;
   certificateTemplate?: CertificateTemplate;
   branding?: AppBranding;
-}
-
-
-function EventTicketView({ event, registration, user, onClose, branding }: { event: DepartmentEvent, registration: EventRegistration, user: any, onClose: () => void, branding?: AppBranding }) {
-  const newTicketNum = `${user?.rollNumber || 'TKT'}-${event.title.substring(0,3).toUpperCase()}-${registration.registrationId.substring(0,4).toUpperCase()}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&color=000000&bgcolor=ffffff&data=${encodeURIComponent(user?.rollNumber?.toUpperCase() || registration.registrationId)}`;
-
-  return (
-    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center p-4 pt-10">
-      <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-content backdrop-blur-md cursor-pointer hover:bg-white/20 transition-colors z-10 border border-white/10">
-         <X className="w-5 h-5" />
-      </button>
-      <div className="relative w-full max-w-[250px]">
-         {/* Ticket Container */}
-         <div className="w-full flex flex-col drop-shadow-2xl font-sans">
-            {/* Top Section */}
-            <div className="bg-[#F3F2EB] rounded-t-[28px] overflow-hidden relative">
-               {/* Header */}
-               <div className="bg-[#3D4329] px-5 py-4 flex justify-between items-center text-[#F3F2EB]">
-                  <div className="flex items-center gap-2.5">
-                     <div className="w-7 h-7 bg-white/10 rounded flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-[#F3F2EB]" />
-                     </div>
-                     <span className="font-bold tracking-widest text-[11px]">EVENT TICKET</span>
-                  </div>
-                  <span className="text-[9px] text-content/60 font-mono">#{newTicketNum}</span>
-               </div>
-               
-               {/* Body */}
-               <div className="p-3.5 flex gap-3">
-                  <div className="w-[65px] h-[90px] flex-shrink-0 bg-neutral-200 rounded-xl overflow-hidden shadow-sm">
-                     <img src={event.posterImage} alt={event.title} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 flex flex-col justify-start py-0.5">
-                     <div>
-                        <h2 className="text-[16px] font-bold text-[#111] leading-[1.1]">{event.title}</h2>
-                        <p className="text-[9px] text-[#555] font-medium mt-1.5">{event.category}</p>
-                     </div>
-                     
-                     <div className="space-y-1.5 mt-auto pb-1">
-                        <div className="flex justify-between items-end">
-                           <span className="text-[9px] text-[#777]">Date</span>
-                           <span className="text-[11px] font-semibold text-[#111]">{event.date}</span>
-                        </div>
-                        <div className="flex justify-between items-end">
-                           <span className="text-[9px] text-[#777]">Time</span>
-                           <span className="text-[11px] font-semibold text-[#111]">{event.startTime} - {event.endTime}</span>
-                        </div>
-                        <div className="flex justify-between items-end">
-                           <span className="text-[9px] text-[#777]">Venue</span>
-                           <span className="text-[11px] font-semibold text-[#111] truncate max-w-[80px] text-right">{event.venue}</span>
-                        </div>
-                        {registration.isTeam && (
-                           <>
-                              <div className="flex justify-between items-end mt-2">
-                                 <span className="text-[9px] text-[#777]">Team Name</span>
-                                 <span className="text-[11px] font-semibold text-[#111] truncate max-w-[80px] text-right">{registration.teamName}</span>
-                              </div>
-                              <div className="flex justify-between items-end">
-                                 <span className="text-[9px] text-[#777]">Team Size</span>
-                                 <span className="text-[11px] font-semibold text-[#111]">{(registration.teamMembers?.length || 0) + 1} Members</span>
-                              </div>
-                           </>
-                        )}
-                     </div>
-                  </div>
-               </div>
-               
-               {/* Status */}
-               <div className="px-3.5 pb-3.5">
-                  <div className="border-t-[1.5px] border-dashed border-[#ccc] pt-3 flex items-center justify-between">
-                     <div className="inline-flex items-center gap-1.5 bg-[#E3F5E7] text-[#307548] px-2.5 py-1.5 rounded-full">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-bold tracking-wide pr-1">Confirmed</span>
-                     </div>
-                     <span className="font-mono text-[9px] font-bold text-[#555] uppercase">{registration.rollNumber || ''}</span>
-                  </div>
-               </div>
-               
-               {/* Left Cutout */}
-               <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-black/80 rounded-full"></div>
-               {/* Right Cutout */}
-               <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-black/80 rounded-full"></div>
-            </div>
-            
-            {/* Tear Line Container */}
-            <div className="h-6 bg-transparent flex items-center relative overflow-hidden -my-[1px]">
-               {/* Dashed line */}
-               <div className="w-full h-[0px] border-t-2 border-dashed border-[#C93F2B] absolute top-1/2 -translate-y-1/2"></div>
-            </div>
-            
-            {/* Bottom Section */}
-            <div className="bg-[#F3F2EB] rounded-b-[28px] overflow-hidden relative">
-               {/* Left Cutout (Top) */}
-               <div className="absolute -top-3 -left-3 w-6 h-6 bg-black/80 rounded-full"></div>
-               {/* Right Cutout (Top) */}
-               <div className="absolute -top-3 -right-3 w-6 h-6 bg-black/80 rounded-full"></div>
-               
-               <div className="p-3.5 flex gap-3 pt-5">
-                  <div className="flex flex-col items-center">
-                     <div className="w-[60px] h-[60px] bg-white p-1.5 rounded-xl border border-neutral-200">
-                        <img src={qrUrl} alt="QR Code" className="w-full h-full object-cover mix-blend-multiply" />
-                     </div>
-                     <span className="text-[9px] text-[#777] font-mono mt-2.5 uppercase tracking-widest">{newTicketNum}</span>
-                  </div>
-                  <div className="flex-1 grid grid-cols-2 gap-y-4 gap-x-2 py-1">
-                     <div>
-                        <div className="flex items-center gap-1.5 text-[#777] mb-0.5">
-                           <Clock className="w-3.5 h-3.5" />
-                           <span className="text-[9px]">Time</span>
-                        </div>
-                        <div className="text-[11px] font-bold text-[#111] leading-tight">
-                           {event.startTime}<br/>- {event.endTime}
-                        </div>
-                     </div>
-                     <div>
-                        <div className="flex items-center gap-1.5 text-[#777] mb-0.5">
-                           <MapPin className="w-3.5 h-3.5" />
-                           <span className="text-[9px]">Location</span>
-                        </div>
-                        <div className="text-[11px] font-bold text-[#111] leading-tight mt-1">
-                           AITS Kadapa
-                        </div>
-                     </div>
-                     <div>
-                        <div className="flex items-center gap-1.5 text-[#777] mb-0.5">
-                           <Calendar className="w-3.5 h-3.5" />
-                           <span className="text-[9px]">Date</span>
-                        </div>
-                        <div className="text-[11px] font-bold text-[#111] leading-tight mt-1">
-                           {event.date}
-                        </div>
-                     </div>
-
-                  </div>
-               </div>
-               
-               {/* Footer */}
-               <div className="bg-[#EAE9E3] p-4 flex justify-between items-center mt-2">
-                  <div className="flex items-center gap-2.5">
-                     <div className="w-6 h-6 bg-[#2D3319] rounded-full flex items-center justify-center">
-                        <div className="w-2.5 h-2.5 bg-[#F3F2EB] rounded-full"></div>
-                     </div>
-                     <div>
-                        <div className="text-[11px] font-bold text-[#111]">{branding?.appName || 'NOTX'} {branding?.tagline || 'Connect'}</div>
-                        <div className="text-[8px] text-[#666] mt-0.5">Empowering Students, Building Futures</div>
-                     </div>
-                  </div>
-                  <div className="text-right">
-                     <div className="text-[9px] text-[#555] font-medium">Thank you!</div>
-                     <div className="text-[9px] text-[#555] font-medium">See you at the event.</div>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-    </div>
-  );
 }
 
 export default function ProfileView({ 
@@ -359,9 +202,11 @@ export default function ProfileView({
   return (
     <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 sm:pb-32 space-y-4 bg-background">
       
-      {/* Profile Core Header inspired by reference design */}
-      <div className="relative rounded-[28px] bg-gradient-to-br from-[#230D1D] via-[#1C0917] to-[#140611] dark:from-[#230D1D] dark:via-[#1C0917] dark:to-[#140611] p-5 sm:p-6 border border-white/10 dark:border-rose-400/15 text-center overflow-hidden shadow-2xl shadow-rose-950/30">
-        <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-r from-rose-500/15 via-pink-500/10 to-violet-500/15 blur-xl pointer-events-none"></div>
+      {/* Profile Core Header */}
+      <div 
+        className="p-5 sm:p-6 rounded-lg bg-[var(--nb-surface)] text-center relative overflow-hidden"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+      >
         <div className="relative pt-1 flex flex-col items-center">
           <button 
             type="button"
@@ -369,34 +214,41 @@ export default function ProfileView({
             className="relative group cursor-pointer"
             title="Click to edit profile & change avatar"
           >
-            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full p-[2px] bg-gradient-to-tr from-rose-500 via-pink-400 to-violet-500 shadow-xl shadow-rose-500/25">
+            <div 
+              className="w-20 h-20 sm:w-22 sm:h-22 rounded-md overflow-hidden p-[2px] bg-[var(--nb-surface-accent)]"
+              style={{ border: '2px solid var(--nb-ink)' }}
+            >
               <img 
                 src={currentAvatar} 
                 alt={user.name} 
-                className="w-full h-full rounded-full object-cover bg-[#1c0817] transition-transform group-hover:scale-105"
+                className="w-full h-full rounded-md object-cover transition-transform group-hover:scale-105"
               />
             </div>
-            <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[9px] font-bold">
-              <Camera className="w-5 h-5 text-white drop-shadow" />
-            </div>
-            <div className="absolute bottom-0 right-0 bg-rose-500 text-white p-1.5 rounded-full border-2 border-[#1c0817] shadow-md flex items-center justify-center">
-              <Camera className="w-3 h-3" />
+            <div 
+              className="absolute -bottom-1 -right-1 bg-[var(--nb-ink)] text-[var(--nb-bg)] p-1.5 rounded"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
+              <Camera className="w-3.5 h-3.5" />
             </div>
           </button>
 
-          <h3 className="text-lg sm:text-xl font-display font-extrabold text-white mt-3 tracking-tight">{user.name}</h3>
+          <h3 className="nb-headline text-2xl mt-3 text-[var(--nb-content)]">{user.name}</h3>
           
           <div className="flex items-center gap-2 mt-1.5 flex-wrap justify-center">
-            <span className="text-[10px] font-sans font-extrabold text-rose-200 bg-rose-500/20 px-3 py-1 rounded-full border border-rose-400/30 uppercase tracking-wider">
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-black shadow-[1.5px_1.5px_0_#000] uppercase ${
+              user.role === 'admin' ? 'nb-pill-coral' :
+              user.role === 'president' || user.role === 'associate' ? 'nb-pill-purple' :
+              user.role === 'coordinator' ? 'nb-pill-blue' : 'nb-pill-green'
+            }`}>
               {user.role}
             </span>
             {user.rollNumber && (
-              <span className="font-sans text-[10px] text-violet-200 font-bold bg-violet-500/20 px-3 py-1 rounded-full border border-violet-400/30">
+              <span className="nb-pill-yellow text-[10px] font-mono font-bold shadow-[1.5px_1.5px_0_#000]">
                 {user.rollNumber}
               </span>
             )}
           </div>
-          <p className="text-xs text-rose-200/70 mt-1 font-sans">
+          <p className="nb-label text-xs text-[var(--nb-secondary)] mt-1.5">
             {user.role === 'student' ? `${user.branch} • ${user.year}` : user.position}
           </p>
         </div>
@@ -406,16 +258,16 @@ export default function ProfileView({
       <div className="grid grid-cols-2 gap-3">
         <button 
           onClick={onOpenMembers}
-          className="ref-pill-secondary py-3 px-4 text-xs font-bold shadow-sm justify-center"
+          className="nb-card-blue py-3 px-4 text-xs font-mono font-bold justify-center flex items-center gap-2 cursor-pointer shadow-[2.5px_2.5px_0_var(--nb-ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
         >
-          <Users className="w-4 h-4 text-rose-400" />
+          <Users className="w-4 h-4 text-white" />
           <span>Members Directory</span>
         </button>
         <button 
           onClick={onOpenSupportBox}
-          className="ref-pill-secondary py-3 px-4 text-xs font-bold shadow-sm justify-center"
+          className="nb-card-pink py-3 px-4 text-xs font-mono font-bold justify-center flex items-center gap-2 cursor-pointer shadow-[2.5px_2.5px_0_var(--nb-ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
         >
-          <PhoneCall className="w-4 h-4 text-rose-400" />
+          <PhoneCall className="w-4 h-4 text-white" />
           <span>Support Box</span>
         </button>
       </div>
@@ -424,44 +276,49 @@ export default function ProfileView({
       {user.role !== 'student' && (
         <button 
           onClick={onOpenAdminPanel}
-          className="w-full ref-pill-button py-3.5 px-5 text-xs font-bold tracking-wider shadow-lg shadow-rose-500/30 flex items-center justify-between gap-2 transition-all group cursor-pointer"
+          className="w-full nb-btn py-3.5 px-5 text-xs font-bold tracking-wider flex items-center justify-between gap-2 transition-all cursor-pointer"
         >
           <div className="flex items-center gap-3 text-left">
-            <div className="ref-icon-bubble w-7 h-7">
-              <Settings className="w-4 h-4 text-white" />
+            <div 
+              className="w-7 h-7 rounded bg-[var(--nb-ink)] text-[var(--nb-bg)] flex items-center justify-center flex-shrink-0"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
+              <Settings className="w-4 h-4" />
             </div>
             <div>
-              <span className="block font-extrabold text-sm text-white">Executive Control Desk</span>
-              <span className="block text-[9px] text-rose-200/80">Manage Roles, Assignments & Attendance</span>
+              <span className="block font-bold text-sm">Executive Control Desk</span>
+              <span className="block text-[10px] text-inherit opacity-80">Manage Roles, Assignments & Attendance</span>
             </div>
           </div>
-          <ArrowRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-1" />
+          <ArrowRight className="w-4 h-4" />
         </button>
       )}
 
       {/* Action Tabs (Edit/Save) */}
       <div className="flex justify-between items-center px-0.5">
-        <h4 className="text-[9px] font-bold text-secondary tracking-wider uppercase font-mono">Contact & Core Specs</h4>
+        <h4 className="nb-label text-[10px] text-[var(--nb-secondary)]">CONTACT & CORE SPECS</h4>
         {!isEditing ? (
           <button 
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-1 text-[9px] text-indigo-300 hover:text-indigo-200 font-bold border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 rounded-lg cursor-pointer transition-colors"
+            className="nb-btn-ghost px-3 py-1 text-[11px] font-bold cursor-pointer"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
-            <Edit className="w-3 h-3 text-indigo-400" />
+            <Edit className="w-3 h-3 text-[var(--nb-accent)]" />
             Edit Profile
           </button>
         ) : (
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <button 
               onClick={() => setIsEditing(false)}
-              className="flex items-center gap-1 text-[9px] text-secondary hover:text-content font-semibold border border-divider bg-surface px-2.5 py-1 rounded-lg cursor-pointer"
+              className="nb-btn-ghost px-3 py-1 text-[11px] font-bold cursor-pointer"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             >
               <X className="w-3 h-3" />
               Cancel
             </button>
             <button 
               onClick={handleSave}
-              className="flex items-center gap-1 text-[9px] text-white font-bold bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded-lg cursor-pointer transition-colors shadow-sm"
+              className="nb-btn px-3 py-1 text-[11px] font-bold cursor-pointer"
             >
               <Save className="w-3 h-3" />
               Save
@@ -471,24 +328,26 @@ export default function ProfileView({
       </div>
 
       {/* Editable Fields / Info card */}
-      <div className="bg-surface p-3.5 rounded-2xl border border-divider/80 space-y-2.5 shadow-md">
-        
+      <div 
+        className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+      >
         {/* Craftwork / Userpic Avatar Picker when Editing */}
         {isEditing && (
-          <div className="pb-3 border-b border-divider space-y-2">
+          <div className="pb-3 border-b border-[var(--nb-ink)]/20 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider">Choose Avatar Model</span>
+              <span className="nb-label text-[10px] text-[var(--nb-accent)]">CHOOSE AVATAR MODEL</span>
               <button
                 type="button"
                 onClick={() => setIsGalleryOpen(true)}
-                className="flex items-center gap-1 text-[9px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-2.5 py-1 rounded-lg transition-all shadow-md cursor-pointer"
+                className="nb-btn px-2.5 py-1 text-[10px] font-bold cursor-pointer"
               >
                 <Grid className="w-3 h-3" />
                 Browse 120+ Models
               </button>
             </div>
             
-            <div className="grid grid-cols-6 gap-1.5 pt-1">
+            <div className="grid grid-cols-6 gap-2 pt-1">
               {craftworkUserpics.map((pic) => {
                 const isSelected = profilePic === pic.url || (!profilePic && pic.url === defaultAvatar);
                 return (
@@ -496,12 +355,14 @@ export default function ProfileView({
                     key={pic.label}
                     type="button"
                     onClick={() => setProfilePic(pic.url)}
-                    className={`relative rounded-xl overflow-hidden aspect-square border transition-all p-1 bg-surface cursor-pointer ${
-                      isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/30 scale-105' : 'border-divider hover:border-divider'
-                    }`}
+                    className="relative rounded-md overflow-hidden aspect-square transition-transform p-1 bg-[var(--nb-surface-accent)] cursor-pointer"
+                    style={{ 
+                      border: isSelected ? '2px solid var(--nb-accent)' : '1.5px solid var(--nb-ink)',
+                      transform: isSelected ? 'scale(1.05)' : 'none'
+                    }}
                     title={pic.label}
                   >
-                    <img src={pic.url} alt={pic.label} className="w-full h-full object-cover rounded-lg" />
+                    <img src={pic.url} alt={pic.label} className="w-full h-full object-cover rounded" />
                   </button>
                 );
               })}
@@ -509,159 +370,140 @@ export default function ProfileView({
 
             <div className="pt-2 flex items-center justify-between gap-2">
               <div className="flex-1">
-                <label className="text-[8px] font-bold text-secondary uppercase block mb-1">Custom Photo / Avatar URL</label>
+                <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-1">Custom Photo / Avatar URL</label>
                 <input
                   type="text"
                   value={profilePic}
                   onChange={(e) => setProfilePic(e.target.value)}
                   placeholder="https://..."
-                  className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2.5 py-1 text-xs text-content w-full outline-none font-mono"
+                  className="nb-input py-1 text-xs w-full font-mono"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => setIsGalleryOpen(true)}
-                className="mt-4 px-2.5 py-1 bg-surface-accent hover:bg-divider border border-divider rounded-lg text-xs font-semibold text-primary hover:text-content flex items-center gap-1 cursor-pointer"
+                className="mt-4 nb-btn-ghost py-1 px-2.5 text-xs font-semibold cursor-pointer"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
-                <Sparkles className="w-3 h-3 text-indigo-400" />
+                <Sparkles className="w-3 h-3 text-[var(--nb-accent)]" />
                 Full Gallery
               </button>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-2.5 text-xs">
-          <User className="w-4 h-4 text-tertiary flex-shrink-0" />
+        <div className="flex items-center gap-3 text-xs">
+          <User className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
           <div className="flex-1">
-            <div className="text-[9px] font-bold text-secondary uppercase">Full Name</div>
+            <div className="nb-label text-[9px] text-[var(--nb-secondary)]">FULL NAME</div>
             {!isEditing ? (
-              <div className="text-primary mt-0.5 text-[11px] font-medium">{user.name}</div>
+              <div className="text-[var(--nb-content)] font-bold text-xs mt-0.5">{user.name}</div>
             ) : (
               <input 
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none"
+                className="nb-input py-1 text-xs mt-1 w-full"
               />
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 text-xs border-t border-divider/80 pt-2">
-          <Mail className="w-4 h-4 text-tertiary flex-shrink-0" />
+        <div className="flex items-center gap-3 text-xs border-t border-[var(--nb-ink)]/15 pt-2.5">
+          <Mail className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
           <div className="flex-1">
-            <div className="text-[9px] font-bold text-secondary uppercase">Email Address</div>
+            <div className="nb-label text-[9px] text-[var(--nb-secondary)]">EMAIL ADDRESS</div>
             {!isEditing ? (
-              <div className="text-secondary mt-0.5 font-mono text-[11px]">{user.email}</div>
+              <div className="text-[var(--nb-secondary)] mt-0.5 font-mono text-xs">{user.email}</div>
             ) : (
               <input 
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none"
+                className="nb-input py-1 text-xs mt-1 w-full font-mono"
               />
             )}
           </div>
         </div>
 
-
-        <div className="flex items-center gap-2.5 text-xs border-t border-divider/80 pt-2">
-          <Lock className="w-4 h-4 text-tertiary flex-shrink-0" />
+        <div className="flex items-center gap-3 text-xs border-t border-[var(--nb-ink)]/15 pt-2.5">
+          <Lock className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
           <div className="flex-1">
-            <div className="text-[9px] font-bold text-secondary uppercase">Access Password</div>
+            <div className="nb-label text-[9px] text-[var(--nb-secondary)]">ACCESS PASSWORD</div>
             {!isEditing ? (
-              <div className="text-secondary mt-0.5 font-mono text-[11px] select-all">{user.password || '••••••••'}</div>
+              <div className="text-[var(--nb-secondary)] mt-0.5 font-mono text-xs select-all">{user.password || '••••••••'}</div>
             ) : (
               <input 
                 type="text"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none font-mono"
+                className="nb-input py-1 text-xs mt-1 w-full font-mono"
                 placeholder="Enter new password"
               />
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2.5 text-xs border-t border-divider/80 pt-2">
-          <Phone className="w-4 h-4 text-tertiary flex-shrink-0" />
+
+        <div className="flex items-center gap-3 text-xs border-t border-[var(--nb-ink)]/15 pt-2.5">
+          <Phone className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
           <div className="flex-1">
-            <div className="text-[9px] font-bold text-secondary uppercase">Phone Number</div>
+            <div className="nb-label text-[9px] text-[var(--nb-secondary)]">PHONE NUMBER</div>
             {!isEditing ? (
-              <div className="text-secondary mt-0.5 font-mono text-[11px]">{user.phone || 'Not added'}</div>
+              <div className="text-[var(--nb-secondary)] mt-0.5 font-mono text-xs">{user.phone || 'Not added'}</div>
             ) : (
               <input 
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none"
+                className="nb-input py-1 text-xs mt-1 w-full font-mono"
               />
             )}
           </div>
         </div>
 
-        {true && (
-          <div className="grid grid-cols-2 gap-2 border-t border-divider/80 pt-2">
-            <div className="text-xs">
-              <div className="text-[9px] font-bold text-secondary uppercase">Year</div>
-              {!isEditing ? (
-                <div className="text-primary mt-0.5 text-[11px] font-mono">{user.year || '3rd Year'}</div>
-              ) : (
-                <select 
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none"
-                >
-                  <option value="1st Year">1st Year</option>
-                  <option value="2nd Year">2nd Year</option>
-                  <option value="3rd Year">3rd Year</option>
-                  <option value="4th Year">4th Year</option>
-                </select>
-              )}
-            </div>
-            <div className="text-xs">
-              <div className="text-[9px] font-bold text-secondary uppercase">Section</div>
-              {!isEditing ? (
-                <div className="text-primary mt-0.5 text-[11px] font-mono">{user.section || 'A'}</div>
-              ) : (
-                <input 
-                  type="text"
-                  value={section}
-                  onChange={(e) => setSection(e.target.value)}
-                  className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none"
-                />
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2.5 text-xs border-t border-divider/80 pt-2">
-          <Calendar className="w-4 h-4 text-tertiary flex-shrink-0" />
-          <div className="flex-1">
-            <div className="text-[9px] font-bold text-secondary uppercase">Account Password</div>
+        <div className="grid grid-cols-2 gap-3 border-t border-[var(--nb-ink)]/15 pt-2.5">
+          <div className="text-xs">
+            <div className="nb-label text-[9px] text-[var(--nb-secondary)]">YEAR</div>
             {!isEditing ? (
-              <div className="text-tertiary mt-0.5 font-mono text-[11px]">••••••••</div>
+              <div className="text-[var(--nb-content)] font-bold mt-0.5 text-xs font-mono">{user.year || '3rd Year'}</div>
+            ) : (
+              <select 
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="nb-input py-1 text-xs mt-1 w-full"
+              >
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+            )}
+          </div>
+          <div className="text-xs">
+            <div className="nb-label text-[9px] text-[var(--nb-secondary)]">SECTION</div>
+            {!isEditing ? (
+              <div className="text-[var(--nb-content)] font-bold mt-0.5 text-xs font-mono">{user.section || 'A'}</div>
             ) : (
               <input 
                 type="text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Set password"
-                className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none font-mono"
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+                className="nb-input py-1 text-xs mt-1 w-full font-mono"
               />
             )}
           </div>
         </div>
 
         {user.role === 'student' ? (
-          <div className="flex items-center gap-2.5 text-xs border-t border-divider/80 pt-2">
-            <Code className="w-4 h-4 text-tertiary flex-shrink-0" />
+          <div className="flex items-center gap-3 text-xs border-t border-[var(--nb-ink)]/15 pt-2.5">
+            <Code className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-[9px] font-bold text-secondary uppercase">Technical Skills</div>
+              <div className="nb-label text-[9px] text-[var(--nb-secondary)]">TECHNICAL SKILLS</div>
               {!isEditing ? (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {(user.skills || 'Add skills...').split(',').map((skill, i) => (
-                    <span key={i} className="text-[9px] bg-surface-accent text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/20">
+                    <span key={i} className="nb-tag text-[9px]">
                       {skill.trim()}
                     </span>
                   ))}
@@ -672,23 +514,23 @@ export default function ProfileView({
                   value={skills}
                   onChange={(e) => setSkills(e.target.value)}
                   placeholder="e.g. Python, ML, React"
-                  className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full outline-none"
+                  className="nb-input py-1 text-xs mt-1 w-full"
                 />
               )}
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 text-xs border-t border-divider/80 pt-2">
-            <Award className="w-4 h-4 text-tertiary flex-shrink-0" />
+          <div className="flex items-center gap-3 text-xs border-t border-[var(--nb-ink)]/15 pt-2.5">
+            <Award className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-[9px] font-bold text-secondary uppercase">Executive Role & Responsibilities</div>
+              <div className="nb-label text-[9px] text-[var(--nb-secondary)]">EXECUTIVE ROLE & RESPONSIBILITIES</div>
               {!isEditing ? (
-                <div className="text-primary mt-0.5 leading-relaxed text-[11px]">{user.responsibilities || 'Coordination'}</div>
+                <div className="text-[var(--nb-content)] mt-0.5 leading-relaxed text-xs">{user.responsibilities || 'Coordination'}</div>
               ) : (
                 <textarea 
                   value={responsibilities}
                   onChange={(e) => setResponsibilities(e.target.value)}
-                  className="bg-background border border-divider focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-content mt-1 w-full resize-none h-16 outline-none"
+                  className="nb-input py-1 text-xs mt-1 w-full resize-none h-16"
                 />
               )}
             </div>
@@ -696,64 +538,127 @@ export default function ProfileView({
         )}
       </div>
 
-      {/* DIGITAL CHECK-IN PASS (QR CODE) */}
+      {/* DIGITAL CHECK-IN PASS (LAMINATED BADGE FORMAT) */}
       {user.role !== 'admin' && user.rollNumber && (
-        <div className="bg-surface p-4 rounded-2xl border border-divider/80 space-y-2.5 shadow-lg relative overflow-hidden">
-          <div className="flex items-center justify-between border-b border-divider pb-2">
-            <div className="flex items-center gap-2">
-              <QrCode className="w-4 h-4 text-violet-400" />
-              <span className="text-[9px] font-bold text-primary uppercase tracking-wider font-mono">Digital Pass</span>
+        <div 
+          className="bg-[var(--nb-surface)] rounded-xl relative overflow-hidden"
+          style={{ border: '2.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+        >
+          {/* Lanyard Clip Hole Representation */}
+          <div className="pt-2.5 pb-1 flex justify-center bg-[var(--nb-surface-accent)] border-b border-[var(--nb-ink)]/15">
+            <div 
+              className="w-16 h-3 rounded-full bg-[var(--nb-ink)] mx-auto flex items-center justify-center"
+              style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)' }}
+            >
+              <div className="w-10 h-1 rounded-full bg-[var(--nb-surface)] opacity-30" />
             </div>
-            <span className="text-[8px] font-mono font-bold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded">
-              Verified ID
+          </div>
+
+          {/* Badge Top Header */}
+          <div 
+            className="p-3 bg-[var(--nb-yellow)] text-neutral-900 flex justify-between items-center border-b-2 border-dashed border-[var(--nb-ink)]"
+          >
+            <div>
+              <span className="font-mono text-[9px] font-bold uppercase tracking-wider block opacity-80">
+                CSE (AI &amp; ML) DEPARTMENT
+              </span>
+              <span className="font-display text-base tracking-wider leading-none">
+                OFFICIAL STUDENT PASS
+              </span>
+            </div>
+            <span className="nb-pill-green text-[9px] font-mono font-bold shadow-[1.5px_1.5px_0_#000]">
+              VERIFIED ID
             </span>
           </div>
           
-          <div className="flex flex-col items-center py-2 space-y-2">
-            <div className="relative p-2 bg-background border border-divider rounded-xl shadow-inner">
+          {/* Badge Card Body */}
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <div 
+              className="p-2.5 bg-white rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: '2px 2px 0 var(--nb-ink)' }}
+            >
               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&color=ffffff&bgcolor=080C14&data=${encodeURIComponent(user.rollNumber.toUpperCase())}`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&color=000000&bgcolor=ffffff&data=${encodeURIComponent(user.rollNumber.toUpperCase())}`} 
                 alt="Student Registration QR Code" 
                 className="w-28 h-28 select-none pointer-events-none"
                 referrerPolicy="no-referrer"
               />
             </div>
             
-            <div className="text-center">
-              <h5 className="text-[11px] font-bold text-content tracking-tight">{user.name}</h5>
-              <p className="font-mono text-[9px] text-secondary mt-0.5 uppercase">{user.rollNumber} • {user.year} ({user.section})</p>
-              <p className="text-[8px] text-violet-400 mt-1.5 bg-violet-500/10 border border-violet-500/20 rounded-full px-2.5 py-0.5 inline-block">
-                Present this QR code for instant event check-in
-              </p>
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <h5 className="nb-headline text-xl text-[var(--nb-content)] truncate">{user.name}</h5>
+              
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
+                <span className="nb-pill-cyan text-[10px] font-mono font-bold shadow-[1.5px_1.5px_0_#000]">
+                  {user.rollNumber}
+                </span>
+                <span className="nb-tag text-[9px] font-mono">
+                  {user.year} ({user.section})
+                </span>
+              </div>
+
+              {/* Barcode Graphic */}
+              <div className="mt-3 pt-2 border-t border-[var(--nb-ink)]/15">
+                <div className="flex items-center justify-center sm:justify-start gap-[2px] h-6 py-0.5 opacity-80">
+                  {[2, 4, 1, 3, 2, 5, 1, 4, 2, 3, 1, 5, 2, 4, 1, 3, 5, 2, 1, 4, 3, 2, 4].map((width, idx) => (
+                    <div 
+                      key={idx} 
+                      className="h-full bg-[var(--nb-ink)]"
+                      style={{ width: `${width}px` }}
+                    />
+                  ))}
+                </div>
+                <p className="font-mono text-[8px] text-[var(--nb-tertiary)] tracking-widest mt-1">
+                  NOTX-CSE-PASS-2024-28
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* Badge Footer Stamp */}
+          <div className="bg-[var(--nb-surface-accent)] px-4 py-2 flex items-center justify-between border-t border-[var(--nb-ink)]/20 text-[10px] font-mono text-[var(--nb-secondary)]">
+            <span className="flex items-center gap-1 font-bold">
+              <QrCode className="w-3.5 h-3.5 text-[var(--nb-accent)]" /> Instant Venue Entry
+            </span>
+            <span className="uppercase text-[9px] font-bold">Admit One Only</span>
           </div>
         </div>
       )}
 
       {/* REGISTERED EVENTS STATUS TRACKER */}
       <div className="space-y-2">
-        <h4 className="text-[9px] font-bold text-secondary tracking-wider uppercase border-b border-divider pb-1.5 font-mono">My Registered events ({myRegs.length})</h4>
+        <h4 className="nb-label text-[10px] text-[var(--nb-secondary)] border-b border-[var(--nb-ink)]/20 pb-1.5">
+          MY REGISTERED EVENTS ({myRegs.length})
+        </h4>
         {myRegs.length === 0 ? (
-          <div className="bg-surface border border-divider/80 rounded-2xl p-5 text-center text-[11px] text-secondary font-medium">
+          <div 
+            className="bg-[var(--nb-surface)] p-5 text-center text-xs text-[var(--nb-secondary)] font-medium rounded-lg"
+            style={{ border: '1.5px dashed var(--nb-ink)' }}
+          >
             You haven't registered for any departmental event yet.
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {myRegs.map((reg) => {
               const ev = events.find(e => e.eventId === reg.eventId);
               if (!ev) return null;
               return (
-                <div key={reg.registrationId} onClick={() => setActiveTicket({ event: ev, registration: reg })} className="bg-surface p-2.5 rounded-xl border border-divider/80 flex justify-between items-center gap-2.5 cursor-pointer hover:bg-surface-accent/40 transition-colors">
+                <div 
+                  key={reg.registrationId} 
+                  onClick={() => setActiveTicket({ event: ev, registration: reg })} 
+                  className="bg-[var(--nb-surface)] p-3 rounded-lg flex justify-between items-center gap-3 cursor-pointer hover:bg-[var(--nb-surface-accent)] transition-colors"
+                  style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <div className="min-w-0">
-                    <h5 className="text-xs font-bold text-primary truncate">{ev.title}</h5>
-                    <p className="font-mono text-[9px] text-secondary mt-0.5">{ev.date} • {ev.venue.split(',')[0]}</p>
+                    <h5 className="nb-headline text-sm text-[var(--nb-content)] truncate">{ev.title}</h5>
+                    <p className="nb-label text-[9px] text-[var(--nb-secondary)] mt-0.5">{ev.date} • {ev.venue.split(',')[0]}</p>
                   </div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md font-mono ${
+                  <span className={`text-[9.5px] font-mono font-bold px-2 py-0.5 rounded border border-black shadow-[1.5px_1.5px_0_#000] uppercase ${
                     reg.status === 'Attended' 
-                      ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' 
+                      ? 'nb-pill-green' 
                       : reg.status === 'Absent' 
-                      ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      : 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                      ? 'nb-pill-coral' 
+                      : 'nb-pill-yellow'
                   }`}>
                     {reg.status}
                   </span>
@@ -784,13 +689,13 @@ export default function ProfileView({
 
             return (
               <>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-divider pb-2 gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--nb-ink)]/20 pb-2 gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="text-[10px] font-bold text-secondary tracking-wider uppercase font-mono flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Certificates ({unlockedCerts.length} Issued</span>
+                    <h4 className="nb-label text-[10px] text-[var(--nb-secondary)] flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
+                      <span>CERTIFICATES ({unlockedCerts.length} ISSUED</span>
                       {lockedCerts.length > 0 && (
-                        <span className="text-amber-400">• {lockedCerts.length} Locked</span>
+                        <span className="text-amber-500">• {lockedCerts.length} LOCKED</span>
                       )}
                       <span>)</span>
                     </h4>
@@ -801,25 +706,26 @@ export default function ProfileView({
                         setVerifyInitialId('');
                         setShowVerifyModal(true);
                       }}
-                      className="text-[9px] font-mono font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer transition-colors bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20"
+                      className="nb-btn-ghost px-2 py-0.5 text-[9px] font-bold flex items-center gap-1 cursor-pointer"
+                      style={{ border: '1px solid var(--nb-ink)' }}
                       title="Verify any Certificate ID in institutional registry"
                     >
-                      <ShieldCheck className="w-3 h-3" />
+                      <ShieldCheck className="w-3 h-3 text-[var(--nb-accent)]" />
                       <span>Verify ID</span>
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[9px] font-mono">
-                    <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  <div className="flex items-center gap-1.5 text-[9px]">
+                    <span className="nb-tag-accent text-[9px] font-bold">
                       🟢 {unlockedCerts.length} Unlocked
                     </span>
                     {lockedCerts.length > 0 && (
-                      <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                        🔒 {lockedCerts.length} Awaiting Admin Batch
+                      <span className="nb-tag text-[9px]">
+                        🔒 {lockedCerts.length} Awaiting Batch
                       </span>
                     )}
                     {!isCertificatesEnabled && (
-                      <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                      <span className="nb-tag text-[9px] bg-amber-500 text-black">
                         Feature Paused
                       </span>
                     )}
@@ -827,89 +733,96 @@ export default function ProfileView({
                 </div>
 
                 {!isCertificatesEnabled ? (
-                  <div className="bg-surface border border-divider/80 rounded-2xl p-4 text-center text-xs text-secondary font-medium flex flex-col items-center gap-1.5 shadow-sm">
-                    <FileBadge className="w-5 h-5 text-amber-400/80 mb-0.5" />
-                    <span className="text-content font-bold text-xs">E-Certificates Temporarily Paused</span>
-                    <p className="text-[10px] text-secondary max-w-xs">
+                  <div 
+                    className="bg-[var(--nb-surface)] p-4 text-center rounded-lg space-y-1"
+                    style={{ border: '2px solid var(--nb-ink)' }}
+                  >
+                    <FileBadge className="w-5 h-5 mx-auto text-[var(--nb-secondary)]" />
+                    <span className="nb-headline text-sm block">E-Certificates Temporarily Paused</span>
+                    <p className="text-[10px] text-[var(--nb-secondary)] max-w-xs mx-auto">
                       The department administration has temporarily paused certificate viewing. Please check back soon.
                     </p>
                   </div>
                 ) : attendedEvents.length === 0 ? (
-                  <div className="bg-surface border border-divider/80 rounded-2xl p-5 text-center text-[11px] text-secondary font-medium flex flex-col items-center gap-1">
-                    <FileBadge className="w-6 h-6 text-secondary mb-1" />
+                  <div 
+                    className="bg-[var(--nb-surface)] p-5 text-center text-xs text-[var(--nb-secondary)] font-medium rounded-lg flex flex-col items-center gap-1"
+                    style={{ border: '1.5px dashed var(--nb-ink)' }}
+                  >
+                    <FileBadge className="w-5 h-5 mb-1" />
                     <span>Certificates are issued post attending events and admin authorization.</span>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     {certsWithStatus.map(({ ev, userCert, isUnlocked, certId, peersCount }) => {
                       if (!isUnlocked) {
-                        // LOCKED STATE: Waiting for Admin batch release
+                        // LOCKED STATE
                         return (
                           <div 
                             key={ev.eventId} 
-                            className="bg-surface/80 border border-amber-500/20 p-3 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs relative overflow-hidden"
+                            className="bg-[var(--nb-surface)] p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden"
+                            style={{ border: '1.5px dashed var(--nb-ink)' }}
                           >
-                            <div className="absolute top-0 left-0 bottom-0 w-1 bg-amber-500/60" />
-
-                            <div className="flex items-start gap-2.5 min-w-0 pl-1">
-                              <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/25 text-amber-400 shrink-0 mt-0.5">
-                                <Lock className="w-4 h-4" />
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div 
+                                className="w-8 h-8 rounded bg-[var(--nb-surface-accent)] flex items-center justify-center shrink-0 mt-0.5"
+                                style={{ border: '1px solid var(--nb-ink)' }}
+                              >
+                                <Lock className="w-4 h-4 text-amber-500" />
                               </div>
 
                               <div className="min-w-0 space-y-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <h5 className="text-xs font-bold text-primary truncate font-display">{ev.title}</h5>
-                                  <span className="text-[8.5px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 flex items-center gap-1">
-                                    <Lock className="w-2.5 h-2.5" />
-                                    <span>Locked</span>
+                                  <h5 className="nb-headline text-sm truncate">{ev.title}</h5>
+                                  <span className="nb-tag text-[8.5px] bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                                    Locked
                                   </span>
-                                  <span className="text-[8.5px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                  <span className="nb-tag-accent text-[8.5px]">
                                     Attended
                                   </span>
                                 </div>
 
-                                <p className="text-[10px] text-secondary leading-snug">
+                                <p className="text-[10px] text-[var(--nb-secondary)] leading-snug">
                                   Attendance verified. Waiting for department administration to generate the certificate batch.
                                 </p>
 
-                                <div className="text-[9px] text-tertiary">
+                                <div className="nb-label text-[9px] text-[var(--nb-secondary)]">
                                   Event Date: {ev.date} • Venue: {ev.venue || 'Campus Auditorium'}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                              <button
-                                disabled
-                                title="The administrator must generate the certificate batch for this event before it can be viewed"
-                                className="px-3 py-1.5 rounded-xl bg-neutral-800/80 border border-neutral-700/80 text-neutral-400 text-[10px] font-bold flex items-center gap-1.5 cursor-not-allowed select-none"
+                            <div className="shrink-0 self-end sm:self-center">
+                              <span 
+                                className="nb-btn-ghost px-3 py-1 text-[10px] opacity-60 cursor-not-allowed inline-flex items-center gap-1.5"
+                                style={{ border: '1px solid var(--nb-ink)' }}
                               >
-                                <Lock className="w-3 h-3 text-amber-400" />
-                                <span>Awaiting Admin Batch</span>
-                              </button>
+                                <Lock className="w-3 h-3 text-amber-500" />
+                                <span>Awaiting Batch</span>
+                              </span>
                             </div>
                           </div>
                         );
                       }
 
-                      // UNLOCKED STATE: Officially generated by Admin in database
+                      // UNLOCKED STATE
                       return (
                         <div 
                           key={ev.eventId} 
-                          className="bg-surface hover:bg-surface-accent/80 p-3 rounded-2xl border border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all hover:border-emerald-500/40 shadow-xs relative overflow-hidden"
+                          className="bg-[var(--nb-surface)] p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden transition-transform hover:-translate-y-0.5"
+                          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                         >
-                          <div className="absolute top-0 left-0 bottom-0 w-1 bg-emerald-500/70" />
-
-                          <div className="flex items-start gap-2.5 min-w-0 pl-1">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/25 text-emerald-400 shrink-0 mt-0.5">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div 
+                              className="w-8 h-8 rounded bg-[var(--nb-accent)] text-black flex items-center justify-center shrink-0 mt-0.5"
+                              style={{ border: '1.5px solid var(--nb-ink)' }}
+                            >
                               <FileBadge className="w-4 h-4" />
                             </div>
-                            <div className="min-w-0 space-y-0.5">
+                            <div className="min-w-0 space-y-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <h5 className="text-xs font-bold text-primary truncate font-display">{ev.title}</h5>
-                                <span className="text-[8.5px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/25 flex items-center gap-1">
-                                  <ShieldCheck className="w-2.5 h-2.5" />
-                                  <span>Official</span>
+                                <h5 className="nb-headline text-sm truncate">{ev.title}</h5>
+                                <span className="nb-tag-accent text-[8.5px]">
+                                  Official
                                 </span>
                               </div>
                               
@@ -923,38 +836,40 @@ export default function ProfileView({
                                     setCopiedId(certId);
                                     setTimeout(() => setCopiedId(null), 2000);
                                   }}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[8.5px] font-mono font-bold bg-neutral-900 border border-neutral-700 hover:border-emerald-500/40 text-neutral-200 cursor-pointer transition-all active:scale-95"
+                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] cursor-pointer transition-all active:scale-95"
+                                  style={{ border: '1px solid var(--nb-ink)' }}
                                   title="Click to copy Certificate ID"
                                 >
-                                  <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                                  <ShieldCheck className="w-2.5 h-2.5 text-[var(--nb-accent)]" />
                                   <span>ID: {certId}</span>
                                   {copiedId === certId ? (
-                                    <span className="text-emerald-400 text-[8px] font-bold">Copied!</span>
+                                    <span className="text-[var(--nb-accent)] font-bold">Copied!</span>
                                   ) : (
-                                    <Copy className="w-2 h-2 text-secondary" />
+                                    <Copy className="w-2 h-2 text-[var(--nb-secondary)]" />
                                   )}
                                 </button>
 
-                                <span className="text-[9px] text-secondary">
+                                <span className="nb-label text-[9px] text-[var(--nb-secondary)]">
                                   Date: {ev.date}
                                 </span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                             <button 
                               onClick={() => {
                                 setActiveCertEvent(ev);
                                 setShowPeersModal(true);
                               }}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-[10px] font-semibold border border-divider transition-all cursor-pointer active:scale-95"
+                              className="nb-btn-ghost px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                              style={{ border: '1.5px solid var(--nb-ink)' }}
                               title="See who else got this certificate"
                             >
-                              <Users className="w-3 h-3 text-indigo-400" />
+                              <Users className="w-3 h-3 text-[var(--nb-accent)]" />
                               <span>Recipients</span>
                               {peersCount > 0 && (
-                                <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-[8px] font-bold">
+                                <span className="px-1.5 py-0.2 rounded bg-[var(--nb-ink)] text-[var(--nb-bg)] font-mono text-[8px] font-bold">
                                   {peersCount}
                                 </span>
                               )}
@@ -962,7 +877,7 @@ export default function ProfileView({
 
                             <button 
                               onClick={() => setActiveCertEvent(ev)}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer active:scale-95 shadow-xs"
+                              className="nb-btn px-3 py-1 text-[10px] font-bold uppercase tracking-wider cursor-pointer"
                             >
                               <Eye className="w-3 h-3" />
                               <span>View</span>
@@ -979,19 +894,24 @@ export default function ProfileView({
         </div>
       )}
 
-      
       {/* DYNAMIC DEPARTMENT SUPPORT BOX */}
-      <div className="bg-surface p-4 rounded-2xl border border-divider/80 space-y-3 shadow-md relative overflow-hidden">
-        <div className="flex items-center justify-between border-b border-divider pb-2.5">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
-              <PhoneCall className="w-3.5 h-3.5" />
+      <div 
+        className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3 relative overflow-hidden"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+      >
+        <div className="flex items-center justify-between border-b border-[var(--nb-ink)]/20 pb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div 
+              className="w-8 h-8 rounded bg-[var(--nb-surface-accent)] flex items-center justify-center text-[var(--nb-accent)]"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
+              <PhoneCall className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-content font-display tracking-tight flex items-center gap-1.5">
+              <h4 className="nb-headline text-base text-[var(--nb-content)]">
                 {currentSupportInfo.title || "Help & Support Desk"}
               </h4>
-              <span className="text-[9px] font-mono text-indigo-400 font-semibold">
+              <span className="nb-label text-[9px] text-[var(--nb-secondary)]">
                 {currentSupportInfo.badge || "OFFICIAL CHANNELS"}
               </span>
             </div>
@@ -1000,17 +920,18 @@ export default function ProfileView({
           {user.role === 'admin' && (
             <button
               onClick={() => setIsEditSupportModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/25 text-[10px] font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+              className="nb-btn-ghost px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
               title="Admin: Edit dynamic Support Box details"
             >
-              <Edit3 className="w-3 h-3" />
+              <Edit3 className="w-3 h-3 text-[var(--nb-accent)]" />
               <span>Edit Box</span>
             </button>
           )}
         </div>
 
         {currentSupportInfo.subtitle && (
-          <p className="text-[11px] text-secondary leading-relaxed">
+          <p className="text-xs text-[var(--nb-secondary)] leading-relaxed">
             {currentSupportInfo.subtitle}
           </p>
         )}
@@ -1019,14 +940,18 @@ export default function ProfileView({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
           <a 
             href={`mailto:${currentSupportInfo.email}`}
-            className="bg-surface-accent/50 hover:bg-surface-accent p-2.5 rounded-xl border border-divider/60 flex items-center gap-2.5 transition-colors group cursor-pointer"
+            className="bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-surface)] p-2.5 rounded flex items-center gap-2.5 transition-colors cursor-pointer"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
-            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+            <div 
+              className="w-7 h-7 rounded bg-[var(--nb-surface)] flex items-center justify-center text-[var(--nb-accent)] shrink-0"
+              style={{ border: '1px solid var(--nb-ink)' }}
+            >
               <Mail className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <div className="text-[9px] font-semibold text-secondary uppercase font-mono">Email Support</div>
-              <div className="text-[11px] text-indigo-300 font-mono font-medium truncate group-hover:underline">
+              <div className="nb-label text-[9px] text-[var(--nb-secondary)]">EMAIL SUPPORT</div>
+              <div className="text-xs text-[var(--nb-content)] font-mono font-medium truncate">
                 {currentSupportInfo.email}
               </div>
             </div>
@@ -1034,14 +959,18 @@ export default function ProfileView({
 
           <a 
             href={`tel:${currentSupportInfo.phone.replace(/\s+/g, '')}`}
-            className="bg-surface-accent/50 hover:bg-surface-accent p-2.5 rounded-xl border border-divider/60 flex items-center gap-2.5 transition-colors group cursor-pointer"
+            className="bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-surface)] p-2.5 rounded flex items-center gap-2.5 transition-colors cursor-pointer"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
-            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+            <div 
+              className="w-7 h-7 rounded bg-[var(--nb-surface)] flex items-center justify-center text-[var(--nb-accent)] shrink-0"
+              style={{ border: '1px solid var(--nb-ink)' }}
+            >
               <Phone className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
-              <div className="text-[9px] font-semibold text-secondary uppercase font-mono">Hotline</div>
-              <div className="text-[11px] text-indigo-300 font-mono font-medium truncate group-hover:underline">
+              <div className="nb-label text-[9px] text-[var(--nb-secondary)]">HOTLINE</div>
+              <div className="text-xs text-[var(--nb-content)] font-mono font-medium truncate">
                 {currentSupportInfo.phone}
               </div>
             </div>
@@ -1049,8 +978,11 @@ export default function ProfileView({
         </div>
 
         {(currentSupportInfo.location || currentSupportInfo.timing) && (
-          <div className="bg-background/60 p-2.5 rounded-xl border border-divider/50 flex items-center gap-2 text-[10px] text-secondary">
-            <MapPin className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+          <div 
+            className="p-2.5 rounded flex items-center gap-2 text-xs text-[var(--nb-secondary)] bg-[var(--nb-surface-accent)]"
+            style={{ border: '1px solid var(--nb-ink)' }}
+          >
+            <MapPin className="w-3.5 h-3.5 text-[var(--nb-accent)] shrink-0" />
             <span className="truncate">
               {currentSupportInfo.location}
               {currentSupportInfo.timing ? ` • ${currentSupportInfo.timing}` : ''}
@@ -1061,48 +993,56 @@ export default function ProfileView({
         {/* Button to open full query desk modal */}
         <button
           onClick={() => onOpenSupportBox ? onOpenSupportBox() : null}
-          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-surface-accent hover:bg-surface-accent/80 text-content border border-divider text-[11px] font-semibold transition-all cursor-pointer"
+          className="w-full nb-btn-ghost py-2.5 px-3 text-xs font-bold justify-center cursor-pointer"
+          style={{ border: '1.5px solid var(--nb-ink)' }}
         >
-          <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+          <MessageSquare className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
           <span>Open Full Support Desk & Submit Ticket</span>
-          <ArrowRight className="w-3 h-3 text-secondary ml-1" />
+          <ArrowRight className="w-3.5 h-3.5 ml-1" />
         </button>
       </div>
 
       {/* GOOGLE ACCOUNT LINKING */}
       {true && (
-        <div className="bg-surface p-4 rounded-2xl border border-divider/80 space-y-2.5 shadow-md">
-          <div className="flex items-center justify-between border-b border-divider pb-2">
-            <h4 className="text-[9px] font-bold text-secondary tracking-wider uppercase font-mono">Connected Accounts</h4>
+        <div 
+          className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-2.5"
+          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+        >
+          <div className="flex items-center justify-between border-b border-[var(--nb-ink)]/20 pb-2">
+            <h4 className="nb-label text-[10px] text-[var(--nb-secondary)]">CONNECTED ACCOUNTS</h4>
           </div>
           <div className="pt-1">
             {user.googleEmail ? (
-              <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 p-2.5 rounded-xl">
-                <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              <div 
+                className="flex items-center gap-3 bg-[var(--nb-surface-accent)] p-3 rounded"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
+                <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                 </div>
                 <div className="overflow-hidden">
-                  <p className="text-[9px] text-secondary font-bold uppercase">Google Connected</p>
-                  <p className="text-xs text-content truncate">{user.googleEmail}</p>
+                  <p className="nb-label text-[9px] text-[var(--nb-secondary)]">GOOGLE CONNECTED</p>
+                  <p className="text-xs text-[var(--nb-content)] font-mono truncate">{user.googleEmail}</p>
                 </div>
               </div>
             ) : (
               <button 
                 onClick={handleLinkGoogle}
                 disabled={isLinkingGoogle}
-                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-bold text-xs rounded-xl py-2.5 transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-white text-black font-bold text-xs rounded py-2.5 transition-transform active:scale-95 cursor-pointer"
+                style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
               >
                 {isLinkingGoogle ? (
                   <span className="w-4 h-4 rounded-full border-2 border-neutral-400 border-t-black animate-spin"></span>
                 ) : (
                   <>
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                    Connect Google Account
+                    <span>Connect Google Account</span>
                   </>
                 )}
               </button>
             )}
-            <p className="text-[9px] text-tertiary mt-2 text-center">
+            <p className="nb-label text-[9px] text-[var(--nb-secondary)] mt-2 text-center">
               Link your Google account to enable easy sign-in.
             </p>
           </div>
@@ -1110,20 +1050,26 @@ export default function ProfileView({
       )}
 
       {/* PWA & AUTO-UPDATE STATUS CARD */}
-      <div className="bg-surface/70 border border-divider/80 rounded-2xl p-3.5 sm:p-4 space-y-3">
+      <div 
+        className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+      >
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+            <div 
+              className="w-8 h-8 rounded bg-[var(--nb-surface-accent)] flex items-center justify-center text-[var(--nb-accent)] shrink-0"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
               <Smartphone className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold text-content font-display">PWA & APK Auto-Sync</span>
-                <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="nb-headline text-sm text-[var(--nb-content)]">PWA & APK Auto-Sync</span>
+                <span className="nb-tag-accent text-[9px] font-bold">
                   Active
                 </span>
               </div>
-              <p className="text-[10px] text-secondary truncate mt-0.5">
+              <p className="text-[10px] text-[var(--nb-secondary)] truncate mt-0.5">
                 {isStandalone ? 'Installed as Standalone App (Home Screen / APK)' : 'Running in Web Browser'}
               </p>
             </div>
@@ -1138,7 +1084,8 @@ export default function ProfileView({
               setUpdateMessage(res.message);
             }}
             disabled={isCheckingUpdate}
-            className="flex items-center gap-1 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+            className="nb-btn-ghost px-2.5 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 shrink-0"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
             Check
@@ -1146,15 +1093,18 @@ export default function ProfileView({
         </div>
 
         {updateMessage && (
-          <div className="text-[10px] text-content bg-surface-accent border border-divider/80 rounded-lg p-2 text-center animate-in fade-in duration-200">
+          <div 
+            className="text-[10px] text-[var(--nb-content)] bg-[var(--nb-surface-accent)] p-2 rounded text-center"
+            style={{ border: '1px solid var(--nb-ink)' }}
+          >
             {updateMessage}
           </div>
         )}
 
-        <div className="text-[9.5px] text-tertiary leading-relaxed border-t border-divider/60 pt-2.5 flex items-start gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+        <div className="text-[10px] text-[var(--nb-secondary)] leading-relaxed border-t border-[var(--nb-ink)]/15 pt-2.5 flex items-start gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-[var(--nb-accent)] shrink-0 mt-0.5" />
           <span>
-            <strong className="text-secondary font-medium">Automatic Live Updates:</strong> When updates are published on the website, this installed app (iOS Home Screen & Android PWA APK) automatically syncs new changes upon opening. No need to reinstall the APK or re-add the app to your home screen!
+            <strong className="text-[var(--nb-content)] font-bold">Automatic Live Updates:</strong> When updates are published on the website, this installed app (iOS Home Screen & Android PWA APK) automatically syncs new changes upon opening.
           </span>
         </div>
       </div>
@@ -1162,19 +1112,21 @@ export default function ProfileView({
       {/* LOGOUT BUTTON */}
       <button 
         onClick={onLogout}
-        className="w-full bg-rose-500/10 hover:bg-rose-500/15 text-rose-400 hover:text-rose-300 font-bold text-xs uppercase tracking-wider rounded-xl py-2.5 border border-rose-500/20 shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+        className="w-full nb-btn-ghost text-xs !min-h-[44px] uppercase tracking-wider text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+        style={{ border: '2px solid var(--nb-ink)' }}
       >
         Sign Out Securely
       </button>
 
       {/* DIGITAL CERTIFICATE FULL SCREEN LIGHTBOX */}
       {activeCertEvent && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xs z-50 flex flex-col justify-center items-center p-4 select-none">
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col justify-center items-center p-4 select-none">
           <div className="w-full max-w-lg flex flex-col justify-between max-h-[92vh] overflow-y-auto space-y-4">
             <div className="flex justify-end">
               <button 
                 onClick={() => setActiveCertEvent(null)}
-                className="w-8 h-8 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider cursor-pointer"
+                className="w-9 h-9 rounded bg-[var(--nb-surface)] text-[var(--nb-content)] flex items-center justify-center cursor-pointer transition-transform active:scale-95"
+                style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1190,18 +1142,24 @@ export default function ProfileView({
 
                 if (!userCert || userCert.status === 'Revoked') {
                   return (
-                    <div className="bg-surface border border-amber-500/20 rounded-2xl p-6 text-center space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                    <div 
+                      className="bg-[var(--nb-surface)] p-6 text-center space-y-3 rounded-lg"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+                    >
+                      <div 
+                        className="w-12 h-12 rounded bg-[var(--nb-surface-accent)] text-amber-500 flex items-center justify-center mx-auto"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
+                      >
                         <Lock className="w-6 h-6" />
                       </div>
-                      <h4 className="text-base font-bold text-content font-display">Certificate is Locked</h4>
-                      <p className="text-xs text-secondary max-w-sm mx-auto leading-relaxed">
+                      <h4 className="nb-headline text-lg text-[var(--nb-content)]">Certificate is Locked</h4>
+                      <p className="text-xs text-[var(--nb-secondary)] max-w-sm mx-auto leading-relaxed">
                         The department administrator has not generated the batch certificates for <strong>{activeCertEvent.title}</strong> yet.
                         Certificates are authorized in batches by the administrator after verifying attendance.
                       </p>
                       <button
                         onClick={() => setActiveCertEvent(null)}
-                        className="px-4 py-2 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-bold border border-divider cursor-pointer transition-all"
+                        className="nb-btn px-4 py-2 text-xs font-bold cursor-pointer"
                       >
                         Close
                       </button>
@@ -1228,12 +1186,13 @@ export default function ProfileView({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                       <button 
                         onClick={() => setShowPeersModal(true)}
-                        className="w-full bg-surface-accent hover:bg-divider border border-divider text-content font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className="w-full nb-btn-ghost py-2.5 px-3 text-xs font-bold justify-center cursor-pointer"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
-                        <Users className="w-3.5 h-3.5 text-indigo-400" />
+                        <Users className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                         <span>See Who Else Got This</span>
                         {peersCount > 0 && (
-                          <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-[9px]">
+                          <span className="px-1.5 py-0.2 rounded bg-[var(--nb-ink)] text-[var(--nb-bg)] font-mono text-[9px] font-bold">
                             {peersCount}
                           </span>
                         )}
@@ -1244,16 +1203,17 @@ export default function ProfileView({
                           setVerifyInitialId(certId);
                           setShowVerifyModal(true);
                         }}
-                        className="w-full bg-surface-accent hover:bg-divider border border-divider text-content font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className="w-full nb-btn-ghost py-2.5 px-3 text-xs font-bold justify-center cursor-pointer"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                         <span>Verify Credential ID</span>
                       </button>
                     </div>
 
                     <button 
                       onClick={() => window.print()}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95"
+                      className="w-full nb-btn py-2.5 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer"
                     >
                       Download / Print PDF Certificate
                     </button>
@@ -1296,7 +1256,7 @@ export default function ProfileView({
       />
 
       {activeTicket && (
-        <EventTicketView
+        <EventTicketModal
           event={activeTicket.event}
           registration={activeTicket.registration}
           user={user}

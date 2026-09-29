@@ -1026,25 +1026,30 @@ export default function AdminPanelView({
   };
 
     return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-sm">
-      <div className="bg-surface w-full max-w-5xl h-[95dvh] sm:h-[90dvh] rounded-3xl border border-divider shadow-2xl flex flex-col overflow-hidden relative">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80">
+      <div 
+        className="bg-[var(--nb-surface)] text-[var(--nb-content)] w-full max-w-5xl h-[95dvh] sm:h-[90dvh] rounded-lg flex flex-col overflow-hidden relative"
+        style={{ border: '2.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+      >
         {/* Header */}
-        <div className="flex justify-between items-center p-3.5 sm:p-4 border-b border-divider bg-background gap-3">
+        <div 
+          className="flex justify-between items-center p-3.5 sm:p-4 bg-[var(--nb-surface-accent)] gap-3"
+          style={{ borderBottom: '2px solid var(--nb-ink)' }}
+        >
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <BrandLogo branding={branding} size="sm" />
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-nowrap">
-                <h2 className="text-xs sm:text-sm font-bold text-content uppercase tracking-wider truncate">
+              <div className="flex items-center gap-2 flex-nowrap">
+                <h2 className="nb-headline text-sm sm:text-base tracking-wide truncate">
                   {branding.appName || 'NOTX'} Admin Console
                 </h2>
                 {branding.subtitle && (
-                  <span className="text-[8.5px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.2 rounded-md hidden xs:inline-block">
+                  <span className="nb-tag text-[9px] hidden xs:inline-block">
                     {branding.subtitle}
                   </span>
                 )}
               </div>
-              <p className="text-[9.5px] sm:text-[10px] text-secondary font-mono truncate">Elevated Privileges Active</p>
+              <p className="nb-label text-[9px] sm:text-[10px] text-[var(--nb-secondary)] truncate">Elevated Privileges Active</p>
             </div>
           </div>
 
@@ -1053,17 +1058,19 @@ export default function AdminPanelView({
               <button
                 type="button"
                 onClick={() => setIsEditBrandingModalOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-[11px] sm:text-xs font-semibold cursor-pointer transition-all active:scale-95"
+                className="nb-btn-ghost px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
                 title="Change brand name (NOTX) and logo dynamically"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                 <span className="hidden sm:inline">Change Name & Logo</span>
                 <span className="sm:hidden">Name & Logo</span>
               </button>
             )}
             <button 
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-surface hover:bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider/60 transition-colors cursor-pointer"
+              className="w-8 h-8 rounded bg-[var(--nb-surface)] text-[var(--nb-content)] flex items-center justify-center cursor-pointer transition-transform active:scale-95"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -1071,57 +1078,60 @@ export default function AdminPanelView({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex px-4 pt-3 gap-1 overflow-x-auto border-b border-divider scrollbar-hide">
+        <div 
+          className="flex px-3 pt-2.5 pb-2 gap-2 overflow-x-auto bg-[var(--nb-surface)] scrollbar-none"
+          style={{ borderBottom: '2px solid var(--nb-ink)' }}
+        >
           {canManageRoles && (
             <>
               <button 
                 onClick={() => setActiveTab('associates')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   activeTab === 'associates' 
-                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
-                    : 'text-secondary hover:text-primary'
+                    ? 'nb-pill-blue text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                    : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
                 }`}
               >
                 Associates
               </button>
               <button 
                 onClick={() => setActiveTab('coordinators')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   activeTab === 'coordinators' 
-                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
-                    : 'text-secondary hover:text-primary'
+                    ? 'nb-pill-cyan text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                    : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
                 }`}
               >
                 Coordinators
               </button>
               <button 
                 onClick={() => setActiveTab('students')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   activeTab === 'students' 
-                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
-                    : 'text-secondary hover:text-primary'
+                    ? 'nb-pill-yellow text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                    : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
                 }`}
               >
                 Students DB
               </button>
               <button 
                 onClick={() => setActiveTab('certificates')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'certificates' 
-                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
-                    : 'text-secondary hover:text-primary'
+                    ? 'nb-pill-purple text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                    : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
                 }`}
               >
-                <Award className="w-3.5 h-3.5" />
+                <Award className={`w-3.5 h-3.5 ${activeTab === 'certificates' ? 'text-white' : 'text-[var(--nb-accent)]'}`} />
                 <span>Certificates</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${isCertificatesEnabled ? 'bg-emerald-400 shadow-sm' : 'bg-amber-400'}`} />
+                <span className={`w-2 h-2 rounded-full ${isCertificatesEnabled ? 'bg-emerald-400' : 'bg-amber-400'}`} />
               </button>
               <button 
                 onClick={() => setActiveTab('settings')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'settings' 
-                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
-                    : 'text-secondary hover:text-primary'
+                    ? 'nb-pill-coral text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                    : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
                 }`}
               >
                 <Settings className="w-3.5 h-3.5" />
@@ -1133,13 +1143,13 @@ export default function AdminPanelView({
           {canViewAttendanceTab && (
             <button 
               onClick={() => setActiveTab('attendance')}
-              className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+              className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                 activeTab === 'attendance' 
-                  ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
-                  : 'text-secondary hover:text-primary'
+                  ? 'nb-pill-green text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                  : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
               }`}
             >
-              Attendance & Registry
+              Attendance &amp; Registry
             </button>
           )}
         </div>
@@ -1148,15 +1158,21 @@ export default function AdminPanelView({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* GLOBAL FEEDBACK NOTIFICATION ALERTS */}
           {feedbackMsg && (
-            <div className="text-xs font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-3 flex justify-between items-center">
+            <div 
+              className="text-xs font-bold text-[var(--nb-content)] bg-[var(--nb-surface-accent)] rounded p-3 flex justify-between items-center"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+            >
               <span>{feedbackMsg}</span>
-              <button onClick={() => setFeedbackMsg('')} className="text-indigo-500 hover:text-indigo-400 font-bold">&times;</button>
+              <button onClick={() => setFeedbackMsg('')} className="font-bold text-sm cursor-pointer">&times;</button>
             </div>
           )}
           {feedbackErr && (
-            <div className="text-xs font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-3 flex justify-between items-center">
+            <div 
+              className="text-xs font-bold text-rose-500 bg-rose-500/10 rounded p-3 flex justify-between items-center"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+            >
               <span>{feedbackErr}</span>
-              <button onClick={() => setFeedbackErr('')} className="text-rose-500 hover:text-rose-400 font-bold">&times;</button>
+              <button onClick={() => setFeedbackErr('')} className="font-bold text-sm cursor-pointer">&times;</button>
             </div>
           )}
 
@@ -1166,12 +1182,12 @@ export default function AdminPanelView({
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-xs font-bold text-content uppercase tracking-wider">Department Associates</h3>
-                  <p className="text-[10px] text-secondary">President, Vice President, Secretary, Media Leads, etc.</p>
+                  <h3 className="nb-headline text-base text-[var(--nb-content)]">Department Associates</h3>
+                  <p className="nb-label text-[10px] text-[var(--nb-secondary)]">President, Vice President, Secretary, Media Leads, etc.</p>
                 </div>
                 <button
                   onClick={() => setShowCreateAssociate(!showCreateAssociate)}
-                  className="flex items-center gap-1.5 text-xs font-bold uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm shadow-indigo-600/20"
+                  className="nb-btn text-xs font-bold uppercase py-2 px-3 flex items-center gap-1.5 cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   New Associate
@@ -1180,22 +1196,27 @@ export default function AdminPanelView({
 
               {/* CREATE ASSOCIATE INLINE FORM */}
               {showCreateAssociate && (
-                <form onSubmit={handleCreateAssociate} className="bg-surface p-4 rounded-3xl border border-divider space-y-3.5 shadow-xl">
-                  <div className="flex justify-between items-center border-b border-divider pb-2 mb-1">
-                    <span className="text-xs font-bold text-indigo-400 uppercase flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" /> Assign Executive Role
+                <form 
+                  onSubmit={handleCreateAssociate} 
+                  className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
+                  <div className="flex justify-between items-center border-b border-[var(--nb-ink)]/20 pb-2 mb-1">
+                    <span className="nb-label text-xs text-[var(--nb-accent)] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" /> ASSIGN EXECUTIVE ROLE
                     </span>
                     <button 
                       type="button" 
                       onClick={() => setShowCreateAssociate(false)}
-                      className="text-secondary hover:text-content text-xs cursor-pointer"
+                      className="nb-btn-ghost px-2 py-0.5 text-xs cursor-pointer"
+                      style={{ border: '1px solid var(--nb-ink)' }}
                     >
                       Cancel
                     </button>
                   </div>
 
                   <div className="relative">
-                    <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Student Roll Number</label>
+                    <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-1">STUDENT ROLL NUMBER</label>
                     <input 
                       type="text" 
                       required 
@@ -1204,88 +1225,103 @@ export default function AdminPanelView({
                       onFocus={() => setAssocRollFocused(true)}
                       onBlur={() => setTimeout(() => setAssocRollFocused(false), 200)}
                       placeholder="e.g. 23HM1A3301"
-                      className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono focus:border-indigo-500/50"
+                      className="nb-input py-1.5 text-xs w-full font-mono"
                     />
                     {assocRollFocused && assocSearchRoll.length > 0 && (
-                      <div className="absolute top-[100%] mt-1 left-0 right-0 bg-background border border-divider rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto overflow-x-hidden">
+                      <div 
+                        className="absolute top-[100%] mt-1 left-0 right-0 bg-[var(--nb-surface)] rounded z-50 max-h-40 overflow-y-auto overflow-x-hidden"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                      >
                         {allUsers
                           .filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(assocSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(assocSearchRoll.toLowerCase())))
                           .map(u => (
                             <div 
                               key={u.uid} 
-                              className="px-3 py-2 hover:bg-surface-accent cursor-pointer border-b border-divider/50 last:border-0"
+                              className="px-3 py-2 hover:bg-[var(--nb-surface-accent)] cursor-pointer border-b border-[var(--nb-ink)]/20 last:border-0"
                               onClick={() => {
                                 setAssocSearchRoll(u.rollNumber || '');
                                 setAssocRollFocused(false);
                               }}
                             >
-                              <div className="text-xs text-content font-bold truncate">{u.name}</div>
-                              <div className="text-[10px] text-secondary font-mono truncate">{u.rollNumber}</div>
+                              <div className="text-xs font-bold text-[var(--nb-content)] truncate">{u.name}</div>
+                              <div className="nb-label text-[10px] text-[var(--nb-secondary)] truncate">{u.rollNumber}</div>
                             </div>
                           ))}
                         {allUsers.filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(assocSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(assocSearchRoll.toLowerCase()))).length === 0 && (
-                          <div className="px-3 py-2 text-[10px] text-tertiary italic">No matching students found</div>
+                          <div className="px-3 py-2 text-xs text-[var(--nb-secondary)] italic">No matching students found</div>
                         )}
                       </div>
                     )}
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Position / Title</label>
+                    <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-1">POSITION / TITLE</label>
                     <input 
                       type="text" 
                       required 
                       value={assocPosition} 
                       onChange={e => setAssocPosition(e.target.value)}
                       placeholder="e.g. President, Vice President"
-                      className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none"
+                      className="nb-input py-1.5 text-xs w-full"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-[10px] font-bold text-secondary uppercase mb-2">Initial Capabilities (Can be modified later)</label>
+                    <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-2">INITIAL CAPABILITIES</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                      <label 
+                        className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         <input 
                           type="checkbox" 
                           checked={assocPowers.canManageEvents}
                           onChange={e => setAssocPowers({...assocPowers, canManageEvents: e.target.checked})}
-                          className="accent-indigo-500"
+                          className="accent-[var(--nb-accent)]"
                         />
-                        <span className="text-[11px] text-secondary">Manage Events</span>
+                        <span className="text-xs text-[var(--nb-content)]">Manage Events</span>
                       </label>
-                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                      <label 
+                        className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         <input 
                           type="checkbox" 
                           checked={assocPowers.canManageAnnouncements}
                           onChange={e => setAssocPowers({...assocPowers, canManageAnnouncements: e.target.checked})}
-                          className="accent-indigo-500"
+                          className="accent-[var(--nb-accent)]"
                         />
-                        <span className="text-[11px] text-secondary">Announcements</span>
+                        <span className="text-xs text-[var(--nb-content)]">Announcements</span>
                       </label>
-                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                      <label 
+                        className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         <input 
                           type="checkbox" 
                           checked={assocPowers.canViewRegistrations}
                           onChange={e => setAssocPowers({...assocPowers, canViewRegistrations: e.target.checked})}
-                          className="accent-indigo-500"
+                          className="accent-[var(--nb-accent)]"
                         />
-                        <span className="text-[11px] text-secondary">View Applicants</span>
+                        <span className="text-xs text-[var(--nb-content)]">View Applicants</span>
                       </label>
-                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                      <label 
+                        className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         <input 
                           type="checkbox" 
                           checked={assocPowers.canManageGallery}
                           onChange={e => setAssocPowers({...assocPowers, canManageGallery: e.target.checked})}
-                          className="accent-indigo-500"
+                          className="accent-[var(--nb-accent)]"
                         />
-                        <span className="text-[11px] text-secondary">Manage Gallery</span>
+                        <span className="text-xs text-[var(--nb-content)]">Manage Gallery</span>
                       </label>
                     </div>
                   </div>
 
                   <button 
                     type="submit" 
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                    className="w-full nb-btn py-2.5 text-xs font-bold uppercase tracking-wider cursor-pointer"
                   >
                     Grant Associate Privileges
                   </button>
@@ -1295,23 +1331,28 @@ export default function AdminPanelView({
               {/* ASSOCIATES LIST WITH REALTIME POWER TOGGLES */}
               <div className="space-y-3">
                 {associates.map((assoc) => (
-                  <div key={assoc.uid} className="bg-surface rounded-3xl p-4 border border-divider space-y-3.5 shadow-md">
+                  <div 
+                    key={assoc.uid} 
+                    className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-3.5"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex gap-3">
                         <img 
                           src={assoc.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${assoc.rollNumber || assoc.uid}`} 
                           alt={assoc.name} 
-                          className="w-11 h-11 rounded-2xl object-cover border border-divider bg-background"
+                          className="w-11 h-11 rounded object-cover bg-[var(--nb-surface-accent)]"
+                          style={{ border: '1.5px solid var(--nb-ink)' }}
                         />
                         <div>
-                          <h4 className="text-xs font-bold text-content">{assoc.name}</h4>
-                          <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full font-mono uppercase mt-1 inline-block">
+                          <h4 className="nb-headline text-sm text-[var(--nb-content)]">{assoc.name}</h4>
+                          <span className="nb-tag-accent text-[9px] font-mono uppercase mt-1 inline-block">
                             {assoc.position}
                           </span>
-                          <div className="flex items-center gap-3 text-[10px] text-secondary mt-1 font-mono">
-                            <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-tertiary" /> {assoc.email}</span>
-                            {assoc.googleEmail && <span className="flex items-center gap-1 text-indigo-400"><Mail className="w-3 h-3 text-indigo-500" /> {assoc.googleEmail}</span>}
-                            {assoc.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-tertiary" /> {assoc.phone}</span>}
+                          <div className="flex items-center gap-3 text-xs text-[var(--nb-secondary)] mt-1 font-mono">
+                            <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-[var(--nb-tertiary)]" /> {assoc.email}</span>
+                            {assoc.googleEmail && <span className="flex items-center gap-1 text-[var(--nb-accent)]"><Mail className="w-3 h-3" /> {assoc.googleEmail}</span>}
+                            {assoc.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-[var(--nb-tertiary)]" /> {assoc.phone}</span>}
                           </div>
                         </div>
                       </div>
@@ -1327,21 +1368,34 @@ export default function AdminPanelView({
                                   refreshData();
                                 } catch(e) { console.error(e); }
                               }}
-                              className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 text-[10px] font-bold uppercase px-2 py-1 rounded-xl transition-all cursor-pointer"
+                              className="nb-btn-ghost text-[10px] font-bold uppercase px-2 py-1 cursor-pointer"
+                              style={{ border: '1px solid var(--nb-ink)' }}
                             >
                               Revoke Pres
                             </button>
                           )}
                           
                           {confirmDemoteId === assoc.uid ? (
-                            <button onClick={() => handleDemoteUser(assoc.uid)} className="text-[10px] bg-rose-500 hover:bg-rose-600 text-content px-2 py-1 rounded-xl transition-all font-bold uppercase cursor-pointer">Sure?</button>
+                            <button 
+                              onClick={() => handleDemoteUser(assoc.uid)} 
+                              className="text-[10px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer"
+                              style={{ border: '1px solid var(--nb-ink)' }}
+                            >
+                              Sure?
+                            </button>
                           ) : (
-                            <button onClick={() => setConfirmDemoteId(assoc.uid)} className="text-[10px] bg-surface-accent hover:bg-divider text-secondary px-2 py-1 rounded-xl transition-all border border-divider font-bold uppercase cursor-pointer">Revoke Role</button>
+                            <button 
+                              onClick={() => setConfirmDemoteId(assoc.uid)} 
+                              className="nb-btn-ghost text-[10px] px-2 py-1 font-bold uppercase cursor-pointer"
+                              style={{ border: '1px solid var(--nb-ink)' }}
+                            >
+                              Revoke Role
+                            </button>
                           )}
                           <HoldButton
                             size="sm"
                             holdTime={1600}
-                            radius={8}
+                            radius={4}
                             backgroundColor="rgba(244, 63, 94, 0.1)"
                             fillColor="#e11d48"
                             textColor="#fda4af"
@@ -1357,62 +1411,69 @@ export default function AdminPanelView({
                     </div>
 
                     {/* Real-time Permission Matrix */}
-                    <div className="bg-background p-3 rounded-2xl border border-divider/80">
-                      <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Live Privilege Matrix (Click to toggle)</div>
+                    <div 
+                      className="bg-[var(--nb-surface-accent)] p-3 rounded"
+                      style={{ border: '1px solid var(--nb-ink)' }}
+                    >
+                      <div className="nb-label text-[9px] text-[var(--nb-secondary)] mb-2">LIVE PRIVILEGE MATRIX (CLICK TO TOGGLE)</div>
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canManageEvents')}
-                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
                             assoc.powers?.canManageEvents 
-                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
-                              : 'bg-surface border-divider text-secondary'
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                              : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
                           }`}
+                          style={{ border: '1px solid var(--nb-ink)' }}
                         >
-                          <span className="text-[11px] font-semibold">Events Manager</span>
-                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canManageEvents ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                          <span className="text-xs font-semibold">Events Manager</span>
+                          <div className={`w-4 h-4 rounded flex items-center justify-center ${assoc.powers?.canManageEvents ? 'bg-[var(--nb-accent)] text-black' : 'bg-[var(--nb-surface-accent)] text-transparent'}`}>
                             <Check className="w-2.5 h-2.5" />
                           </div>
                         </button>
                         <button 
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canManageAnnouncements')}
-                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
                             assoc.powers?.canManageAnnouncements 
-                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
-                              : 'bg-surface border-divider text-secondary'
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                              : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
                           }`}
+                          style={{ border: '1px solid var(--nb-ink)' }}
                         >
-                          <span className="text-[11px] font-semibold">Announcements</span>
-                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canManageAnnouncements ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                          <span className="text-xs font-semibold">Announcements</span>
+                          <div className={`w-4 h-4 rounded flex items-center justify-center ${assoc.powers?.canManageAnnouncements ? 'bg-[var(--nb-accent)] text-black' : 'bg-[var(--nb-surface-accent)] text-transparent'}`}>
                             <Check className="w-2.5 h-2.5" />
                           </div>
                         </button>
                         <button 
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canViewRegistrations')}
-                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
                             assoc.powers?.canViewRegistrations 
-                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
-                              : 'bg-surface border-divider text-secondary'
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                              : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
                           }`}
+                          style={{ border: '1px solid var(--nb-ink)' }}
                         >
-                          <span className="text-[11px] font-semibold">View Applicants</span>
-                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canViewRegistrations ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                          <span className="text-xs font-semibold">View Applicants</span>
+                          <div className={`w-4 h-4 rounded flex items-center justify-center ${assoc.powers?.canViewRegistrations ? 'bg-[var(--nb-accent)] text-black' : 'bg-[var(--nb-surface-accent)] text-transparent'}`}>
                             <Check className="w-2.5 h-2.5" />
                           </div>
                         </button>
                         <button 
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canManageGallery')}
-                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
                             assoc.powers?.canManageGallery 
-                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
-                              : 'bg-surface border-divider text-secondary'
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                              : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
                           }`}
+                          style={{ border: '1px solid var(--nb-ink)' }}
                         >
-                          <span className="text-[11px] font-semibold">Manage Gallery</span>
-                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canManageGallery ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                          <span className="text-xs font-semibold">Manage Gallery</span>
+                          <div className={`w-4 h-4 rounded flex items-center justify-center ${assoc.powers?.canManageGallery ? 'bg-[var(--nb-accent)] text-black' : 'bg-[var(--nb-surface-accent)] text-transparent'}`}>
                             <Check className="w-2.5 h-2.5" />
                           </div>
                         </button>
@@ -1434,12 +1495,12 @@ export default function AdminPanelView({
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-xs font-bold text-content uppercase tracking-wider">Student Coordinators</h3>
-                  <p className="text-[10px] text-secondary">Assigned specific technical and cultural events to manage.</p>
+                  <h3 className="nb-headline text-base text-[var(--nb-content)]">Student Coordinators</h3>
+                  <p className="nb-label text-[10px] text-[var(--nb-secondary)]">Assigned specific technical and cultural events to manage.</p>
                 </div>
                 <button
                   onClick={() => setShowCreateCoordinator(!showCreateCoordinator)}
-                  className="flex items-center gap-1.5 text-xs font-bold uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm shadow-indigo-600/20"
+                  className="nb-btn text-xs font-bold uppercase py-2 px-3 flex items-center gap-1.5 cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   New Coordinator
@@ -1448,22 +1509,27 @@ export default function AdminPanelView({
 
               {/* CREATE COORDINATOR INLINE FORM */}
               {showCreateCoordinator && (
-                <form onSubmit={handleCreateCoordinator} className="bg-surface p-4 rounded-3xl border border-divider space-y-3.5 shadow-xl">
-                  <div className="flex justify-between items-center border-b border-divider pb-2 mb-1">
-                    <span className="text-xs font-bold text-indigo-400 uppercase flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" /> Assign Event Coordinator
+                <form 
+                  onSubmit={handleCreateCoordinator} 
+                  className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
+                  <div className="flex justify-between items-center border-b border-[var(--nb-ink)]/20 pb-2 mb-1">
+                    <span className="nb-label text-xs text-[var(--nb-accent)] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" /> ASSIGN EVENT COORDINATOR
                     </span>
                     <button 
                       type="button" 
                       onClick={() => setShowCreateCoordinator(false)}
-                      className="text-secondary hover:text-content text-xs cursor-pointer"
+                      className="nb-btn-ghost px-2 py-0.5 text-xs cursor-pointer"
+                      style={{ border: '1px solid var(--nb-ink)' }}
                     >
                       Cancel
                     </button>
                   </div>
 
                   <div className="relative">
-                    <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Student Roll Number</label>
+                    <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-1">STUDENT ROLL NUMBER</label>
                     <input 
                       type="text" 
                       required 
@@ -1472,40 +1538,47 @@ export default function AdminPanelView({
                       onFocus={() => setCoordRollFocused(true)}
                       onBlur={() => setTimeout(() => setCoordRollFocused(false), 200)}
                       placeholder="e.g. 23HM1A3315"
-                      className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono focus:border-indigo-500/50"
+                      className="nb-input py-1.5 text-xs w-full font-mono"
                     />
                     {coordRollFocused && coordSearchRoll.length > 0 && (
-                      <div className="absolute top-[100%] mt-1 left-0 right-0 bg-background border border-divider rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto overflow-x-hidden">
+                      <div 
+                        className="absolute top-[100%] mt-1 left-0 right-0 bg-[var(--nb-surface)] rounded z-50 max-h-40 overflow-y-auto overflow-x-hidden"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                      >
                         {allUsers
                           .filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(coordSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(coordSearchRoll.toLowerCase())))
                           .map(u => (
                             <div 
                               key={u.uid} 
-                              className="px-3 py-2 hover:bg-surface-accent cursor-pointer border-b border-divider/50 last:border-0"
+                              className="px-3 py-2 hover:bg-[var(--nb-surface-accent)] cursor-pointer border-b border-[var(--nb-ink)]/20 last:border-0"
                               onClick={() => {
                                 setCoordSearchRoll(u.rollNumber || '');
                                 setCoordRollFocused(false);
                               }}
                             >
-                              <div className="text-xs text-content font-bold truncate">{u.name}</div>
-                              <div className="text-[10px] text-secondary font-mono truncate">{u.rollNumber}</div>
+                              <div className="text-xs font-bold text-[var(--nb-content)] truncate">{u.name}</div>
+                              <div className="nb-label text-[10px] text-[var(--nb-secondary)] truncate">{u.rollNumber}</div>
                             </div>
                           ))}
                         {allUsers.filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(coordSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(coordSearchRoll.toLowerCase()))).length === 0 && (
-                          <div className="px-3 py-2 text-[10px] text-tertiary italic">No matching students found</div>
+                          <div className="px-3 py-2 text-xs text-[var(--nb-secondary)] italic">No matching students found</div>
                         )}
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-secondary uppercase mb-2">Assign Events (Optional)</label>
+                    <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-2">ASSIGN EVENTS (OPTIONAL)</label>
                     <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
                       {events.length === 0 ? (
-                        <p className="text-[10px] text-tertiary italic">No events exist. You can assign events later.</p>
+                        <p className="text-xs text-[var(--nb-secondary)] italic">No events exist. You can assign events later.</p>
                       ) : (
                         events.map(ev => (
-                          <label key={ev.eventId} className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                          <label 
+                            key={ev.eventId} 
+                            className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
+                            style={{ border: '1px solid var(--nb-ink)' }}
+                          >
                             <input 
                               type="checkbox" 
                               checked={coordAssignedEvents.includes(ev.eventId)}
@@ -1513,11 +1586,11 @@ export default function AdminPanelView({
                                 if (e.target.checked) setCoordAssignedEvents([...coordAssignedEvents, ev.eventId]);
                                 else setCoordAssignedEvents(coordAssignedEvents.filter(id => id !== ev.eventId));
                               }}
-                              className="accent-indigo-500"
+                              className="accent-[var(--nb-accent)]"
                             />
                             <div className="min-w-0 flex-1">
-                              <span className="text-[11px] text-secondary block truncate">{ev.title}</span>
-                              <span className="text-[9px] text-tertiary block truncate">{ev.category} • {ev.date}</span>
+                              <span className="text-xs text-[var(--nb-content)] font-bold block truncate">{ev.title}</span>
+                              <span className="nb-label text-[9px] text-[var(--nb-secondary)] block truncate">{ev.category} • {ev.date}</span>
                             </div>
                           </label>
                         ))
@@ -1527,7 +1600,7 @@ export default function AdminPanelView({
 
                   <button 
                     type="submit" 
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                    className="w-full nb-btn py-2.5 text-xs font-bold uppercase tracking-wider cursor-pointer"
                   >
                     Assign Coordinator Role
                   </button>
@@ -1537,39 +1610,58 @@ export default function AdminPanelView({
               {/* COORDINATORS LIST */}
               <div className="space-y-3">
                 {coordinators.map((coord) => (
-                  <div key={coord.uid} className="bg-surface rounded-3xl p-4 border border-divider space-y-3.5 shadow-md">
+                  <div 
+                    key={coord.uid} 
+                    className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-3.5"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 text-indigo-400">
+                        <div 
+                          className="w-10 h-10 rounded bg-[var(--nb-surface-accent)] flex items-center justify-center text-[var(--nb-accent)] shrink-0"
+                          style={{ border: '1.5px solid var(--nb-ink)' }}
+                        >
                           <Users className="w-5 h-5" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-content">{coord.name}</h4>
+                          <h4 className="nb-headline text-sm text-[var(--nb-content)]">{coord.name}</h4>
                           <div className="flex gap-2 mt-0.5 items-center">
-                            <span className="font-mono text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                            <span className="nb-tag text-[9px] font-mono font-bold">
                               Roll: {coord.rollNumber}
                             </span>
-                            <span className="text-[10px] text-secondary">{coord.year} • Sec {coord.section}</span>
+                            <span className="nb-label text-[10px] text-[var(--nb-secondary)]">{coord.year} • Sec {coord.section}</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1 items-end">
                         <button
                           onClick={() => setActiveEditingCoordId(activeEditingCoordId === coord.uid ? null : coord.uid)}
-                          className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer w-full text-center"
+                          className="nb-btn text-xs py-1.5 px-3 font-bold cursor-pointer w-full text-center"
                         >
                           {activeEditingCoordId === coord.uid ? 'Close' : 'Manage Events'}
                         </button>
                         <div className="flex gap-1 w-full mt-1">
                           {confirmDemoteId === coord.uid ? (
-                            <button onClick={() => handleDemoteUser(coord.uid)} className="flex-1 text-[9px] bg-rose-500 hover:bg-rose-600 text-content px-2 py-1 rounded-lg transition-all font-bold uppercase cursor-pointer">Sure?</button>
+                            <button 
+                              onClick={() => handleDemoteUser(coord.uid)} 
+                              className="flex-1 text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer"
+                              style={{ border: '1px solid var(--nb-ink)' }}
+                            >
+                              Sure?
+                            </button>
                           ) : (
-                            <button onClick={() => setConfirmDemoteId(coord.uid)} className="flex-1 text-[9px] bg-surface-accent hover:bg-divider text-secondary px-2 py-1 rounded-lg transition-all border border-divider font-bold uppercase cursor-pointer">Revoke</button>
+                            <button 
+                              onClick={() => setConfirmDemoteId(coord.uid)} 
+                              className="flex-1 nb-btn-ghost text-[9px] px-2 py-1 font-bold uppercase cursor-pointer"
+                              style={{ border: '1px solid var(--nb-ink)' }}
+                            >
+                              Revoke
+                            </button>
                           )}
                           <HoldButton
                             size="sm"
                             holdTime={1600}
-                            radius={8}
+                            radius={4}
                             backgroundColor="rgba(244, 63, 94, 0.1)"
                             fillColor="#e11d48"
                             textColor="#fda4af"
@@ -1586,28 +1678,35 @@ export default function AdminPanelView({
 
                     {/* Expandable Event Assignment Editor */}
                     {activeEditingCoordId === coord.uid && (
-                      <div className="bg-background p-3 rounded-2xl border border-divider/80 space-y-2">
-                        <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Assigned Events</div>
+                      <div 
+                        className="bg-[var(--nb-surface-accent)] p-3 rounded space-y-2"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
+                        <div className="nb-label text-[9px] text-[var(--nb-secondary)] mb-2">ASSIGNED EVENTS</div>
                         {events.length === 0 ? (
-                          <p className="text-[10px] text-tertiary italic">No events exist in the database.</p>
+                          <p className="text-xs text-[var(--nb-secondary)] italic">No events exist in the database.</p>
                         ) : (
                           <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
                             {events.map(ev => {
                               const isAssigned = coord.assignedEvents?.includes(ev.eventId);
                               return (
-                                <label key={ev.eventId} className={`flex justify-between items-center p-2 rounded-xl border cursor-pointer transition-all ${
-                                  isAssigned ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-surface border-divider hover:border-divider'
-                                }`}>
+                                <label 
+                                  key={ev.eventId} 
+                                  className={`flex justify-between items-center p-2 rounded cursor-pointer transition-all ${
+                                    isAssigned ? 'bg-[var(--nb-surface)] font-bold' : 'bg-[var(--nb-surface)]/60'
+                                  }`}
+                                  style={{ border: isAssigned ? '1.5px solid var(--nb-ink)' : '1px solid var(--nb-ink)/40' }}
+                                >
                                   <div className="min-w-0 flex-1 flex items-center gap-2">
                                     <input 
-                                      type="checkbox"
+                                      type="checkbox" 
                                       checked={isAssigned || false}
                                       onChange={() => handleToggleEventAssignment(coord.uid, ev.eventId)}
-                                      className="accent-indigo-500"
+                                      className="accent-[var(--nb-accent)]"
                                     />
                                     <div className="truncate">
-                                      <span className={`text-[11px] block truncate ${isAssigned ? 'text-indigo-300 font-bold' : 'text-secondary'}`}>{ev.title}</span>
-                                      <span className="text-[9px] text-tertiary block truncate">{ev.category} • {ev.date}</span>
+                                      <span className={`text-xs block truncate ${isAssigned ? 'text-[var(--nb-content)]' : 'text-[var(--nb-secondary)]'}`}>{ev.title}</span>
+                                      <span className="nb-label text-[9px] text-[var(--nb-secondary)] block truncate">{ev.category} • {ev.date}</span>
                                     </div>
                                   </div>
                                 </label>
@@ -1620,7 +1719,7 @@ export default function AdminPanelView({
                   </div>
                 ))}
                 {coordinators.length === 0 && (
-                  <div className="text-center py-6 text-xs text-tertiary">
+                  <div className="text-center py-6 text-xs text-[var(--nb-secondary)]">
                     No coordinators have been assigned yet.
                   </div>
                 )}
@@ -1654,11 +1753,12 @@ export default function AdminPanelView({
               {/* Event Selector */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">Select Event to Manage</label>
+                  <label className="nb-label text-[10px] text-[var(--nb-secondary)]">SELECT EVENT TO MANAGE</label>
                   {selectedEventId && activeEvent && (
                     <button 
                       onClick={() => exportAttendanceCSV(activeEvent)}
-                      className="text-[10px] flex items-center gap-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded-lg hover:bg-indigo-600/30 transition-colors uppercase font-bold"
+                      className="nb-btn-ghost text-[10px] flex items-center gap-1.5 px-2.5 py-1 font-bold uppercase cursor-pointer"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
                       <Download className="w-3 h-3" />
                       Export CSV
@@ -1671,7 +1771,8 @@ export default function AdminPanelView({
                     setSelectedEventId(e.target.value);
                     setScanResultMsg('');
                   }}
-                  className="bg-surface border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none"
+                  className="bg-[var(--nb-surface)] text-xs text-[var(--nb-content)] rounded py-2 px-3 outline-none font-bold"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
                   {events.length === 0 && <option value="">No events available</option>}
                   {events.map(ev => (
@@ -1684,39 +1785,52 @@ export default function AdminPanelView({
                 <>
                   {/* Event Date Status Banner */}
                   {!isEventToday ? (
-                    <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs p-3 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div 
+                      className="bg-[var(--nb-surface-accent)] text-xs p-3 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                    >
                       <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                         <div>
-                          <span className="font-bold">Scheduled Date:</span> {activeEvent.date}
-                          <span className="text-secondary text-[11px] ml-2">(Today: {todayStr})</span>
+                          <span className="font-bold text-[var(--nb-content)]">Scheduled Date:</span> <span className="font-mono">{activeEvent.date}</span>
+                          <span className="text-[var(--nb-secondary)] text-[11px] ml-2">(Today: {todayStr})</span>
                         </div>
                       </div>
-                      <span className="text-[9px] uppercase font-bold tracking-wider text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md self-start sm:self-auto">
+                      <span 
+                        className="nb-tag text-[9px] font-mono font-bold self-start sm:self-auto bg-amber-400 text-black"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         Admin Check-in Active
                       </span>
                     </div>
                   ) : (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-2.5 rounded-2xl flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="font-bold">Event Day Active ({activeEvent.date})</span>
+                    <div 
+                      className="bg-[var(--nb-surface-accent)] text-xs p-3 rounded flex items-center gap-2"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                    >
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="font-bold text-[var(--nb-content)]">Event Day Active ({activeEvent.date})</span>
                     </div>
                   )}
 
                   {/* QR SCANNER CARD (Always available for admin check-in) */}
-                  <div className="bg-surface border border-divider p-4 rounded-3xl space-y-3.5 shadow-xl">
-                    <div className="flex justify-between items-center border-b border-divider pb-2">
-                      <span className="text-xs font-bold text-content uppercase flex items-center gap-1.5">
-                        <QrCode className="w-3.5 h-3.5 text-indigo-400" />
+                  <div 
+                    className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3.5"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                  >
+                    <div className="flex justify-between items-center border-b border-[var(--nb-ink)]/15 pb-2">
+                      <span className="nb-label text-xs font-bold text-[var(--nb-content)] flex items-center gap-1.5">
+                        <QrCode className="w-4 h-4 text-[var(--nb-accent)]" />
                         Quick Check-in Scanner
                       </span>
                       <button 
                         onClick={() => setShowQRScanner(!showQRScanner)}
-                        className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        className={`text-xs px-3 py-1.5 font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase ${
                           showQRScanner 
-                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' 
-                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
+                            ? 'nb-btn-ghost' 
+                            : 'nb-btn'
                         }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         <Camera className="w-3.5 h-3.5" />
                         {showQRScanner ? 'Close Scanner' : 'Open Camera'}
@@ -1725,7 +1839,7 @@ export default function AdminPanelView({
 
                     {showQRScanner && (
                       <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <p className="text-[10px] text-secondary">
+                        <p className="text-[10px] text-[var(--nb-secondary)]">
                           Point the camera at student QR pass or upload a QR image to verify attendance instantly.
                         </p>
                         
@@ -1747,11 +1861,12 @@ export default function AdminPanelView({
                             placeholder="Or type Roll Number manually..." 
                             value={scannedRollInput}
                             onChange={(e) => setScannedRollInput(e.target.value)}
-                            className="flex-1 bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none font-mono"
+                            className="flex-1 bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded py-2 px-3 outline-none font-mono"
+                            style={{ border: '1.5px solid var(--nb-ink)' }}
                           />
                           <button 
                             type="submit" 
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase px-3.5 rounded-xl transition-all cursor-pointer"
+                            className="nb-btn text-[10px] font-bold uppercase px-4 py-2 cursor-pointer"
                           >
                             Mark
                           </button>
@@ -1761,22 +1876,25 @@ export default function AdminPanelView({
 
                     {/* Scan Result Feedback Banner */}
                     {scanResultMsg && (
-                      <div className={`p-3 rounded-2xl border flex items-center justify-between gap-2.5 transition-all animate-in fade-in zoom-in-95 ${
-                        scanResultType === 'success' 
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
-                          : scanResultType === 'info'
-                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                      }`}>
-                        <div className="flex items-center gap-2 text-xs font-medium">
-                          {scanResultType === 'success' && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
-                          {scanResultType === 'info' && <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />}
-                          {scanResultType === 'error' && <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
+                      <div 
+                        className={`p-3 rounded flex items-center justify-between gap-2.5 transition-all animate-in fade-in zoom-in-95 ${
+                          scanResultType === 'success' 
+                            ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300' 
+                            : scanResultType === 'info'
+                            ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+                            : 'bg-rose-500/15 text-rose-800 dark:text-rose-300'
+                        }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
+                      >
+                        <div className="flex items-center gap-2 text-xs font-bold">
+                          {scanResultType === 'success' && <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />}
+                          {scanResultType === 'info' && <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />}
+                          {scanResultType === 'error' && <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
                           <span>{scanResultMsg}</span>
                         </div>
                         <button
                           onClick={() => setScanResultMsg('')}
-                          className="text-content/50 hover:text-content p-1 rounded-lg hover:bg-surface-accent transition-colors cursor-pointer"
+                          className="text-[var(--nb-secondary)] hover:text-[var(--nb-content)] p-1 cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1785,13 +1903,19 @@ export default function AdminPanelView({
                   </div>
 
                   {/* REGISTRATIONS LIST */}
-                  <div className="bg-surface border border-divider p-4 rounded-3xl space-y-3 shadow-xl">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-divider pb-2 gap-2">
+                  <div 
+                    className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--nb-ink)]/15 pb-2.5 gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-content uppercase">
+                        <span className="nb-label text-xs font-bold text-[var(--nb-content)]">
                           Registered Students ({activeRegistrations?.length || 0})
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        <span 
+                          className="nb-tag text-[10px] font-mono font-bold bg-emerald-400 text-black"
+                          style={{ border: '1px solid var(--nb-ink)' }}
+                        >
                           {activeRegistrations?.filter(r => r.status === 'Attended').length || 0} Present
                         </span>
                       </div>
@@ -1801,7 +1925,7 @@ export default function AdminPanelView({
                           type="button"
                           onClick={() => handleGenerateBatchForEvent(activeEvent.eventId)}
                           disabled={!activeRegistrations?.some(r => r.status === 'Attended')}
-                          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-[10px] font-bold uppercase transition-all cursor-pointer shadow-xs active:scale-95"
+                          className="nb-btn text-[10px] py-1.5 px-3 font-bold uppercase cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                           title="Generate batch certificates for all attended students of this event"
                         >
                           <Zap className="w-3 h-3 text-amber-300" />
@@ -1813,22 +1937,22 @@ export default function AdminPanelView({
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="border-b border-divider">
-                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase">Roll No.</th>
-                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase">Name</th>
-                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase">Type</th>
-                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase text-center">Attendance</th>
-                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase text-center">Certificate</th>
-                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase text-right">Action</th>
+                          <tr className="bg-[var(--nb-surface-accent)] border-b-2 border-[var(--nb-ink)]">
+                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">ROLL NO.</th>
+                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">NAME</th>
+                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">TYPE</th>
+                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-center">ATTENDANCE</th>
+                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-center">CERTIFICATE</th>
+                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-right">ACTION</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-neutral-800/50">
+                        <tbody className="divide-y divide-[var(--nb-ink)]/15">
                           {(() => {
                             const currentRegs = activeRegistrations;
                             if (currentRegs.length === 0) {
                               return (
                                 <tr>
-                                  <td colSpan={6} className="py-6 text-center text-[10px] text-tertiary italic">
+                                  <td colSpan={6} className="py-6 text-center text-xs text-[var(--nb-secondary)] italic">
                                     No registrations yet.
                                   </td>
                                 </tr>
@@ -1845,58 +1969,75 @@ export default function AdminPanelView({
                               const isCertIssued = Boolean(existingCert && existingCert.status !== 'Revoked');
 
                               return (
-                                <tr key={reg.registrationId} className="hover:bg-surface/50 transition-colors">
-                                  <td className="py-2 text-[11px] text-indigo-300 font-mono font-bold">
+                                <tr key={reg.registrationId} className="hover:bg-[var(--nb-surface-accent)]/50 transition-colors">
+                                  <td className="py-2.5 px-2 text-[11px] font-mono font-bold text-[var(--nb-content)]">
                                     {profile.rollNumber || 'N/A'}
                                   </td>
-                                  <td className="py-2 text-[11px] text-content">
+                                  <td className="py-2.5 px-2 text-xs font-bold text-[var(--nb-content)]">
                                     {profile.name || 'Unknown User'}
                                     {reg.teamName && (
-                                      <span className="block text-[9px] text-tertiary mt-0.5">Team: {reg.teamName}</span>
+                                      <span className="block text-[9px] text-[var(--nb-secondary)] mt-0.5">Team: {reg.teamName}</span>
                                     )}
                                   </td>
-                                  <td className="py-2">
-                                    <span className="bg-surface-accent text-secondary px-2 py-0.5 rounded-md text-[9px] font-bold uppercase">
+                                  <td className="py-2.5 px-2">
+                                    <span 
+                                      className="nb-tag text-[9px] font-bold uppercase"
+                                      style={{ border: '1px solid var(--nb-ink)' }}
+                                    >
                                       {(reg.isTeam ? 'Team' : 'Solo')}
                                     </span>
                                   </td>
-                                  <td className="py-2 text-center">
+                                  <td className="py-2.5 px-2 text-center">
                                     {reg.status === 'Attended' ? (
-                                      <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-1 rounded-md text-[9px] font-bold uppercase">
+                                      <span 
+                                        className="inline-flex items-center gap-1 bg-emerald-400 text-black px-2 py-0.5 rounded text-[9px] font-bold uppercase"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
+                                      >
                                         <CheckCircle className="w-3 h-3" />
                                         Present
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 bg-surface-accent/50 text-tertiary px-2 py-1 rounded-md text-[9px] font-bold uppercase">
+                                      <span 
+                                        className="inline-flex items-center gap-1 bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] px-2 py-0.5 rounded text-[9px] font-bold uppercase"
+                                        style={{ border: '1px solid var(--nb-ink)/30' }}
+                                      >
                                         Absent
                                       </span>
                                     )}
                                   </td>
-                                  <td className="py-2 text-center">
+                                  <td className="py-2.5 px-2 text-center">
                                     {isCertIssued && existingCert ? (
-                                      <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold">
-                                        <ShieldCheck className="w-2.5 h-2.5" />
+                                      <span 
+                                        className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-[9px] font-mono font-bold"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
+                                      >
+                                        <ShieldCheck className="w-3 h-3" />
                                         <span>Issued</span>
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold">
-                                        <Lock className="w-2.5 h-2.5" />
+                                      <span 
+                                        className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded text-[9px] font-mono font-bold"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
+                                      >
+                                        <Lock className="w-3 h-3" />
                                         <span>Locked</span>
                                       </span>
                                     )}
                                   </td>
-                                  <td className="py-2 text-right">
+                                  <td className="py-2.5 px-2 text-right">
                                     {reg.status === 'Attended' ? (
                                       <button 
                                         onClick={() => handleToggleAttendance(reg.registrationId, false)}
-                                        className="text-[9px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-2 py-1 rounded-lg transition-all font-bold uppercase cursor-pointer"
+                                        className="text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
                                       >
                                         Revoke
                                       </button>
                                     ) : (
                                       <button 
                                         onClick={() => handleToggleAttendance(reg.registrationId, true)}
-                                        className="text-[9px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-2 py-1 rounded-lg transition-all font-bold uppercase cursor-pointer"
+                                        className="nb-btn text-[9px] px-2 py-1 font-bold uppercase cursor-pointer"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
                                       >
                                         Mark Present
                                       </button>
@@ -1920,13 +2061,13 @@ export default function AdminPanelView({
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-xs font-bold text-content uppercase tracking-wider">Students Database</h3>
-                  <p className="text-[10px] text-secondary">Bulk import roll numbers, manage student accounts.</p>
+                  <h3 className="nb-headline text-sm text-[var(--nb-content)]">Students Database</h3>
+                  <p className="nb-label text-[10px] text-[var(--nb-secondary)]">BULK IMPORT ROLL NUMBERS, MANAGE STUDENT ACCOUNTS</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowBulkAdd(!showBulkAdd)}
-                  className="flex items-center gap-1.5 text-xs font-bold uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm shadow-indigo-600/20"
+                  className="nb-btn flex items-center gap-1.5 text-xs font-bold uppercase py-1.5 px-3 cursor-pointer"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
                   {showBulkAdd ? "Close Importer" : "Bulk Add"}
@@ -1935,25 +2076,30 @@ export default function AdminPanelView({
 
               {/* BULK CREATOR INTERFACE */}
               {showBulkAdd && (
-                <div className="bg-surface border border-divider p-4 rounded-3xl space-y-3.5 shadow-xl">
-                  <div className="flex items-center justify-between border-b border-divider pb-2">
-                    <span className="text-xs font-bold text-content uppercase">Bulk Importer Tool</span>
+                <div 
+                  className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3.5"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
+                  <div className="flex items-center justify-between border-b border-[var(--nb-ink)]/15 pb-2">
+                    <span className="nb-label text-xs font-bold text-[var(--nb-content)]">BULK IMPORTER TOOL</span>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setBulkMode('series')}
-                        className={`text-xs font-bold px-3 py-1 rounded-xl transition-all cursor-pointer ${
-                          bulkMode === 'series' ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-secondary hover:text-content'
+                        className={`text-xs font-bold px-3 py-1 rounded cursor-pointer uppercase ${
+                          bulkMode === 'series' ? 'nb-btn' : 'nb-btn-ghost'
                         }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         Roll Series
                       </button>
                       <button
                         type="button"
                         onClick={() => setBulkMode('column')}
-                        className={`text-xs font-bold px-3 py-1 rounded-xl transition-all cursor-pointer ${
-                          bulkMode === 'column' ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-secondary hover:text-content'
+                        className={`text-xs font-bold px-3 py-1 rounded cursor-pointer uppercase ${
+                          bulkMode === 'column' ? 'nb-btn' : 'nb-btn-ghost'
                         }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         Paste Column
                       </button>
@@ -1962,106 +2108,114 @@ export default function AdminPanelView({
 
                   {bulkMode === 'series' ? (
                     <div className="space-y-3">
-                      <p className="text-[10px] text-secondary leading-relaxed">
+                      <p className="text-[10px] text-[var(--nb-secondary)] leading-relaxed">
                         Generate roll numbers in a continuous series (e.g. 23HM1A3301 to 23HM1A3361).
                       </p>
                       <div className="grid grid-cols-3 gap-2.5">
                         <div>
-                          <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Prefix</label>
+                          <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">PREFIX</label>
                           <input
                             type="text"
                             required
                             placeholder="e.g. 23HM1A33"
                             value={seriesPrefix}
                             onChange={(e) => setSeriesPrefix(e.target.value)}
-                            className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none"
+                            className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded py-2 px-2.5 outline-none font-bold"
+                            style={{ border: '1.5px solid var(--nb-ink)' }}
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Start Index</label>
+                          <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">START INDEX</label>
                           <input
                             type="text"
                             required
                             placeholder="e.g. 01"
                             value={seriesStart}
                             onChange={(e) => setSeriesStart(e.target.value)}
-                            className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono"
+                            className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded py-2 px-2.5 outline-none font-mono font-bold"
+                            style={{ border: '1.5px solid var(--nb-ink)' }}
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-secondary uppercase mb-1">End Index</label>
+                          <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">END INDEX</label>
                           <input
                             type="text"
                             required
                             placeholder="e.g. 61"
                             value={seriesEnd}
                             onChange={(e) => setSeriesEnd(e.target.value)}
-                            className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono"
+                            className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded py-2 px-2.5 outline-none font-mono font-bold"
+                            style={{ border: '1.5px solid var(--nb-ink)' }}
                           />
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-bold text-secondary uppercase">Pasted Roll Numbers</label>
+                      <label className="block nb-label text-[10px] text-[var(--nb-secondary)]">PASTED ROLL NUMBERS</label>
                       <textarea
                         placeholder="Paste roll numbers from Excel/Sheet here (separated by newlines or commas)&#10;e.g.&#10;23HM1A3301&#10;23HM1A3305&#10;23HM1A3312"
                         value={bulkText}
                         onChange={(e) => setBulkText(e.target.value)}
-                        className="w-full bg-background border border-divider text-xs text-content rounded-2xl p-3 h-28 outline-none resize-none font-mono leading-relaxed"
+                        className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-3 h-28 outline-none resize-none font-mono leading-relaxed"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       />
                     </div>
                   )}
 
-                  <div className="border-t border-divider pt-3 space-y-2.5">
-                    <span className="block text-[10px] font-bold text-secondary uppercase">Temporary Password Strategy</span>
+                  <div className="border-t border-[var(--nb-ink)]/15 pt-3 space-y-2.5">
+                    <span className="block nb-label text-[10px] text-[var(--nb-secondary)]">TEMPORARY PASSWORD STRATEGY</span>
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
                         onClick={() => setPasswordOption('roll')}
-                        className={`text-xs font-bold p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                           passwordOption === 'roll'
-                            ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300'
-                            : 'border-divider bg-background text-secondary'
+                            ? 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)]'
+                            : 'bg-[var(--nb-surface)] text-[var(--nb-secondary)] opacity-70'
                         }`}
+                        style={{ border: passwordOption === 'roll' ? '2px solid var(--nb-ink)' : '1px solid var(--nb-ink)/30' }}
                       >
-                        <span>Same as Roll</span>
-                        <span className="text-[9px] text-tertiary font-normal">Pass = Roll</span>
+                        <span className="font-bold">Same as Roll</span>
+                        <span className="text-[9px] font-mono text-[var(--nb-secondary)]">Pass = Roll</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setPasswordOption('preset')}
-                        className={`text-xs font-bold p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                           passwordOption === 'preset'
-                            ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300'
-                            : 'border-divider bg-background text-secondary'
+                            ? 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)]'
+                            : 'bg-[var(--nb-surface)] text-[var(--nb-secondary)] opacity-70'
                         }`}
+                        style={{ border: passwordOption === 'preset' ? '2px solid var(--nb-ink)' : '1px solid var(--nb-ink)/30' }}
                       >
-                        <span>Preset Code</span>
-                        <span className="text-[9px] text-tertiary font-normal">Welcome@123</span>
+                        <span className="font-bold">Preset Code</span>
+                        <span className="text-[9px] font-mono text-[var(--nb-secondary)]">Welcome@123</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setPasswordOption('random')}
-                        className={`text-xs font-bold p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                           passwordOption === 'random'
-                            ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300'
-                            : 'border-divider bg-background text-secondary'
+                            ? 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)]'
+                            : 'bg-[var(--nb-surface)] text-[var(--nb-secondary)] opacity-70'
                         }`}
+                        style={{ border: passwordOption === 'random' ? '2px solid var(--nb-ink)' : '1px solid var(--nb-ink)/30' }}
                       >
-                        <span>Random Alpha</span>
-                        <span className="text-[9px] text-tertiary font-normal">e.g. K7L9Z4</span>
+                        <span className="font-bold">Random Alpha</span>
+                        <span className="text-[9px] font-mono text-[var(--nb-secondary)]">e.g. K7L9Z4</span>
                       </button>
                     </div>
 
                     {passwordOption === 'preset' && (
                       <div className="mt-2 text-xs">
-                        <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Custom Preset Code</label>
+                        <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">CUSTOM PRESET CODE</label>
                         <input
                           type="text"
                           value={presetPassword}
                           onChange={(e) => setPresetPassword(e.target.value)}
-                          className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono"
+                          className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded py-2 px-2.5 outline-none font-mono"
+                          style={{ border: '1.5px solid var(--nb-ink)' }}
                         />
                       </div>
                     )}
@@ -2070,7 +2224,7 @@ export default function AdminPanelView({
                   <button
                     type="button"
                     onClick={handleBulkAddStudents}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-2.5 shadow-md shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+                    className="w-full nb-btn py-2.5 text-xs font-bold uppercase cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Sparkles className="w-4 h-4" />
                     Generate & Save Student Profiles
@@ -2080,15 +2234,18 @@ export default function AdminPanelView({
 
               {/* STUDENT LIST WITH GROUPING AND SEARCH */}
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center bg-surface border border-divider rounded-xl px-3 py-2">
+                <div 
+                  className="flex justify-between items-center bg-[var(--nb-surface)] rounded-lg px-3 py-2"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
                   <div className="flex items-center gap-2 w-full">
-                    <Search className="w-4 h-4 text-tertiary flex-shrink-0" />
+                    <Search className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
                     <input
                       type="text"
                       placeholder="Search students by roll number or name..."
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
-                      className="bg-transparent border-none text-xs text-content placeholder:text-secondary outline-none w-full"
+                      className="bg-transparent border-none text-xs text-[var(--nb-content)] placeholder:text-[var(--nb-secondary)] outline-none w-full font-bold"
                     />
                   </div>
                 </div>
@@ -2098,7 +2255,7 @@ export default function AdminPanelView({
                     <input 
                       type="checkbox" 
                       id="selectAll"
-                      className="accent-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                      className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
                       checked={
                         allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
                           u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
@@ -2121,8 +2278,8 @@ export default function AdminPanelView({
                         }
                       }}
                     />
-                    <label htmlFor="selectAll" className="text-[10px] text-secondary font-bold uppercase cursor-pointer">
-                      Select All Visible
+                    <label htmlFor="selectAll" className="nb-label text-[10px] text-[var(--nb-secondary)] cursor-pointer">
+                      SELECT ALL VISIBLE
                     </label>
                   </div>
                   
@@ -2130,7 +2287,7 @@ export default function AdminPanelView({
                     <HoldButton 
                       size="sm"
                       holdTime={2000}
-                      radius={8}
+                      radius={4}
                       backgroundColor="rgba(244, 63, 94, 0.15)"
                       fillColor="#e11d48"
                       textColor="#fda4af"
@@ -2138,7 +2295,8 @@ export default function AdminPanelView({
                       doneLabel="Deleted Selected"
                       onHold={handleBulkDeleteStudents}
                       icon={<Trash2 className="w-3.5 h-3.5" />}
-                      className="border border-rose-500/20 text-[10px] font-bold uppercase !h-8 !px-3 cursor-pointer"
+                      className="border border-rose-500 text-[10px] font-bold uppercase !h-8 !px-3 cursor-pointer"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
                       Hold to Delete ({selectedStudentIds.length})
                     </HoldButton>
@@ -2155,7 +2313,7 @@ export default function AdminPanelView({
 
                   if (filteredStudents.length === 0) {
                     return (
-                      <div className="text-center py-6 text-xs text-tertiary">
+                      <div className="text-center py-6 text-xs text-[var(--nb-secondary)]">
                         No students found. Use the bulk importer above to populate the database!
                       </div>
                     );
@@ -2169,8 +2327,15 @@ export default function AdminPanelView({
                   }, {} as Record<string, typeof filteredStudents>);
 
                   return Object.entries(groupedStudents).map(([groupKey, studentsInGroup]) => (
-                    <div key={groupKey} className="bg-surface border border-divider rounded-2xl p-4 shadow-sm">
-                      <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-3 border-b border-divider/80 pb-2">{groupKey} - {studentsInGroup.length} Students</div>
+                    <div 
+                      key={groupKey} 
+                      className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-2.5"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <div className="nb-label text-[10px] text-[var(--nb-content)] uppercase tracking-wider mb-2 border-b-2 border-[var(--nb-ink)] pb-2 flex justify-between items-center">
+                        <span>{groupKey}</span>
+                        <span className="nb-tag text-[9px] font-mono font-bold">{studentsInGroup.length} Students</span>
+                      </div>
                       <div className="space-y-2">
                         {studentsInGroup.map((student) => {
                           const isExpanded = expandedStudentId === student.uid;
@@ -2178,14 +2343,15 @@ export default function AdminPanelView({
                           <div 
                             key={student.uid} 
                             onClick={() => setExpandedStudentId(isExpanded ? null : student.uid)}
-                            className="bg-background border border-divider/80 rounded-2xl p-3 flex flex-col gap-3 cursor-pointer hover:border-indigo-500/30 transition-all"
+                            className="bg-[var(--nb-surface-accent)] rounded p-3 flex flex-col gap-2.5 cursor-pointer transition-all"
+                            style={{ border: '1.5px solid var(--nb-ink)' }}
                           >
                             <div className="flex justify-between items-center w-full">
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center justify-center mr-1" onClick={(e) => e.stopPropagation()}>
                                   <input 
-                                    type="checkbox"
-                                    className="accent-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                                    type="checkbox" 
+                                    className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
                                     checked={selectedStudentIds.includes(student.uid)}
                                     onChange={(e) => {
                                       if (e.target.checked) {
@@ -2196,28 +2362,32 @@ export default function AdminPanelView({
                                     }}
                                   />
                                 </div>
-                                <span className="font-mono text-[10px] font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 flex-shrink-0">
+                                <span 
+                                  className="nb-tag font-mono text-[10px] font-bold"
+                                  style={{ border: '1px solid var(--nb-ink)' }}
+                                >
                                   {student.rollNumber || 'NO ROLL'}
                                 </span>
-                                <h5 className="text-xs font-bold text-content truncate">{student.name}</h5>
+                                <h5 className="nb-headline text-xs text-[var(--nb-content)] truncate">{student.name}</h5>
                               </div>
-                              <span className="text-tertiary text-xs font-mono">{isExpanded ? '[-]' : '[+]'}</span>
+                              <span className="nb-tag text-[10px] font-mono font-bold">{isExpanded ? '[-]' : '[+]'}</span>
                             </div>
                             
                             {isExpanded && (
-                              <div className="pt-2 border-t border-divider/80 flex justify-between gap-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px] text-secondary flex-1">
-                                  <span className="truncate">Email: <strong className="text-secondary font-mono">{student.email}</strong></span>
-                                  {student.googleEmail && (<span className="truncate">Google: <strong className="text-indigo-400 font-mono">{student.googleEmail}</strong></span>)}
-                                  <span>Phone: <strong className="text-secondary">{student.phone || 'N/A'}</strong></span>
-                                  <span>Password: <strong className="text-indigo-400 font-mono bg-indigo-500/10 px-1 py-0.2 rounded border border-indigo-500/20">••••••••</strong></span>
-                                  <span>Role: <strong className="text-indigo-400 uppercase">{student.role}</strong></span>
+                              <div className="pt-2 border-t border-[var(--nb-ink)]/15 flex justify-between gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px] text-[var(--nb-secondary)] flex-1">
+                                  <span className="truncate">Email: <strong className="text-[var(--nb-content)] font-mono">{student.email}</strong></span>
+                                  {student.googleEmail && (<span className="truncate">Google: <strong className="text-[var(--nb-content)] font-mono">{student.googleEmail}</strong></span>)}
+                                  <span>Phone: <strong className="text-[var(--nb-content)]">{student.phone || 'N/A'}</strong></span>
+                                  <span>Password: <strong className="font-mono bg-[var(--nb-surface)] px-1 py-0.2 rounded border border-[var(--nb-ink)]/20">••••••••</strong></span>
+                                  <span>Role: <strong className="uppercase text-[var(--nb-content)]">{student.role}</strong></span>
                                 </div>
                                 
                                 <div className="flex flex-col gap-1.5 flex-shrink-0 w-24">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); student.rollNumber && handleResetPassword(student.uid, student.rollNumber); }}
-                                    className="bg-surface-accent hover:bg-divider text-secondary border border-divider text-[9px] font-bold uppercase py-1.5 px-3 rounded-xl transition-all cursor-pointer w-full"
+                                    className="nb-btn-ghost text-[9px] font-bold uppercase py-1 px-2 rounded cursor-pointer w-full text-center"
+                                    style={{ border: '1px solid var(--nb-ink)' }}
                                   >
                                     Reset Pass
                                   </button>
@@ -2225,7 +2395,7 @@ export default function AdminPanelView({
                                     <HoldButton
                                       size="sm"
                                       holdTime={1600}
-                                      radius={10}
+                                      radius={4}
                                       backgroundColor="rgba(244, 63, 94, 0.1)"
                                       fillColor="#e11d48"
                                       textColor="#fda4af"
@@ -2233,7 +2403,7 @@ export default function AdminPanelView({
                                       doneLabel="Deleted"
                                       onHold={() => handleDeleteUser(student.uid)}
                                       className="border border-rose-500/20 text-[10px] font-bold uppercase !h-7 w-full !px-1"
-                                      style={{ fontSize: '10px' }}
+                                      style={{ border: '1px solid var(--nb-ink)', fontSize: '10px' }}
                                     >
                                       Hold to Delete
                                     </HoldButton>
@@ -2255,23 +2425,29 @@ export default function AdminPanelView({
           {activeTab === 'certificates' && canManageRoles && (
             <div className="flex flex-col h-full overflow-hidden">
               {/* Header with Sub-tabs and actions */}
-              <div className="px-5 py-3.5 border-b border-divider/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-surface">
+              <div 
+                className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-[var(--nb-surface)]"
+                style={{ borderBottom: '2px solid var(--nb-ink)' }}
+              >
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-content font-display flex items-center gap-2">
-                      <Award className="w-4 h-4 text-indigo-400" />
+                    <h3 className="nb-headline text-sm text-[var(--nb-content)] flex items-center gap-2">
+                      <Award className="w-4 h-4 text-[var(--nb-accent)]" />
                       <span>E-Certificate Management & Database</span>
                     </h3>
-                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                      isCertificatesEnabled 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                    }`}>
+                    <span 
+                      className={`nb-tag text-[9px] font-mono font-bold ${
+                        isCertificatesEnabled 
+                          ? 'bg-emerald-400 text-black' 
+                          : 'bg-amber-400 text-black'
+                      }`}
+                      style={{ border: '1px solid var(--nb-ink)' }}
+                    >
                       {isCertificatesEnabled ? 'ACTIVE' : 'PAUSED'}
                     </span>
                   </div>
-                  <p className="text-[11px] text-secondary mt-0.5">
-                    Search institutional certificates, verify credentials, and customize digital templates
+                  <p className="nb-label text-[10px] text-[var(--nb-secondary)] mt-0.5">
+                    SEARCH INSTITUTIONAL CERTIFICATES, VERIFY CREDENTIALS, AND CUSTOMIZE DIGITAL TEMPLATES
                   </p>
                 </div>
 
@@ -2281,26 +2457,28 @@ export default function AdminPanelView({
                       setVerifyInitialId('');
                       setIsVerifyModalOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold border border-divider transition-all cursor-pointer shadow-xs active:scale-95"
+                    className="nb-btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase cursor-pointer"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                     title="Quickly verify any Certificate ID"
                   >
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Verify ID</span>
                   </button>
 
                   <button
                     onClick={() => setShowManualIssueModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold border border-divider transition-all cursor-pointer shadow-xs active:scale-95"
+                    className="nb-btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase cursor-pointer"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                     title="Issue certificate directly to a student"
                   >
-                    <PlusCircle className="w-3.5 h-3.5 text-indigo-400" />
+                    <PlusCircle className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                     <span>Issue Custom</span>
                   </button>
 
                   <button
                     onClick={handleSyncCertificates}
                     disabled={isSyncingCerts}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95"
+                    className="nb-btn flex items-center gap-1.5 px-3.5 py-1.5 font-bold text-xs uppercase tracking-wider cursor-pointer disabled:opacity-50"
                     title="Generate and sync unique Certificate IDs for all attended students"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCerts ? 'animate-spin' : ''}`} />
@@ -2310,45 +2488,51 @@ export default function AdminPanelView({
               </div>
 
               {/* Sub-Navigation Switcher */}
-              <div className="px-5 pt-3 border-b border-divider/60 bg-surface/50 flex items-center justify-between shrink-0">
+              <div 
+                className="px-5 py-2.5 bg-[var(--nb-surface-accent)] flex items-center justify-between shrink-0"
+                style={{ borderBottom: '2px solid var(--nb-ink)' }}
+              >
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCertSubTab('batch')}
-                    className={`pb-2.5 px-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${
                       certSubTab === 'batch'
-                        ? 'border-indigo-500 text-indigo-400'
-                        : 'border-transparent text-secondary hover:text-content'
+                        ? 'nb-btn'
+                        : 'nb-btn-ghost'
                     }`}
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <Zap className="w-3.5 h-3.5" />
                     <span>Batch Generator & Rosters</span>
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-indigo-500/15 text-indigo-300">
+                    <span className="nb-tag text-[9px] font-mono font-bold bg-white text-black ml-1">
                       {events.length} Events
                     </span>
                   </button>
 
                   <button
                     onClick={() => setCertSubTab('db')}
-                    className={`pb-2.5 px-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${
                       certSubTab === 'db'
-                        ? 'border-indigo-500 text-indigo-400'
-                        : 'border-transparent text-secondary hover:text-content'
+                        ? 'nb-btn'
+                        : 'nb-btn-ghost'
                     }`}
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <Database className="w-3.5 h-3.5" />
                     <span>Certificates Database</span>
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-indigo-500/15 text-indigo-300">
+                    <span className="nb-tag text-[9px] font-mono font-bold bg-white text-black ml-1">
                       {dbCertificates.length}
                     </span>
                   </button>
 
                   <button
                     onClick={() => setCertSubTab('template')}
-                    className={`pb-2.5 px-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${
                       certSubTab === 'template'
-                        ? 'border-indigo-500 text-indigo-400'
-                        : 'border-transparent text-secondary hover:text-content'
+                        ? 'nb-btn'
+                        : 'nb-btn-ghost'
                     }`}
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Template & Styling</span>
@@ -2356,17 +2540,18 @@ export default function AdminPanelView({
                 </div>
 
                 {/* Quick toggle feature on/off */}
-                <div className="pb-2.5 flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-secondary hidden sm:inline">Feature:</span>
+                <div className="flex items-center gap-2">
+                  <span className="nb-label text-[10px] text-[var(--nb-secondary)] hidden sm:inline">FEATURE:</span>
                   <button
                     onClick={() => handleToggleCertificates()}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight cursor-pointer border transition-all active:scale-95 flex items-center gap-1.5 ${
+                    className={`px-2.5 py-1 text-[10px] font-bold tracking-tight cursor-pointer uppercase rounded flex items-center gap-1.5 ${
                       isCertificatesEnabled
-                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25 hover:bg-emerald-500/20'
-                        : 'bg-neutral-800 text-neutral-300 border-neutral-700 hover:bg-neutral-700'
+                        ? 'bg-emerald-400 text-black'
+                        : 'nb-btn-ghost'
                     }`}
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
-                    <div className={`w-1.5 h-1.5 rounded-full ${isCertificatesEnabled ? 'bg-emerald-400' : 'bg-neutral-500'}`} />
+                    <div className={`w-1.5 h-1.5 rounded-full ${isCertificatesEnabled ? 'bg-black' : 'bg-[var(--nb-secondary)]'}`} />
                     <span>{isCertificatesEnabled ? 'Feature On' : 'Feature Off'}</span>
                   </button>
                 </div>
@@ -2388,51 +2573,66 @@ export default function AdminPanelView({
 
                     return (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Total Events</span>
-                          <div className="text-xl font-black text-content font-display">
+                        <div 
+                          className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                        >
+                          <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">TOTAL EVENTS</span>
+                          <div className="text-2xl font-black text-[var(--nb-content)] nb-headline">
                             {events.length}
                           </div>
-                          <span className="text-[10px] text-tertiary">Department event catalogue</span>
+                          <span className="text-[10px] text-[var(--nb-secondary)]">Department event catalogue</span>
                         </div>
 
-                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Attended Students</span>
-                          <div className="text-xl font-black text-indigo-400 font-display">
+                        <div 
+                          className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                        >
+                          <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">ATTENDED STUDENTS</span>
+                          <div className="text-2xl font-black text-[var(--nb-accent)] nb-headline">
                             {allAttendedRegs.length}
                           </div>
-                          <span className="text-[10px] text-tertiary">Eligible for certificates</span>
+                          <span className="text-[10px] text-[var(--nb-secondary)]">Eligible for certificates</span>
                         </div>
 
-                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Generated & Released</span>
-                          <div className="text-xl font-black text-emerald-400 font-display">
+                        <div 
+                          className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                        >
+                          <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">GENERATED & RELEASED</span>
+                          <div className="text-2xl font-black text-emerald-600 nb-headline">
                             {releasedTotal}
                           </div>
-                          <span className="text-[10px] text-tertiary">Unlocked in student profiles</span>
+                          <span className="text-[10px] text-[var(--nb-secondary)]">Unlocked in student profiles</span>
                         </div>
 
-                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Locked / Pending Release</span>
-                          <div className="text-xl font-black text-amber-400 font-display">
+                        <div 
+                          className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                        >
+                          <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">LOCKED / PENDING</span>
+                          <div className="text-2xl font-black text-amber-500 nb-headline">
                             {pendingTotal}
                           </div>
-                          <span className="text-[10px] text-tertiary">Awaiting admin batch generation</span>
+                          <span className="text-[10px] text-[var(--nb-secondary)]">Awaiting batch generation</span>
                         </div>
                       </div>
                     );
                   })()}
 
                   {/* Batch Authority Banner */}
-                  <div className="bg-gradient-to-r from-indigo-950/40 via-surface to-surface border border-indigo-500/25 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
+                  <div 
+                    className="bg-[var(--nb-surface-accent)] rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3"
+                    style={{ border: '2px solid var(--nb-ink)' }}
+                  >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-indigo-400" />
-                        <h4 className="text-xs font-bold text-content font-display uppercase tracking-wide">
+                        <Zap className="w-4 h-4 text-[var(--nb-accent)]" />
+                        <h4 className="nb-headline text-xs text-[var(--nb-content)] uppercase">
                           Administrative Batch Authority
                         </h4>
                       </div>
-                      <p className="text-[11px] text-secondary max-w-xl leading-relaxed">
+                      <p className="text-[11px] text-[var(--nb-secondary)] max-w-xl leading-relaxed">
                         Student certificates stay strictly <strong>locked</strong> until you verify attendance and click Generate Batch. You can generate batch certificates for all events at once or inspect individual event participant rosters below.
                       </p>
                     </div>
@@ -2441,7 +2641,7 @@ export default function AdminPanelView({
                       <button
                         onClick={handleSyncCertificates}
                         disabled={isSyncingCerts}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/30 active:scale-95"
+                        className="nb-btn flex items-center gap-2 px-4 py-2 font-bold text-xs uppercase tracking-wider cursor-pointer disabled:opacity-50"
                       >
                         <Zap className={`w-3.5 h-3.5 ${isSyncingCerts ? 'animate-spin' : ''}`} />
                         <span>{isSyncingCerts ? 'Generating All...' : 'Generate Batch for All Events'}</span>
@@ -2450,52 +2650,59 @@ export default function AdminPanelView({
                   </div>
 
                   {/* Filter & Search Bar for Events */}
-                  <div className="bg-surface border border-divider/80 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div 
+                    className="bg-[var(--nb-surface)] rounded-lg p-3 flex flex-col sm:flex-row items-center justify-between gap-3"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => setBatchEventStatusFilter('all')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer ${
                           batchEventStatusFilter === 'all'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-surface-accent text-secondary hover:text-content'
+                            ? 'nb-btn'
+                            : 'nb-btn-ghost'
                         }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         All Events ({events.length})
                       </button>
 
                       <button
                         onClick={() => setBatchEventStatusFilter('pending')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1 ${
                           batchEventStatusFilter === 'pending'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                            : 'bg-surface-accent text-secondary hover:text-content'
+                            ? 'bg-amber-400 text-black'
+                            : 'nb-btn-ghost'
                         }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
-                        <Lock className="w-3 h-3 text-amber-400" />
+                        <Lock className="w-3 h-3" />
                         <span>Has Pending / Locked</span>
                       </button>
 
                       <button
                         onClick={() => setBatchEventStatusFilter('completed')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1 ${
                           batchEventStatusFilter === 'completed'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                            : 'bg-surface-accent text-secondary hover:text-content'
+                            ? 'bg-emerald-400 text-black'
+                            : 'nb-btn-ghost'
                         }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
-                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                        <CheckCircle className="w-3 h-3" />
                         <span>Completed Batch</span>
                       </button>
                     </div>
 
                     <div className="relative w-full sm:w-72">
-                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--nb-secondary)]" />
                       <input
                         type="text"
                         placeholder="Search event title or venue..."
                         value={batchEventSearch}
                         onChange={(e) => setBatchEventSearch(e.target.value)}
-                        className="w-full bg-surface-accent border border-divider rounded-xl pl-9 pr-3 py-1.5 text-xs text-content placeholder:text-secondary focus:outline-none focus:border-indigo-500/50"
+                        className="w-full bg-[var(--nb-surface-accent)] rounded pl-9 pr-3 py-1.5 text-xs text-[var(--nb-content)] placeholder:text-[var(--nb-secondary)] outline-none font-bold"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       />
                     </div>
                   </div>
@@ -2526,7 +2733,10 @@ export default function AdminPanelView({
 
                       if (filteredEvents.length === 0) {
                         return (
-                          <div className="bg-surface border border-divider/80 rounded-2xl p-8 text-center text-secondary text-xs">
+                          <div 
+                            className="bg-[var(--nb-surface)] rounded-lg p-8 text-center text-[var(--nb-secondary)] text-xs"
+                            style={{ border: '2px solid var(--nb-ink)' }}
+                          >
                             No events matched your filter criteria.
                           </div>
                         );
@@ -2559,43 +2769,56 @@ export default function AdminPanelView({
                         return (
                           <div 
                             key={ev.eventId} 
-                            className="bg-surface border border-divider/80 rounded-2xl overflow-hidden shadow-xs transition-all"
+                            className="bg-[var(--nb-surface)] rounded-lg overflow-hidden transition-all"
+                            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                           >
                             {/* Event Header Card */}
-                            <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface hover:bg-surface-accent/30 transition-colors">
+                            <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[var(--nb-surface)]">
                               <div className="min-w-0 space-y-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <h4 className="text-sm font-bold text-content font-display truncate">
+                                  <h4 className="nb-headline text-sm text-[var(--nb-content)] truncate">
                                     {ev.title}
                                   </h4>
-                                  <span className="text-[9px] font-mono text-tertiary bg-surface-accent px-2 py-0.5 rounded-md border border-divider">
+                                  <span 
+                                    className="nb-tag text-[9px] font-mono"
+                                    style={{ border: '1px solid var(--nb-ink)' }}
+                                  >
                                     {ev.category || 'Event'}
                                   </span>
 
                                   {/* Status Badge */}
                                   {eventAttended.length === 0 ? (
-                                    <span className="text-[9px] font-mono font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded-md border border-neutral-700">
+                                    <span 
+                                      className="nb-tag text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)]"
+                                      style={{ border: '1px solid var(--nb-ink)/30' }}
+                                    >
                                       ⚪ 0 Attendees Marked
                                     </span>
                                   ) : pendingCount === 0 ? (
-                                    <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/25 flex items-center gap-1">
+                                    <span 
+                                      className="nb-tag text-[9px] font-mono font-bold bg-emerald-400 text-black flex items-center gap-1"
+                                      style={{ border: '1px solid var(--nb-ink)' }}
+                                    >
                                       <CheckCircle className="w-3 h-3" />
                                       <span>All Batch Generated ({generatedCount}/{eventAttended.length})</span>
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25 flex items-center gap-1">
+                                    <span 
+                                      className="nb-tag text-[9px] font-mono font-bold bg-amber-400 text-black flex items-center gap-1"
+                                      style={{ border: '1px solid var(--nb-ink)' }}
+                                    >
                                       <Lock className="w-3 h-3" />
                                       <span>🔒 {pendingCount} Locked (Pending Generation)</span>
                                     </span>
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-secondary">
-                                  <span>Date: <strong>{ev.date}</strong></span>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[var(--nb-secondary)]">
+                                  <span>Date: <strong className="text-[var(--nb-content)] font-mono">{ev.date}</strong></span>
                                   <span>Venue: {ev.venue || 'Campus Auditorium'}</span>
-                                  <span>Registered: <strong className="text-content">{eventRegs.length}</strong></span>
-                                  <span>Attended: <strong className="text-emerald-400">{eventAttended.length}</strong></span>
-                                  <span>Certificates: <strong className="text-indigo-400">{eventCerts.length}</strong></span>
+                                  <span>Registered: <strong className="text-[var(--nb-content)]">{eventRegs.length}</strong></span>
+                                  <span>Attended: <strong className="text-emerald-600">{eventAttended.length}</strong></span>
+                                  <span>Certificates: <strong className="text-[var(--nb-accent)]">{eventCerts.length}</strong></span>
                                 </div>
                               </div>
 
@@ -2604,7 +2827,7 @@ export default function AdminPanelView({
                                 <button
                                   onClick={() => handleGenerateBatchForEvent(ev.eventId)}
                                   disabled={isGeneratingThis || eventAttended.length === 0 || pendingCount === 0}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-95"
+                                  className="nb-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                   title={pendingCount === 0 ? "All attended students already have certificates generated" : `Generate certificates for all ${pendingCount} attended students`}
                                 >
                                   <Zap className={`w-3.5 h-3.5 ${isGeneratingThis ? 'animate-spin' : ''}`} />
@@ -2614,7 +2837,8 @@ export default function AdminPanelView({
                                 {eventCerts.length > 0 && (
                                   <button
                                     onClick={() => handleRevokeBatchForEvent(ev.eventId)}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-xs font-semibold transition-all cursor-pointer active:scale-95"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-rose-500 text-white text-xs font-bold uppercase transition-all cursor-pointer"
+                                    style={{ border: '1.5px solid var(--nb-ink)' }}
                                     title="Lock and revoke all certificates for this event"
                                   >
                                     <Lock className="w-3 h-3" />
@@ -2624,22 +2848,26 @@ export default function AdminPanelView({
 
                                 <button
                                   onClick={() => setExpandedEventId(isExpanded ? null : ev.eventId)}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer active:scale-95 ${
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer ${
                                     isExpanded 
-                                      ? 'bg-neutral-800 text-white border-neutral-700' 
-                                      : 'bg-surface-accent hover:bg-divider text-content border-divider'
+                                      ? 'nb-btn' 
+                                      : 'nb-btn-ghost'
                                   }`}
+                                  style={{ border: '1.5px solid var(--nb-ink)' }}
                                 >
-                                  <Users className="w-3.5 h-3.5 text-indigo-400" />
+                                  <Users className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                                   <span>{isExpanded ? 'Hide Roster' : 'View Participants Roster'}</span>
-                                  <span className="font-mono text-[10px] text-tertiary">({eventRegs.length})</span>
+                                  <span className="font-mono text-[10px]">({eventRegs.length})</span>
                                 </button>
                               </div>
                             </div>
 
                             {/* Expandable Participant Roster Drawer */}
                             {isExpanded && (
-                              <div className="border-t border-divider/70 bg-background/50 p-4 space-y-3">
+                              <div 
+                                className="bg-[var(--nb-surface-accent)] p-4 space-y-3"
+                                style={{ borderTop: '2px solid var(--nb-ink)' }}
+                              >
                                 {/* Participant Controls Bar */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
                                   <div className="flex flex-wrap items-center gap-2">
@@ -2648,12 +2876,13 @@ export default function AdminPanelView({
                                         const allStudentIds = displayedRegs.map(r => r.studentId);
                                         handleSelectAllParticipants(ev.eventId, allStudentIds);
                                       }}
-                                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-divider hover:bg-surface-accent text-secondary hover:text-content text-[11px] font-semibold cursor-pointer"
+                                      className="nb-btn-ghost flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold uppercase cursor-pointer"
+                                      style={{ border: '1px solid var(--nb-ink)' }}
                                     >
                                       {selectedInThis.length === displayedRegs.length && displayedRegs.length > 0 ? (
-                                        <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
+                                        <CheckSquare className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                                       ) : (
-                                        <Square className="w-3.5 h-3.5 text-secondary" />
+                                        <Square className="w-3.5 h-3.5 text-[var(--nb-secondary)]" />
                                       )}
                                       <span>Select All ({displayedRegs.length})</span>
                                     </button>
@@ -2663,7 +2892,7 @@ export default function AdminPanelView({
                                         <button
                                           onClick={() => handleGenerateBatchForEvent(ev.eventId, selectedInThis)}
                                           disabled={isGeneratingThis}
-                                          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold uppercase transition-all cursor-pointer shadow-xs"
+                                          className="nb-btn flex items-center gap-1 px-3 py-1 text-[11px] font-bold uppercase cursor-pointer"
                                         >
                                           <Zap className="w-3 h-3" />
                                           <span>Generate Selected ({selectedInThis.length})</span>
@@ -2671,7 +2900,8 @@ export default function AdminPanelView({
 
                                         <button
                                           onClick={() => handleRevokeBatchForEvent(ev.eventId, selectedInThis)}
-                                          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-[11px] font-bold uppercase transition-all cursor-pointer"
+                                          className="flex items-center gap-1 px-3 py-1 rounded bg-rose-500 text-white text-[11px] font-bold uppercase cursor-pointer"
+                                          style={{ border: '1px solid var(--nb-ink)' }}
                                         >
                                           <Lock className="w-3 h-3" />
                                           <span>Lock Selected ({selectedInThis.length})</span>
@@ -2681,34 +2911,38 @@ export default function AdminPanelView({
                                   </div>
 
                                   <div className="relative w-full sm:w-60">
-                                    <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary" />
+                                    <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--nb-secondary)]" />
                                     <input
                                       type="text"
                                       placeholder="Filter participant name / roll..."
                                       value={participantSearchMap[ev.eventId] || ''}
                                       onChange={(e) => setParticipantSearchMap(prev => ({ ...prev, [ev.eventId]: e.target.value }))}
-                                      className="w-full bg-surface border border-divider rounded-lg pl-8 pr-2.5 py-1 text-[11px] text-content placeholder:text-secondary focus:outline-none focus:border-indigo-500/50"
+                                      className="w-full bg-[var(--nb-surface)] rounded pl-8 pr-2.5 py-1 text-[11px] text-[var(--nb-content)] placeholder:text-[var(--nb-secondary)] outline-none font-bold"
+                                      style={{ border: '1.5px solid var(--nb-ink)' }}
                                     />
                                   </div>
                                 </div>
 
                                 {/* Participants Table */}
-                                <div className="bg-surface border border-divider/80 rounded-xl overflow-hidden shadow-xs">
+                                <div 
+                                  className="bg-[var(--nb-surface)] rounded-lg overflow-hidden"
+                                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                                >
                                   <table className="w-full text-left border-collapse text-xs">
                                     <thead>
-                                      <tr className="border-b border-divider/60 bg-surface/80 text-[10px] font-bold text-tertiary uppercase">
+                                      <tr className="bg-[var(--nb-surface-accent)] border-b-2 border-[var(--nb-ink)] text-[10px] font-bold text-[var(--nb-content)] uppercase">
                                         <th className="py-2 px-3 w-8"></th>
-                                        <th className="py-2 px-3">Student</th>
-                                        <th className="py-2 px-3">Roll Number</th>
-                                        <th className="py-2 px-3">Attendance</th>
-                                        <th className="py-2 px-3">Certificate Status</th>
-                                        <th className="py-2 px-3 text-right">Actions</th>
+                                        <th className="py-2 px-3 nb-label">STUDENT</th>
+                                        <th className="py-2 px-3 nb-label">ROLL NUMBER</th>
+                                        <th className="py-2 px-3 nb-label">ATTENDANCE</th>
+                                        <th className="py-2 px-3 nb-label">CERTIFICATE STATUS</th>
+                                        <th className="py-2 px-3 nb-label text-right">ACTIONS</th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-divider/40">
+                                    <tbody className="divide-y divide-[var(--nb-ink)]/15">
                                       {displayedRegs.length === 0 ? (
                                         <tr>
-                                          <td colSpan={6} className="py-6 text-center text-[11px] text-secondary italic">
+                                          <td colSpan={6} className="py-6 text-center text-[11px] text-[var(--nb-secondary)] italic">
                                             No participants found.
                                           </td>
                                         </tr>
@@ -2723,24 +2957,27 @@ export default function AdminPanelView({
                                           const isCertIssued = Boolean(existingCert && existingCert.status !== 'Revoked');
 
                                           return (
-                                            <tr key={reg.registrationId} className="hover:bg-surface-accent/40 transition-colors">
+                                            <tr key={reg.registrationId} className="hover:bg-[var(--nb-surface-accent)]/50 transition-colors">
                                               <td className="py-2.5 px-3">
                                                 <button
                                                   type="button"
                                                   onClick={() => handleToggleParticipantSelect(ev.eventId, reg.studentId)}
-                                                  className="cursor-pointer text-secondary hover:text-indigo-400"
+                                                  className="cursor-pointer text-[var(--nb-secondary)] hover:text-[var(--nb-content)]"
                                                 >
                                                   {isSelected ? (
-                                                    <CheckSquare className="w-4 h-4 text-indigo-400" />
+                                                    <CheckSquare className="w-4 h-4 text-[var(--nb-accent)]" />
                                                   ) : (
-                                                    <Square className="w-4 h-4 text-secondary/60" />
+                                                    <Square className="w-4 h-4 text-[var(--nb-secondary)]/60" />
                                                   )}
                                                 </button>
                                               </td>
 
                                               <td className="py-2.5 px-3">
                                                 <div className="flex items-center gap-2">
-                                                  <div className="w-7 h-7 rounded-lg bg-surface-accent border border-divider overflow-hidden shrink-0">
+                                                  <div 
+                                                    className="w-7 h-7 rounded bg-[var(--nb-surface-accent)] overflow-hidden shrink-0"
+                                                    style={{ border: '1px solid var(--nb-ink)' }}
+                                                  >
                                                     <img
                                                       src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(reg.studentName || reg.rollNumber || 'User')}`}
                                                       alt=""
@@ -2748,29 +2985,32 @@ export default function AdminPanelView({
                                                     />
                                                   </div>
                                                   <div className="min-w-0">
-                                                    <div className="font-bold text-content truncate text-xs">
+                                                    <div className="font-bold text-[var(--nb-content)] truncate text-xs">
                                                       {reg.studentName || student?.name || 'Student Participant'}
                                                     </div>
-                                                    <div className="text-[9.5px] text-secondary truncate">
+                                                    <div className="text-[9.5px] text-[var(--nb-secondary)] truncate">
                                                       {student?.department || 'CSE (AI & ML)'} • {student?.year || reg.year || 'III Year'}
                                                     </div>
                                                   </div>
                                                 </div>
                                               </td>
 
-                                              <td className="py-2.5 px-3 font-mono text-[11px] font-bold text-indigo-300">
+                                              <td className="py-2.5 px-3 font-mono text-[11px] font-bold text-[var(--nb-content)]">
                                                 {reg.rollNumber || student?.rollNumber || 'N/A'}
                                               </td>
 
                                               <td className="py-2.5 px-3">
                                                 <div className="flex items-center gap-1.5">
-                                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${
-                                                    reg.status === 'Attended'
-                                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                                                      : reg.status === 'Absent'
-                                                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/25'
-                                                      : 'bg-neutral-800 text-neutral-400 border-neutral-700'
-                                                  }`}>
+                                                  <span 
+                                                    className={`nb-tag text-[9px] font-bold uppercase ${
+                                                      reg.status === 'Attended'
+                                                        ? 'bg-emerald-400 text-black'
+                                                        : reg.status === 'Absent'
+                                                        ? 'bg-rose-500 text-white'
+                                                        : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)]'
+                                                    }`}
+                                                    style={{ border: '1px solid var(--nb-ink)' }}
+                                                  >
                                                     {reg.status}
                                                   </span>
 
@@ -2781,9 +3021,9 @@ export default function AdminPanelView({
                                                       await updateRegistrationStatus(reg.registrationId, next);
                                                       refreshData();
                                                     }}
-                                                    className="text-[9px] text-tertiary hover:text-content underline cursor-pointer"
+                                                    className="nb-label text-[9px] text-[var(--nb-secondary)] hover:text-[var(--nb-content)] underline cursor-pointer"
                                                   >
-                                                    Toggle
+                                                    TOGGLE
                                                   </button>
                                                 </div>
                                               </td>
@@ -2791,23 +3031,29 @@ export default function AdminPanelView({
                                               <td className="py-2.5 px-3">
                                                 {isCertIssued && existingCert ? (
                                                   <div className="space-y-0.5">
-                                                    <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                                    <span 
+                                                      className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded"
+                                                      style={{ border: '1px solid var(--nb-ink)' }}
+                                                    >
                                                       <ShieldCheck className="w-2.5 h-2.5" />
                                                       <span>Generated</span>
                                                     </span>
-                                                    <div className="flex items-center gap-1 text-[8.5px] font-mono text-tertiary">
+                                                    <div className="flex items-center gap-1 text-[8.5px] font-mono text-[var(--nb-secondary)]">
                                                       <span>ID: {existingCert.certificateId}</span>
                                                       <button
                                                         type="button"
                                                         onClick={(e) => handleCopyCertId(existingCert.certificateId, e)}
-                                                        className="text-secondary hover:text-content cursor-pointer"
+                                                        className="text-[var(--nb-secondary)] hover:text-[var(--nb-content)] cursor-pointer"
                                                       >
                                                         <Copy className="w-2.5 h-2.5" />
                                                       </button>
                                                     </div>
                                                   </div>
                                                 ) : (
-                                                  <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                                  <span 
+                                                    className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded"
+                                                    style={{ border: '1px solid var(--nb-ink)' }}
+                                                  >
                                                     <Lock className="w-2.5 h-2.5" />
                                                     <span>Locked</span>
                                                   </span>
@@ -2820,14 +3066,16 @@ export default function AdminPanelView({
                                                     <>
                                                       <button
                                                         onClick={() => setActivePreviewCert(existingCert)}
-                                                        className="p-1 rounded-lg bg-surface-accent hover:bg-divider text-content transition-colors cursor-pointer"
+                                                        className="nb-btn-ghost p-1.5 rounded cursor-pointer"
+                                                        style={{ border: '1px solid var(--nb-ink)' }}
                                                         title="Preview Certificate"
                                                       >
-                                                        <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                                        <Eye className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                                                       </button>
                                                       <button
                                                         onClick={() => handleRevokeBatchForEvent(ev.eventId, [reg.studentId])}
-                                                        className="p-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                                                        className="p-1.5 rounded bg-rose-500 text-white cursor-pointer"
+                                                        style={{ border: '1px solid var(--nb-ink)' }}
                                                         title="Lock / Revoke this certificate"
                                                       >
                                                         <Lock className="w-3.5 h-3.5" />
@@ -2836,7 +3084,7 @@ export default function AdminPanelView({
                                                   ) : (
                                                     <button
                                                       onClick={() => handleGenerateBatchForEvent(ev.eventId, [reg.studentId])}
-                                                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase transition-all cursor-pointer shadow-xs active:scale-95"
+                                                      className="nb-btn flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase cursor-pointer"
                                                       title="Generate certificate for this student now"
                                                     >
                                                       <Zap className="w-2.5 h-2.5" />
@@ -2867,47 +3115,63 @@ export default function AdminPanelView({
                 <div className="p-5 overflow-y-auto space-y-5 flex-grow">
                   {/* Summary Metric Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Total In Database</span>
-                      <div className="text-xl font-black text-indigo-400 font-display">
+                    <div 
+                      className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">TOTAL IN DATABASE</span>
+                      <div className="text-2xl font-black text-[var(--nb-accent)] nb-headline">
                         {dbCertificates.length}
                       </div>
-                      <span className="text-[10px] text-tertiary">Verified credentials issued</span>
+                      <span className="text-[10px] text-[var(--nb-secondary)]">Verified credentials issued</span>
                     </div>
 
-                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Attended Registrations</span>
-                      <div className="text-xl font-black text-emerald-400 font-display">
+                    <div 
+                      className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">ATTENDED REGISTRATIONS</span>
+                      <div className="text-2xl font-black text-emerald-600 nb-headline">
                         {registrations.filter(r => r.status === 'Attended').length}
                       </div>
-                      <span className="text-[10px] text-tertiary">Students eligible for certs</span>
+                      <span className="text-[10px] text-[var(--nb-secondary)]">Students eligible for certs</span>
                     </div>
 
-                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Events Covered</span>
-                      <div className="text-xl font-black text-content font-display">
+                    <div 
+                      className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">EVENTS COVERED</span>
+                      <div className="text-2xl font-black text-[var(--nb-content)] nb-headline">
                         {new Set(dbCertificates.map(c => c.eventId)).size}
                       </div>
-                      <span className="text-[10px] text-tertiary">Out of {events.length} total events</span>
+                      <span className="text-[10px] text-[var(--nb-secondary)]">Out of {events.length} total events</span>
                     </div>
 
-                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
-                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Issuance Status</span>
-                      <div className={`text-sm font-bold font-display ${isCertificatesEnabled ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <div 
+                      className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <span className="nb-label text-[9.5px] text-[var(--nb-secondary)]">ISSUANCE STATUS</span>
+                      <div className={`text-sm font-bold uppercase nb-headline ${isCertificatesEnabled ? 'text-emerald-600' : 'text-amber-500'}`}>
                         {isCertificatesEnabled ? 'Active (Live)' : 'Paused (Hidden)'}
                       </div>
-                      <span className="text-[10px] text-tertiary">Visible in student profiles</span>
+                      <span className="text-[10px] text-[var(--nb-secondary)]">Visible in student profiles</span>
                     </div>
                   </div>
 
                   {/* Filters: Event Select & Text Search */}
-                  <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-center gap-3">
+                  <div 
+                    className="bg-[var(--nb-surface)] rounded-lg p-3.5 flex flex-col sm:flex-row items-center gap-3"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     <div className="relative w-full sm:w-64">
-                      <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                      <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--nb-secondary)]" />
                       <select
                         value={certEventFilter}
                         onChange={(e) => setCertEventFilter(e.target.value)}
-                        className="w-full bg-surface-accent border border-divider rounded-xl pl-9 pr-8 py-2 text-xs text-content focus:outline-none focus:border-indigo-500/50 appearance-none transition-colors"
+                        className="w-full bg-[var(--nb-surface-accent)] rounded pl-9 pr-8 py-2 text-xs text-[var(--nb-content)] outline-none font-bold appearance-none transition-colors"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         <option value="all">All Events ({dbCertificates.length})</option>
                         {events.map(ev => {
@@ -2922,18 +3186,19 @@ export default function AdminPanelView({
                     </div>
 
                     <div className="relative flex-grow w-full">
-                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--nb-secondary)]" />
                       <input
                         type="text"
                         placeholder="Search by Certificate ID, Student Name, Roll Number, or Dept..."
                         value={certSearch}
                         onChange={(e) => setCertSearch(e.target.value)}
-                        className="w-full bg-surface-accent border border-divider rounded-xl pl-9 pr-8 py-2 text-xs text-content placeholder:text-secondary focus:outline-none focus:border-indigo-500/50 transition-colors"
+                        className="w-full bg-[var(--nb-surface-accent)] rounded pl-9 pr-8 py-2 text-xs text-[var(--nb-content)] placeholder:text-[var(--nb-secondary)] outline-none font-bold"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       />
                       {certSearch && (
                         <button
                           onClick={() => setCertSearch('')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-secondary hover:text-content"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 nb-label text-[10px] text-[var(--nb-secondary)] hover:text-[var(--nb-content)] cursor-pointer"
                         >
                           Clear
                         </button>
@@ -2956,10 +3221,13 @@ export default function AdminPanelView({
 
                     if (filtered.length === 0) {
                       return (
-                        <div className="bg-surface border border-divider/80 rounded-2xl p-10 text-center space-y-3">
-                          <Award className="w-10 h-10 text-secondary mx-auto opacity-40 mb-1" />
-                          <h4 className="text-sm font-bold text-content">No Certificates in Database</h4>
-                          <p className="text-xs text-secondary max-w-md mx-auto">
+                        <div 
+                          className="bg-[var(--nb-surface)] rounded-lg p-10 text-center space-y-3"
+                          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                        >
+                          <Award className="w-10 h-10 text-[var(--nb-secondary)] mx-auto opacity-40 mb-1" />
+                          <h4 className="nb-headline text-sm text-[var(--nb-content)]">No Certificates in Database</h4>
+                          <p className="text-xs text-[var(--nb-secondary)] max-w-md mx-auto">
                             {dbCertificates.length === 0 
                               ? "No certificates have been issued yet. Click 'Sync All Attended' to automatically generate official Certificate IDs for all students marked as Attended, or click 'Issue Custom'."
                               : "No certificates matched your current event filter or search query."}
@@ -2968,7 +3236,7 @@ export default function AdminPanelView({
                             <button
                               onClick={handleSyncCertificates}
                               disabled={isSyncingCerts}
-                              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 inline-flex items-center gap-2"
+                              className="nb-btn px-4 py-2 font-bold text-xs uppercase tracking-wider cursor-pointer inline-flex items-center gap-2"
                             >
                               <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCerts ? 'animate-spin' : ''}`} />
                               <span>Sync All Attended Students Now</span>
@@ -2979,13 +3247,16 @@ export default function AdminPanelView({
                     }
 
                     return (
-                      <div className="bg-surface border border-divider/80 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="px-4 py-3 border-b border-divider/60 flex items-center justify-between bg-surface/50 text-[11px] text-secondary">
-                          <span>Showing <strong className="text-content">{filtered.length}</strong> certificates</span>
-                          <span>Click "Who Else Got This" to view fellow recipients</span>
+                      <div 
+                        className="bg-[var(--nb-surface)] rounded-lg overflow-hidden"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                      >
+                        <div className="px-4 py-3 border-b-2 border-[var(--nb-ink)] flex items-center justify-between bg-[var(--nb-surface-accent)] text-[11px] text-[var(--nb-secondary)] font-bold">
+                          <span>Showing <strong className="text-[var(--nb-content)]">{filtered.length}</strong> certificates</span>
+                          <span className="nb-label text-[10px]">CLICK "WHO ELSE GOT THIS" TO VIEW FELLOW RECIPIENTS</span>
                         </div>
 
-                        <div className="divide-y divide-divider/60">
+                        <div className="divide-y divide-[var(--nb-ink)]/15">
                           {filtered.map(cert => {
                             const matchedEvent = events.find(e => e.eventId === cert.eventId);
                             const peerCount = dbCertificates.filter(c => c.eventId === cert.eventId).length;
@@ -2993,11 +3264,14 @@ export default function AdminPanelView({
                             return (
                               <div 
                                 key={cert.certificateId} 
-                                className="p-3.5 hover:bg-surface-accent/60 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
+                                className="p-3.5 hover:bg-[var(--nb-surface-accent)]/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
                               >
                                 {/* Left Info: Student + Cert ID */}
                                 <div className="flex items-start gap-3 min-w-0">
-                                  <div className="w-9 h-9 rounded-xl bg-surface-accent border border-divider p-0.5 shrink-0 overflow-hidden mt-0.5">
+                                  <div 
+                                    className="w-9 h-9 rounded bg-[var(--nb-surface-accent)] p-0.5 shrink-0 overflow-hidden mt-0.5"
+                                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                                  >
                                     <img
                                       src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(cert.studentName || cert.rollNumber)}`}
                                       alt={cert.studentName}
@@ -3007,20 +3281,26 @@ export default function AdminPanelView({
 
                                   <div className="min-w-0 space-y-1">
                                     <div className="flex flex-wrap items-center gap-2">
-                                      <span className="font-bold text-content font-display text-xs sm:text-sm truncate">
+                                      <span className="nb-headline text-xs sm:text-sm text-[var(--nb-content)] truncate">
                                         {cert.studentName}
                                       </span>
-                                      <span className="font-mono text-[10px] text-indigo-300 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                      <span 
+                                        className="nb-tag font-mono text-[10px] font-bold"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
+                                      >
                                         {cert.rollNumber}
                                       </span>
-                                      <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                      <span 
+                                        className="nb-tag font-mono text-[9px] font-bold bg-emerald-400 text-black"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
+                                      >
                                         {cert.status || 'Verified'}
                                       </span>
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10.5px] text-secondary">
-                                      <span className="text-content font-medium truncate max-w-xs">{cert.eventTitle}</span>
-                                      <span>• Date: {cert.eventDate || cert.issueDate}</span>
+                                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10.5px] text-[var(--nb-secondary)]">
+                                      <span className="text-[var(--nb-content)] font-bold truncate max-w-xs">{cert.eventTitle}</span>
+                                      <span>• Date: <strong className="font-mono">{cert.eventDate || cert.issueDate}</strong></span>
                                       {cert.department && <span>• {cert.department}</span>}
                                     </div>
 
@@ -3030,18 +3310,19 @@ export default function AdminPanelView({
                                         type="button"
                                         onClick={(e) => handleCopyCertId(cert.certificateId, e)}
                                         title="Copy Certificate ID"
-                                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-neutral-900 border border-neutral-700 hover:border-indigo-500/50 text-neutral-200 cursor-pointer transition-all active:scale-95"
+                                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] cursor-pointer transition-all active:scale-95"
+                                        style={{ border: '1px solid var(--nb-ink)' }}
                                       >
-                                        <ShieldCheck className="w-2.5 h-2.5 text-indigo-400" />
+                                        <ShieldCheck className="w-2.5 h-2.5 text-[var(--nb-accent)]" />
                                         <span>ID: {cert.certificateId}</span>
                                         {copiedCertId === cert.certificateId ? (
-                                          <span className="text-emerald-400 text-[8px] font-bold">Copied!</span>
+                                          <span className="text-emerald-600 text-[8px] font-bold">Copied!</span>
                                         ) : (
-                                          <Copy className="w-2 h-2 text-secondary" />
+                                          <Copy className="w-2 h-2 text-[var(--nb-secondary)]" />
                                         )}
                                       </button>
 
-                                      <span className="text-[9px] text-tertiary">
+                                      <span className="text-[9px] text-[var(--nb-secondary)] font-mono">
                                         Issued: {cert.issueDate || cert.issuedAt?.split('T')[0]}
                                       </span>
                                     </div>
@@ -3064,12 +3345,13 @@ export default function AdminPanelView({
                                         } as DepartmentEvent);
                                       }
                                     }}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-[11px] font-semibold border border-divider transition-all cursor-pointer active:scale-95"
+                                    className="nb-btn-ghost flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold uppercase cursor-pointer"
+                                    style={{ border: '1.5px solid var(--nb-ink)' }}
                                     title="See all recipients who earned this certificate"
                                   >
-                                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                                    <Users className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                                     <span>Who Else Got This</span>
-                                    <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-[9px]">
+                                    <span className="nb-tag text-[9px] font-mono font-bold ml-0.5">
                                       {peerCount}
                                     </span>
                                   </button>
@@ -3077,10 +3359,11 @@ export default function AdminPanelView({
                                   {/* Preview Certificate Lightbox */}
                                   <button
                                     onClick={() => setActivePreviewCert(cert)}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-[11px] font-semibold border border-divider transition-all cursor-pointer active:scale-95"
+                                    className="nb-btn-ghost flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold uppercase cursor-pointer"
+                                    style={{ border: '1.5px solid var(--nb-ink)' }}
                                     title="View full certificate"
                                   >
-                                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                    <Eye className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                                     <span>Preview</span>
                                   </button>
 
@@ -3088,7 +3371,7 @@ export default function AdminPanelView({
                                   <HoldButton
                                     size="sm"
                                     holdTime={1600}
-                                    radius={12}
+                                    radius={4}
                                     backgroundColor="rgba(244, 63, 94, 0.1)"
                                     fillColor="#e11d48"
                                     textColor="#fda4af"
@@ -3096,7 +3379,8 @@ export default function AdminPanelView({
                                     doneLabel="Revoked"
                                     icon={<Trash2 className="w-3.5 h-3.5" />}
                                     onHold={() => handleDeleteCert(cert.certificateId)}
-                                    className="border border-rose-500/25 text-[10px] font-bold !h-7 !px-2"
+                                    className="border border-rose-500 text-[10px] font-bold uppercase !h-7 !px-2"
+                                    style={{ border: '1.5px solid var(--nb-ink)' }}
                                   >
                                     Hold to Revoke
                                   </HoldButton>
@@ -3115,22 +3399,21 @@ export default function AdminPanelView({
               {certSubTab === 'template' && (
                 <div className="p-5 overflow-y-auto space-y-6 flex-grow">
                   {/* Feature On / Off Control Banner */}
-                  <div className={`border rounded-2xl p-5 shadow-sm transition-all ${
-                    isCertificatesEnabled 
-                      ? 'bg-emerald-500/5 border-emerald-500/30' 
-                      : 'bg-amber-500/5 border-amber-500/30'
-                  }`}>
+                  <div 
+                    className="p-5 rounded-lg transition-all bg-[var(--nb-surface)]"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className={`w-2.5 h-2.5 rounded-full ${
-                            isCertificatesEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                            isCertificatesEnabled ? 'bg-emerald-500' : 'bg-amber-500'
                           }`} />
-                          <h4 className="text-sm font-bold text-content">
+                          <h4 className="nb-headline text-sm text-[var(--nb-content)]">
                             Certificate Issuance Status: {isCertificatesEnabled ? 'ACTIVE' : 'PAUSED'}
                           </h4>
                         </div>
-                        <p className="text-xs text-secondary max-w-xl">
+                        <p className="text-xs text-[var(--nb-secondary)] max-w-xl">
                           {isCertificatesEnabled 
                             ? 'Students who attended verified department events can view, generate, and print their digital credentials from their profile.' 
                             : 'Certificate viewing is currently paused. Students will see a friendly notice on their profile that certificates are temporarily paused.'}
@@ -3139,13 +3422,14 @@ export default function AdminPanelView({
 
                       <button
                         onClick={() => handleToggleCertificates()}
-                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-95 shrink-0 ${
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
                           isCertificatesEnabled 
-                            ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30' 
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                            ? 'bg-rose-500 text-white' 
+                            : 'nb-btn'
                         }`}
+                        style={{ border: '2px solid var(--nb-ink)' }}
                       >
-                        <div className={`w-2 h-2 rounded-full ${isCertificatesEnabled ? 'bg-rose-400' : 'bg-white'}`} />
+                        <div className={`w-2 h-2 rounded-full ${isCertificatesEnabled ? 'bg-white' : 'bg-black'}`} />
                         <span>{isCertificatesEnabled ? 'Turn Feature Off' : 'Turn Feature On'}</span>
                       </button>
                     </div>
@@ -3153,44 +3437,56 @@ export default function AdminPanelView({
 
                   {/* Quick Stats Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="bg-surface border border-divider/80 rounded-2xl p-4 space-y-1">
-                      <span className="text-[10px] font-mono font-bold text-secondary uppercase">Eligible Attendees</span>
-                      <div className="text-xl font-extrabold text-indigo-400 font-display">
+                    <div 
+                      className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-1"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <span className="nb-label text-[10px] text-[var(--nb-secondary)]">ELIGIBLE ATTENDEES</span>
+                      <div className="text-2xl font-black text-[var(--nb-accent)] nb-headline">
                         {registrations.filter(r => r.status === 'Attended').length}
                       </div>
-                      <span className="text-[10px] text-tertiary">Students marked as Attended</span>
+                      <span className="text-[10px] text-[var(--nb-secondary)]">Students marked as Attended</span>
                     </div>
 
-                    <div className="bg-surface border border-divider/80 rounded-2xl p-4 space-y-1">
-                      <span className="text-[10px] font-mono font-bold text-secondary uppercase">Active Theme</span>
-                      <div className="text-xl font-extrabold text-content font-display capitalize">
+                    <div 
+                      className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-1"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <span className="nb-label text-[10px] text-[var(--nb-secondary)]">ACTIVE THEME</span>
+                      <div className="text-2xl font-black text-[var(--nb-content)] nb-headline capitalize">
                         {certificateTemplate.theme || 'Indigo'}
                       </div>
-                      <span className="text-[10px] text-tertiary">{certificateTemplate.badgeStyle || 'Seal'} emblem style</span>
+                      <span className="text-[10px] text-[var(--nb-secondary)]">{certificateTemplate.badgeStyle || 'Seal'} emblem style</span>
                     </div>
 
-                    <div className="bg-surface border border-divider/80 rounded-2xl p-4 space-y-1">
-                      <span className="text-[10px] font-mono font-bold text-secondary uppercase">Certificate Title</span>
-                      <div className="text-sm font-bold text-content font-display truncate">
+                    <div 
+                      className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-1"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <span className="nb-label text-[10px] text-[var(--nb-secondary)]">CERTIFICATE TITLE</span>
+                      <div className="text-sm font-bold text-[var(--nb-content)] nb-headline truncate">
                         {certificateTemplate.certificateTitle || 'Certificate of Participation'}
                       </div>
-                      <span className="text-[10px] text-tertiary">{certificateTemplate.orgName || 'NOTX Association'}</span>
+                      <span className="text-[10px] text-[var(--nb-secondary)]">{certificateTemplate.orgName || 'NOTX Association'}</span>
                     </div>
                   </div>
 
                   {/* Live Template Showcase */}
-                  <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between border-b border-divider/60 pb-3">
+                  <div 
+                    className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                  >
+                    <div className="flex items-center justify-between border-b-2 border-[var(--nb-ink)] pb-3">
                       <div>
-                        <h4 className="text-sm font-bold text-content font-display">Current Live Template</h4>
-                        <p className="text-xs text-secondary">This is the design students receive when opening their certificates</p>
+                        <h4 className="nb-headline text-sm text-[var(--nb-content)]">Current Live Template</h4>
+                        <p className="nb-label text-[10px] text-[var(--nb-secondary)]">THIS IS THE DESIGN STUDENTS RECEIVE WHEN OPENING THEIR CERTIFICATES</p>
                       </div>
 
                       <button
                         onClick={() => setIsEditCertModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold transition-all cursor-pointer border border-divider"
+                        className="nb-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase cursor-pointer"
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                        <Edit3 className="w-3.5 h-3.5" />
                         <span>Edit Design</span>
                       </button>
                     </div>
@@ -3217,21 +3513,30 @@ export default function AdminPanelView({
 
           {activeTab === 'settings' && canManageRoles && (
             <div className="flex flex-col h-full overflow-hidden">
-              <div className="px-5 py-4 border-b border-divider/60 flex items-center justify-between shrink-0">
-                <h3 className="text-sm font-bold text-content font-display">System Settings</h3>
+              <div 
+                className="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[var(--nb-surface)]"
+                style={{ borderBottom: '2px solid var(--nb-ink)' }}
+              >
+                <h3 className="nb-headline text-sm text-[var(--nb-content)]">System Settings</h3>
               </div>
               <div className="p-5 overflow-y-auto space-y-6">
                 
                 {/* Brand Name & Logo Customizer */}
-                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                <div 
+                  className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
-                        <SlidersHorizontal className="w-3 h-3" />
+                      <div 
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
+                        <SlidersHorizontal className="w-3 h-3 text-[var(--nb-accent)]" />
                         PORTAL IDENTITY & LOGO
                       </div>
-                      <h4 className="text-sm font-bold text-content mb-1">Brand Name & Logo Customizer</h4>
-                      <p className="text-xs text-secondary leading-relaxed">
+                      <h4 className="nb-headline text-sm text-[var(--nb-content)] mb-1">Brand Name & Logo Customizer</h4>
+                      <p className="text-xs text-[var(--nb-secondary)] leading-relaxed">
                         Change the application brand name (currently <strong>"{branding.appName || 'NOTX'}"</strong>), department subtitle badge, and the adjacent logo across the entire platform.
                       </p>
                     </div>
@@ -3240,136 +3545,174 @@ export default function AdminPanelView({
                       <button
                         type="button"
                         onClick={() => setIsEditBrandingModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
+                        className="nb-btn flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider cursor-pointer shrink-0"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Edit Name & Logo</span>
                       </button>
                     ) : (
-                      <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-lg shrink-0">
+                      <span 
+                        className="nb-tag text-[10px] font-mono font-bold bg-amber-400 text-black px-2.5 py-1 shrink-0"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         Admin Restricted
                       </span>
                     )}
                   </div>
 
                   {/* Live brand preview bar */}
-                  <div className="bg-surface-accent/40 rounded-xl p-3.5 border border-divider/60 flex items-center justify-between gap-3 flex-wrap">
+                  <div 
+                    className="bg-[var(--nb-surface-accent)] rounded p-3.5 flex items-center justify-between gap-3 flex-wrap"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     <div className="flex items-center gap-2.5">
                       <BrandLogo branding={branding} size="md" />
                       <div>
                         <div className="flex items-center gap-1.5 flex-nowrap">
-                          <span className="font-display font-bold text-sm text-content">{branding.appName || 'NOTX'}</span>
+                          <span className="nb-headline text-sm text-[var(--nb-content)]">{branding.appName || 'NOTX'}</span>
                           {branding.subtitle && (
-                            <span className="text-[9px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.2 rounded-md">
+                            <span 
+                              className="nb-tag text-[9px] font-mono font-bold px-1.5 py-0.2"
+                              style={{ border: '1px solid var(--nb-ink)' }}
+                            >
                               {branding.subtitle}
                             </span>
                           )}
                         </div>
-                        <p className="text-[10.5px] text-secondary font-mono mt-0.5">
+                        <p className="text-[10.5px] text-[var(--nb-secondary)] font-mono mt-0.5">
                           {branding.logoType === 'custom' ? 'Custom Crest / Image Logo' : `Tech Icon: ${branding.logoIcon || 'Cpu'} (${branding.accentColor || 'indigo'})`}
                           {branding.tagline ? ` • Suffix: ${branding.tagline}` : ''}
                         </p>
                       </div>
                     </div>
 
-                    <span className="text-[9.5px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                    <span 
+                      className="nb-tag text-[9.5px] font-mono font-bold bg-emerald-400 text-black px-2 py-0.5"
+                      style={{ border: '1px solid var(--nb-ink)' }}
+                    >
                       Live Dynamic Synced
                     </span>
                   </div>
                 </div>
 
                 {/* Chat Feature Toggle */}
-                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm">
+                <div 
+                  className="bg-[var(--nb-surface)] rounded-lg p-5"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-bold text-content mb-1">Global Chat System</h4>
-                      <p className="text-xs text-secondary">Enable or disable the peer-to-peer messaging page for all users.</p>
+                      <h4 className="nb-headline text-sm text-[var(--nb-content)] mb-1">Global Chat System</h4>
+                      <p className="text-xs text-[var(--nb-secondary)]">Enable or disable the peer-to-peer messaging page for all users.</p>
                     </div>
                     
                     <button
                       onClick={handleToggleChat}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-                        isChatEnabled ? 'bg-indigo-500' : 'bg-divider'
+                      className={`relative inline-flex h-7 w-12 items-center rounded transition-colors cursor-pointer ${
+                        isChatEnabled ? 'bg-emerald-500' : 'bg-[var(--nb-surface-accent)]'
                       }`}
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        className={`inline-block h-4 w-4 transform rounded bg-white transition-transform ${
                           isChatEnabled ? 'translate-x-6' : 'translate-x-1'
                         }`}
+                        style={{ border: '1px solid var(--nb-ink)' }}
                       />
                     </button>
                   </div>
                 </div>
 
                 {/* E-Certificate Feature Toggle & Template Designer */}
-                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                <div 
+                  className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
-                        <Award className="w-3 h-3" />
+                      <div 
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
+                        <Award className="w-3 h-3 text-[var(--nb-accent)]" />
                         EVENT CREDENTIALS
                       </div>
-                      <h4 className="text-sm font-bold text-content mb-1">E-Certificates Feature</h4>
-                      <p className="text-xs text-secondary">Turn certificate viewing on/off and edit the official certificate template.</p>
+                      <h4 className="nb-headline text-sm text-[var(--nb-content)] mb-1">E-Certificates Feature</h4>
+                      <p className="text-xs text-[var(--nb-secondary)]">Turn certificate viewing on/off and edit the official certificate template.</p>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => setIsEditCertModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border border-divider shadow-xs active:scale-95"
+                        className="nb-btn-ghost flex items-center gap-1.5 px-3 py-1.5 font-bold text-xs uppercase tracking-wider cursor-pointer"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                        <Edit3 className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                         <span>Edit Template</span>
                       </button>
 
                       <button
                         onClick={() => handleToggleCertificates()}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-                          isCertificatesEnabled ? 'bg-emerald-500' : 'bg-divider'
+                        className={`relative inline-flex h-7 w-12 items-center rounded transition-colors cursor-pointer ${
+                          isCertificatesEnabled ? 'bg-emerald-500' : 'bg-[var(--nb-surface-accent)]'
                         }`}
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                         title="Toggle certificate feature on or off"
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          className={`inline-block h-4 w-4 transform rounded bg-white transition-transform ${
                             isCertificatesEnabled ? 'translate-x-6' : 'translate-x-1'
                           }`}
+                          style={{ border: '1px solid var(--nb-ink)' }}
                         />
                       </button>
                     </div>
                   </div>
 
-                  <div className="bg-surface-accent/40 rounded-xl p-3.5 border border-divider/60 space-y-1.5 text-xs">
+                  <div 
+                    className="bg-[var(--nb-surface-accent)] rounded p-3.5 space-y-1.5 text-xs"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-content">{certificateTemplate.certificateTitle || "Certificate of Participation"}</span>
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                        isCertificatesEnabled 
-                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
-                          : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                      }`}>
+                      <span className="font-bold text-[var(--nb-content)]">{certificateTemplate.certificateTitle || "Certificate of Participation"}</span>
+                      <span 
+                        className={`nb-tag text-[10px] font-mono font-bold px-2 py-0.5 ${
+                          isCertificatesEnabled 
+                            ? 'bg-emerald-400 text-black' 
+                            : 'bg-amber-400 text-black'
+                        }`}
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         {isCertificatesEnabled ? 'Feature Enabled' : 'Feature Paused'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-secondary">
-                      Issuing organization: <strong className="text-content">{certificateTemplate.orgName}</strong> ({certificateTemplate.departmentName})
+                    <p className="text-[11px] text-[var(--nb-secondary)]">
+                      Issuing organization: <strong className="text-[var(--nb-content)]">{certificateTemplate.orgName}</strong> ({certificateTemplate.departmentName})
                     </p>
                   </div>
                 </div>
 
                 {/* Dynamic Support Box Configuration */}
-                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                <div 
+                  className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
-                        <ShieldCheck className="w-3 h-3" />
+                      <div 
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
+                        <ShieldCheck className="w-3 h-3 text-[var(--nb-accent)]" />
                         PROFILE & SUPPORT DESK
                       </div>
-                      <h4 className="text-sm font-bold text-content mb-1">Support Box Details</h4>
-                      <p className="text-xs text-secondary">Configure the official department help contacts shown on the profile page and query desk.</p>
+                      <h4 className="nb-headline text-sm text-[var(--nb-content)] mb-1">Support Box Details</h4>
+                      <p className="text-xs text-[var(--nb-secondary)]">Configure the official department help contacts shown on the profile page and query desk.</p>
                     </div>
 
                     <button
                       onClick={() => setIsEditSupportModalOpen(true)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
+                      className="nb-btn flex items-center gap-1.5 px-3 py-2 font-bold text-xs uppercase tracking-wider cursor-pointer shrink-0"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit Support Box</span>
@@ -3377,26 +3720,29 @@ export default function AdminPanelView({
                   </div>
 
                   {/* Summary preview */}
-                  <div className="bg-surface-accent/40 rounded-xl p-3.5 border border-divider/60 space-y-2 text-xs">
-                    <div className="flex items-center justify-between border-b border-divider/50 pb-2">
-                      <span className="font-bold text-content">{supportInfo.title || "Help & Support Desk"}</span>
-                      <span className="text-[10px] font-mono text-indigo-400">{supportInfo.badge || "OFFICIAL CHANNELS"}</span>
+                  <div 
+                    className="bg-[var(--nb-surface-accent)] rounded p-3.5 space-y-2 text-xs"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
+                    <div className="flex items-center justify-between border-b border-[var(--nb-ink)]/15 pb-2">
+                      <span className="font-bold text-[var(--nb-content)]">{supportInfo.title || "Help & Support Desk"}</span>
+                      <span className="nb-tag text-[10px] font-mono font-bold">{supportInfo.badge || "OFFICIAL CHANNELS"}</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                      <div className="flex items-center gap-2 text-secondary">
-                        <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                        <span className="text-content font-mono truncate">{supportInfo.email}</span>
+                      <div className="flex items-center gap-2 text-[var(--nb-secondary)]">
+                        <Mail className="w-3.5 h-3.5 text-[var(--nb-accent)] shrink-0" />
+                        <span className="text-[var(--nb-content)] font-mono truncate">{supportInfo.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-secondary">
-                        <Phone className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                        <span className="text-content font-mono truncate">{supportInfo.phone}</span>
+                      <div className="flex items-center gap-2 text-[var(--nb-secondary)]">
+                        <Phone className="w-3.5 h-3.5 text-[var(--nb-accent)] shrink-0" />
+                        <span className="text-[var(--nb-content)] font-mono truncate">{supportInfo.phone}</span>
                       </div>
                     </div>
 
                     {supportInfo.location && (
-                      <div className="text-[10px] text-secondary flex items-center gap-1.5 pt-1">
-                        <span className="font-semibold text-content">Location:</span> {supportInfo.location}
+                      <div className="text-[10px] text-[var(--nb-secondary)] flex items-center gap-1.5 pt-1">
+                        <span className="font-semibold text-[var(--nb-content)]">Location:</span> {supportInfo.location}
                         {supportInfo.timing ? ` (${supportInfo.timing})` : ''}
                       </div>
                     )}
@@ -3404,15 +3750,21 @@ export default function AdminPanelView({
                 </div>
 
                 {/* Overall Data Export & System Backup */}
-                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                <div 
+                  className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
-                        <FolderArchive className="w-3 h-3" />
+                      <div 
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
+                        <FolderArchive className="w-3 h-3 text-[var(--nb-accent)]" />
                         DATABASE BACKUP & ARCHIVAL
                       </div>
-                      <h4 className="text-sm font-bold text-content mb-1">Overall Data Export & System Backup</h4>
-                      <p className="text-xs text-secondary leading-relaxed">
+                      <h4 className="nb-headline text-sm text-[var(--nb-content)] mb-1">Overall Data Export & System Backup</h4>
+                      <p className="text-xs text-[var(--nb-secondary)] leading-relaxed">
                         Export all application data into a consolidated JSON backup or download individual CSV tables for students and attendance before any academic term transitions.
                       </p>
                     </div>
@@ -3423,7 +3775,7 @@ export default function AdminPanelView({
                         setResetModalInitialTab('export');
                         setIsResetModalOpen(true);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
+                      className="nb-btn flex items-center gap-1.5 px-3 py-2 font-bold text-xs uppercase tracking-wider cursor-pointer shrink-0"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Data Export Hub</span>
@@ -3432,35 +3784,53 @@ export default function AdminPanelView({
 
                   {/* Quick stats snapshot */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
-                      <div className="text-sm font-mono font-bold text-content">{allUsers.length}</div>
-                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Enrolled Users</div>
+                    <div 
+                      className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                    >
+                      <div className="text-lg font-mono font-bold text-[var(--nb-content)]">{allUsers.length}</div>
+                      <div className="nb-label text-[9px] text-[var(--nb-secondary)] uppercase mt-0.5">Enrolled Users</div>
                     </div>
-                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
-                      <div className="text-sm font-mono font-bold text-indigo-400">{events.length}</div>
-                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Department Events</div>
+                    <div 
+                      className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                    >
+                      <div className="text-lg font-mono font-bold text-[var(--nb-accent)]">{events.length}</div>
+                      <div className="nb-label text-[9px] text-[var(--nb-secondary)] uppercase mt-0.5">Department Events</div>
                     </div>
-                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
-                      <div className="text-sm font-mono font-bold text-emerald-400">{registrations.length}</div>
-                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Registrations</div>
+                    <div 
+                      className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                    >
+                      <div className="text-lg font-mono font-bold text-emerald-600">{registrations.length}</div>
+                      <div className="nb-label text-[9px] text-[var(--nb-secondary)] uppercase mt-0.5">Registrations</div>
                     </div>
-                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
-                      <div className="text-sm font-mono font-bold text-amber-400">{dbCertificates.length}</div>
-                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Issued Credentials</div>
+                    <div 
+                      className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                    >
+                      <div className="text-lg font-mono font-bold text-amber-500">{dbCertificates.length}</div>
+                      <div className="nb-label text-[9px] text-[var(--nb-secondary)] uppercase mt-0.5">Issued Credentials</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Reset Association & Start New Academic Year (DANGER ZONE) */}
-                <div className="bg-rose-500/5 border border-rose-500/30 rounded-2xl p-5 shadow-sm space-y-4">
+                <div 
+                  className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
+                  style={{ border: '2px solid #e11d48', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-1.5">
+                      <div 
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500 text-white mb-1.5"
+                        style={{ border: '1px solid var(--nb-ink)' }}
+                      >
                         <AlertTriangle className="w-3 h-3" />
                         DANGER ZONE • ASSOCIATION LIFECYCLE
                       </div>
-                      <h4 className="text-sm font-bold text-content mb-1">Reset Association • Start New Academic Year</h4>
-                      <p className="text-xs text-secondary leading-relaxed">
+                      <h4 className="nb-headline text-sm text-[var(--nb-content)] mb-1">Reset Association • Start New Academic Year</h4>
+                      <p className="text-xs text-[var(--nb-secondary)] leading-relaxed">
                         Permanently wipe all past student accounts, events, registrations, certificates, event winners, photo albums, and chat logs across the entire database to begin a completely clean new association term.
                       </p>
                     </div>
@@ -3471,19 +3841,26 @@ export default function AdminPanelView({
                         setResetModalInitialTab('reset');
                         setIsResetModalOpen(true);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-rose-600/30 active:scale-95 shrink-0"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Start New Association</span>
                     </button>
                   </div>
 
-                  <div className="bg-surface rounded-xl p-3.5 border border-rose-500/20 text-xs flex items-center justify-between gap-3 flex-wrap">
-                    <div className="text-[11px] text-secondary flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div 
+                    className="bg-[var(--nb-surface-accent)] rounded p-3.5 text-xs flex items-center justify-between gap-3 flex-wrap"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
+                    <div className="text-[11px] text-[var(--nb-secondary)] flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>Root Admin account (<strong>{currentUser.email}</strong>) is preserved automatically so you never lose access.</span>
                     </div>
-                    <span className="text-[10px] font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20">
+                    <span 
+                      className="nb-tag text-[10px] font-mono text-rose-600 font-bold bg-white"
+                      style={{ border: '1px solid var(--nb-ink)' }}
+                    >
                       Requires Typed Verification
                     </span>
                   </div>
@@ -3541,21 +3918,28 @@ export default function AdminPanelView({
 
       {/* Manual Issue Certificate Modal */}
       {showManualIssueModal && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 select-none animate-fadeIn">
-          <div className="bg-background rounded-3xl border border-divider w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-divider pb-3">
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-3 select-none animate-fadeIn">
+          <div 
+            className="bg-[var(--nb-surface)] rounded-lg w-full max-w-md p-5 space-y-4"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+          >
+            <div className="flex items-center justify-between border-b-2 border-[var(--nb-ink)] pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 border border-indigo-500/25">
+                <div 
+                  className="w-8 h-8 rounded bg-[var(--nb-surface-accent)] flex items-center justify-center text-[var(--nb-accent)]"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
                   <Award className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-content font-display">Issue Custom Certificate</h4>
-                  <p className="text-[10px] text-secondary">Assign a credential to a student for any event</p>
+                  <h4 className="nb-headline text-sm text-[var(--nb-content)]">Issue Custom Certificate</h4>
+                  <p className="nb-label text-[10px] text-[var(--nb-secondary)]">ASSIGN A CREDENTIAL TO A STUDENT FOR ANY EVENT</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowManualIssueModal(false)}
-                className="w-7 h-7 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider cursor-pointer"
+                className="nb-btn-ghost w-7 h-7 flex items-center justify-center cursor-pointer rounded"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -3563,13 +3947,14 @@ export default function AdminPanelView({
 
             <form onSubmit={handleIssueSingleCert} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-[10px] font-mono font-bold text-secondary uppercase mb-1">
-                  Select Student
+                <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">
+                  SELECT STUDENT
                 </label>
                 <select
                   value={manualStudentUid}
                   onChange={(e) => setManualStudentUid(e.target.value)}
-                  className="w-full bg-surface-accent border border-divider rounded-xl px-3 py-2 text-content focus:outline-none focus:border-indigo-500/50"
+                  className="w-full bg-[var(--nb-surface-accent)] rounded px-3 py-2 text-[var(--nb-content)] outline-none font-bold"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                   required
                 >
                   <option value="">-- Choose Student --</option>
@@ -3582,13 +3967,14 @@ export default function AdminPanelView({
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono font-bold text-secondary uppercase mb-1">
-                  Select Event
+                <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">
+                  SELECT EVENT
                 </label>
                 <select
                   value={manualEventId}
                   onChange={(e) => setManualEventId(e.target.value)}
-                  className="w-full bg-surface-accent border border-divider rounded-xl px-3 py-2 text-content focus:outline-none focus:border-indigo-500/50"
+                  className="w-full bg-[var(--nb-surface-accent)] rounded px-3 py-2 text-[var(--nb-content)] outline-none font-bold"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                   required
                 >
                   <option value="">-- Choose Event --</option>
@@ -3600,25 +3986,29 @@ export default function AdminPanelView({
                 </select>
               </div>
 
-              <div className="p-3 rounded-xl bg-surface-accent/60 border border-divider space-y-1">
-                <span className="text-[9px] font-mono text-secondary uppercase block">Auto-Generated ID Format</span>
-                <div className="font-mono text-xs font-bold text-emerald-400">
+              <div 
+                className="p-3 rounded bg-[var(--nb-surface-accent)] space-y-1"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
+                <span className="nb-label text-[9px] text-[var(--nb-secondary)] block">AUTO-GENERATED ID FORMAT</span>
+                <div className="font-mono text-xs font-bold text-emerald-600">
                   CERT-AIML-[ROLL]-[EVT]-[HASH]
                 </div>
-                <p className="text-[10px] text-tertiary">A unique tamper-evident verification ID will be generated upon issuance.</p>
+                <p className="text-[10px] text-[var(--nb-secondary)]">A unique tamper-evident verification ID will be generated upon issuance.</p>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-divider">
+              <div className="flex justify-end gap-2 pt-2 border-t-2 border-[var(--nb-ink)]">
                 <button
                   type="button"
                   onClick={() => setShowManualIssueModal(false)}
-                  className="px-4 py-2 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-bold cursor-pointer"
+                  className="nb-btn-ghost px-4 py-2 text-xs font-bold uppercase cursor-pointer"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95"
+                  className="nb-btn px-4 py-2 font-bold text-xs uppercase tracking-wider cursor-pointer"
                 >
                   Issue Certificate Now
                 </button>
@@ -3630,16 +4020,20 @@ export default function AdminPanelView({
 
       {/* Certificate Lightbox Preview */}
       {activePreviewCert && (
-        <div className="fixed inset-0 bg-black/90 z-60 flex items-center justify-center p-3 animate-fadeIn">
-          <div className="bg-background rounded-3xl border border-divider max-w-xl w-full p-4 sm:p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-divider pb-2">
+        <div className="fixed inset-0 bg-black/80 z-60 flex items-center justify-center p-3 animate-fadeIn">
+          <div 
+            className="bg-[var(--nb-surface)] rounded-lg max-w-xl w-full p-4 sm:p-6 space-y-4"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+          >
+            <div className="flex items-center justify-between border-b-2 border-[var(--nb-ink)] pb-2">
               <div>
-                <h4 className="text-xs font-bold text-content font-display">Certificate Preview</h4>
-                <p className="text-[10px] text-secondary">ID: {activePreviewCert.certificateId}</p>
+                <h4 className="nb-headline text-xs text-[var(--nb-content)]">Certificate Preview</h4>
+                <p className="nb-label text-[10px] text-[var(--nb-secondary)]">ID: {activePreviewCert.certificateId}</p>
               </div>
               <button 
                 onClick={() => setActivePreviewCert(null)}
-                className="w-7 h-7 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider cursor-pointer"
+                className="nb-btn-ghost w-7 h-7 flex items-center justify-center cursor-pointer rounded"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -3664,12 +4058,13 @@ export default function AdminPanelView({
             />
 
             <div className="flex justify-between items-center pt-2">
-              <span className="text-[10px] text-secondary font-mono">
-                Status: <strong className="text-emerald-400">{activePreviewCert.status}</strong>
+              <span className="nb-label text-[10px] text-[var(--nb-secondary)]">
+                STATUS: <strong className="text-emerald-600 font-mono">{activePreviewCert.status}</strong>
               </span>
               <button
                 onClick={() => setActivePreviewCert(null)}
-                className="px-4 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content font-bold text-xs border border-divider cursor-pointer"
+                className="nb-btn-ghost px-4 py-1.5 font-bold text-xs uppercase cursor-pointer"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
                 Close Preview
               </button>
@@ -3677,6 +4072,7 @@ export default function AdminPanelView({
           </div>
         </div>
       )}
+
 
       {/* Reset Association & Overall Data Export Hub Modal */}
       <ResetAssociationModal

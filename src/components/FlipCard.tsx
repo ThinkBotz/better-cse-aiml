@@ -43,7 +43,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
   dragDistance = 0,
   tilt = true,
   tiltMax = 12,
-  glare = true,
+  glare = false,
   glareOpacity = 0.22,
   hoverScale = 1.03,
   perspective = 1100,
@@ -55,12 +55,12 @@ export const FlipCard: React.FC<FlipCardProps> = ({
   maxHeight,
   maxWidth,
   minHeight,
-  radius = 22,
-  background = '#27272a',
-  color = '#f5f5f5',
+  radius = 12,
+  background = 'var(--nb-surface, #FFFFFF)',
+  color = 'var(--nb-content, #1A1A1A)',
   shadow = true,
-  shadowColor = '#000000',
-  shadowOpacity = 0.45,
+  shadowColor = 'var(--nb-ink, #000000)',
+  shadowOpacity = 0.8,
   onFlipChange,
   isFlipped: controlledFlipped,
   className = '',
@@ -232,6 +232,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
           className="flip-card-face flip-card-front"
           style={{
             borderRadius: `${radius}px`,
+            border: '2px solid var(--nb-ink)',
             backgroundColor: background,
             color
           }}
@@ -253,6 +254,7 @@ export const FlipCard: React.FC<FlipCardProps> = ({
           className="flip-card-face flip-card-back"
           style={{
             borderRadius: `${radius}px`,
+            border: '2px solid var(--nb-ink)',
             backgroundColor: background,
             color,
             transform: backFaceTransform

@@ -38,7 +38,14 @@ export const BRAND_ICONS: Record<string, React.ElementType> = {
   Trophy
 };
 
+// Neo-brutalist flat colour palette for accent themes.
+// hex = raw colour for CSS var injection (--nb-accent)
+// fg  = foreground on top of that colour
+// solid Tailwind classes used for logo bg, tags, etc.
 export const ACCENT_THEMES: Record<string, {
+  hex: string;
+  fg: string;
+  // legacy fields kept so existing code that destructures these doesn't break
   border: string;
   glow: string;
   iconColor: string;
@@ -48,60 +55,82 @@ export const ACCENT_THEMES: Record<string, {
   primaryBg: string;
 }> = {
   indigo: {
-    border: 'from-indigo-600 via-indigo-500 to-violet-500',
-    glow: 'shadow-indigo-500/25',
-    iconColor: 'text-indigo-400',
-    badgeBg: 'bg-indigo-500/15',
-    badgeText: 'text-indigo-400',
-    badgeBorder: 'border-indigo-500/30',
-    primaryBg: 'bg-indigo-600 hover:bg-indigo-500'
+    hex: '#2563EB',
+    fg:  '#FFFFFF',
+    border:      'border-blue-600',
+    glow:        '',
+    iconColor:   'text-white',
+    badgeBg:     'bg-blue-600',
+    badgeText:   'text-white',
+    badgeBorder: 'border-blue-700',
+    primaryBg:   'bg-blue-600 hover:bg-blue-700'
   },
   violet: {
-    border: 'from-violet-600 via-purple-500 to-fuchsia-500',
-    glow: 'shadow-violet-500/25',
-    iconColor: 'text-violet-400',
-    badgeBg: 'bg-violet-500/15',
-    badgeText: 'text-violet-400',
-    badgeBorder: 'border-violet-500/30',
-    primaryBg: 'bg-violet-600 hover:bg-violet-500'
+    hex: '#7C3AED',
+    fg:  '#FFFFFF',
+    border:      'border-violet-600',
+    glow:        '',
+    iconColor:   'text-white',
+    badgeBg:     'bg-violet-600',
+    badgeText:   'text-white',
+    badgeBorder: 'border-violet-700',
+    primaryBg:   'bg-violet-600 hover:bg-violet-700'
   },
   emerald: {
-    border: 'from-emerald-600 via-teal-500 to-cyan-500',
-    glow: 'shadow-emerald-500/25',
-    iconColor: 'text-emerald-400',
-    badgeBg: 'bg-emerald-500/15',
-    badgeText: 'text-emerald-400',
-    badgeBorder: 'border-emerald-500/30',
-    primaryBg: 'bg-emerald-600 hover:bg-emerald-500'
+    hex: '#00D26A',
+    fg:  '#111111',
+    border:      'border-emerald-500',
+    glow:        '',
+    iconColor:   'text-gray-900',
+    badgeBg:     'bg-emerald-500',
+    badgeText:   'text-gray-900',
+    badgeBorder: 'border-emerald-600',
+    primaryBg:   'bg-emerald-500 hover:bg-emerald-600'
   },
   cyan: {
-    border: 'from-cyan-600 via-sky-500 to-blue-500',
-    glow: 'shadow-cyan-500/25',
-    iconColor: 'text-cyan-400',
-    badgeBg: 'bg-cyan-500/15',
-    badgeText: 'text-cyan-400',
-    badgeBorder: 'border-cyan-500/30',
-    primaryBg: 'bg-cyan-600 hover:bg-cyan-500'
+    hex: '#00B4D8',
+    fg:  '#FFFFFF',
+    border:      'border-cyan-500',
+    glow:        '',
+    iconColor:   'text-white',
+    badgeBg:     'bg-cyan-500',
+    badgeText:   'text-white',
+    badgeBorder: 'border-cyan-600',
+    primaryBg:   'bg-cyan-500 hover:bg-cyan-600'
   },
   amber: {
-    border: 'from-amber-600 via-orange-500 to-yellow-500',
-    glow: 'shadow-amber-500/25',
-    iconColor: 'text-amber-400',
-    badgeBg: 'bg-amber-500/15',
-    badgeText: 'text-amber-400',
-    badgeBorder: 'border-amber-500/30',
-    primaryBg: 'bg-amber-500 hover:bg-amber-400'
+    hex: '#FFE600',
+    fg:  '#111111',
+    border:      'border-amber-400',
+    glow:        '',
+    iconColor:   'text-gray-900',
+    badgeBg:     'bg-amber-400',
+    badgeText:   'text-gray-900',
+    badgeBorder: 'border-amber-500',
+    primaryBg:   'bg-amber-400 hover:bg-amber-500'
   },
   rose: {
-    border: 'from-rose-600 via-pink-500 to-red-500',
-    glow: 'shadow-rose-500/25',
-    iconColor: 'text-rose-400',
-    badgeBg: 'bg-rose-500/15',
-    badgeText: 'text-rose-400',
-    badgeBorder: 'border-rose-500/30',
-    primaryBg: 'bg-rose-600 hover:bg-rose-500'
+    hex: '#FF2A85',
+    fg:  '#FFFFFF',
+    border:      'border-pink-600',
+    glow:        '',
+    iconColor:   'text-white',
+    badgeBg:     'bg-pink-600',
+    badgeText:   'text-white',
+    badgeBorder: 'border-pink-700',
+    primaryBg:   'bg-pink-600 hover:bg-pink-700'
   }
 };
+
+/** Returns the hex accent colour for a given accent key (safe fallback to indigo) */
+export function getCssAccent(accentKey?: string): string {
+  return (ACCENT_THEMES[accentKey || 'indigo'] || ACCENT_THEMES.indigo).hex;
+}
+
+/** Returns the foreground colour for use on top of the accent (black or white) */
+export function getCssAccentFg(accentKey?: string): string {
+  return (ACCENT_THEMES[accentKey || 'indigo'] || ACCENT_THEMES.indigo).fg;
+}
 
 interface BrandLogoProps {
   branding?: AppBranding;
@@ -115,52 +144,37 @@ export default function BrandLogo({
   className = ''
 }: BrandLogoProps) {
   const accentKey = branding.accentColor || 'indigo';
-  const theme = ACCENT_THEMES[accentKey] || ACCENT_THEMES.indigo;
+  const accentHex = getCssAccent(accentKey);
+  const accentFg  = getCssAccentFg(accentKey);
 
-  const sizeClasses = {
-    xs: {
-      container: 'w-6 h-6 rounded-lg p-[1px]',
-      inner: 'rounded-[7px]',
-      icon: 'w-3.5 h-3.5',
-      image: 'rounded-[7px]'
-    },
-    sm: {
-      container: 'w-7.5 h-7.5 rounded-xl p-[1px]',
-      inner: 'rounded-[10px]',
-      icon: 'w-4 h-4',
-      image: 'rounded-[10px]'
-    },
-    md: {
-      container: 'w-8 h-8 sm:w-9 sm:h-9 rounded-xl p-[1px]',
-      inner: 'rounded-[11px]',
-      icon: 'w-4 h-4 sm:w-4.5 sm:h-4.5',
-      image: 'rounded-[11px]'
-    },
-    lg: {
-      container: 'w-12 h-12 rounded-2xl p-[1.5px]',
-      inner: 'rounded-[14px]',
-      icon: 'w-6 h-6',
-      image: 'rounded-[14px]'
-    },
-    xl: {
-      container: 'w-16 h-16 rounded-3xl p-[2px]',
-      inner: 'rounded-[22px]',
-      icon: 'w-8 h-8',
-      image: 'rounded-[22px]'
-    }
+  // Size map: flat square badge with 2px ink border + solid accent background
+  const sizeMap = {
+    xs: { wh: 'w-6 h-6',         radius: 'rounded',    icon: 'w-3.5 h-3.5' },
+    sm: { wh: 'w-8 h-8',         radius: 'rounded-md',  icon: 'w-4 h-4'     },
+    md: { wh: 'w-9 h-9',         radius: 'rounded-md',  icon: 'w-4.5 h-4.5' },
+    lg: { wh: 'w-12 h-12',       radius: 'rounded-lg',  icon: 'w-6 h-6'     },
+    xl: { wh: 'w-16 h-16',       radius: 'rounded-xl',  icon: 'w-8 h-8'     },
   }[size];
+
+  const containerStyle: React.CSSProperties = {
+    backgroundColor: accentHex,
+    border: '2px solid var(--nb-ink)',
+    color: accentFg,
+    flexShrink: 0,
+  };
 
   // Custom uploaded logo
   if (branding.logoType === 'custom' && branding.logoImageUrl) {
     return (
-      <div className={`${sizeClasses.container} bg-gradient-to-tr ${theme.border} shadow-md ${theme.glow} flex-shrink-0 ${className}`}>
-        <div className={`w-full h-full bg-background ${sizeClasses.inner} overflow-hidden flex items-center justify-center`}>
-          <img 
-            src={branding.logoImageUrl} 
-            alt={branding.appName || 'Logo'} 
-            className={`w-full h-full object-cover ${sizeClasses.image}`}
-          />
-        </div>
+      <div
+        className={`${sizeMap.wh} ${sizeMap.radius} overflow-hidden flex items-center justify-center ${className}`}
+        style={containerStyle}
+      >
+        <img
+          src={branding.logoImageUrl}
+          alt={branding.appName || 'Logo'}
+          className="w-full h-full object-cover"
+        />
       </div>
     );
   }
@@ -169,10 +183,11 @@ export default function BrandLogo({
   const IconComponent = BRAND_ICONS[branding.logoIcon || 'Cpu'] || Cpu;
 
   return (
-    <div className={`${sizeClasses.container} bg-gradient-to-tr ${theme.border} shadow-md ${theme.glow} flex-shrink-0 ${className}`}>
-      <div className={`w-full h-full bg-background ${sizeClasses.inner} flex items-center justify-center`}>
-        <IconComponent className={`${sizeClasses.icon} ${theme.iconColor}`} />
-      </div>
+    <div
+      className={`${sizeMap.wh} ${sizeMap.radius} flex items-center justify-center ${className}`}
+      style={containerStyle}
+    >
+      <IconComponent className={sizeMap.icon} style={{ color: accentFg }} />
     </div>
   );
 }

@@ -188,29 +188,36 @@ export default function AddEventWinnerModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-200">
-      <div className="bg-surface border border-divider/90 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-3 sm:p-4 select-none animate-fadeIn">
+      <div 
+        className="bg-[var(--nb-surface)] rounded-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+      >
         {/* Modal Header */}
-        <div className="p-4 border-b border-divider/70 flex items-center justify-between bg-surface-accent/40 shrink-0">
+        <div 
+          className="p-4 border-b-2 border-[var(--nb-ink)] flex items-center justify-between bg-[var(--nb-surface-accent)] shrink-0"
+        >
           <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-              isEditing ? 'bg-indigo-500/10 border border-indigo-500/25 text-indigo-400' : 'bg-amber-500/10 border border-amber-500/25 text-amber-400'
-            }`}>
+            <div 
+              className="w-8 h-8 rounded bg-[var(--nb-surface)] flex items-center justify-center text-[var(--nb-accent)]"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
               {isEditing ? <Edit3 className="w-4 h-4" /> : <Trophy className="w-4 h-4" />}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-content font-display">
-                {isEditing ? 'Edit Wall of Champions Winner' : 'Add Event Winner to Home Page'}
+              <h3 className="nb-headline text-base text-[var(--nb-content)]">
+                {isEditing ? 'Edit Wall of Champions Winner' : 'Add Event Winner'}
               </h3>
-              <p className="text-[10.5px] text-secondary">
-                {isEditing ? 'Modify student podium standings, prize titles, or awards' : 'Feature student achievements and podium finishes on Wall of Fame'}
+              <p className="nb-label text-[10px] text-[var(--nb-secondary)]">
+                {isEditing ? 'MODIFY PODIUM STANDINGS & PRIZES' : 'FEATURE STUDENT ACHIEVEMENTS ON WALL OF FAME'}
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-xl bg-surface-accent hover:bg-divider text-secondary hover:text-content border border-divider flex items-center justify-center cursor-pointer transition-colors"
+            className="nb-btn-ghost w-7 h-7 rounded flex items-center justify-center cursor-pointer"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
             <X className="w-4 h-4" />
           </button>
@@ -219,7 +226,10 @@ export default function AddEventWinnerModal({
         {/* Modal Body Form */}
         <form onSubmit={handleSubmit} className="p-4 overflow-y-auto space-y-4 text-xs flex-grow">
           {errorMsg && (
-            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs font-medium">
+            <div 
+              className="p-2.5 rounded bg-rose-500/10 text-rose-600 font-bold text-xs"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
               {errorMsg}
             </div>
           )}
@@ -227,14 +237,14 @@ export default function AddEventWinnerModal({
           {/* 1. SELECT EVENT FROM DB */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-indigo-400" />
-                <span>Department Event *</span>
+              <label className="nb-label text-[10px] text-[var(--nb-secondary)] flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-[var(--nb-accent)]" />
+                <span>DEPARTMENT EVENT *</span>
               </label>
               <button
                 type="button"
                 onClick={() => setUseCustomEvent(!useCustomEvent)}
-                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline"
+                className="nb-label text-[10px] text-[var(--nb-accent)] font-bold cursor-pointer underline"
               >
                 {useCustomEvent ? 'Pick from DB events' : '+ Custom event name'}
               </button>
@@ -247,13 +257,15 @@ export default function AddEventWinnerModal({
                 placeholder="e.g. State-Level AI Hackathon 2026"
                 value={customEventTitle}
                 onChange={(e) => setCustomEventTitle(e.target.value)}
-                className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none focus:border-indigo-500/50"
+                className="w-full bg-[var(--nb-surface-accent)] rounded text-xs font-bold text-[var(--nb-content)] py-2 px-3 outline-none"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               />
             ) : (
               <select
                 value={selectedEventId}
                 onChange={(e) => setSelectedEventId(e.target.value)}
-                className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none focus:border-indigo-500/50"
+                className="w-full bg-[var(--nb-surface-accent)] rounded text-xs font-bold text-[var(--nb-content)] py-2 px-3 outline-none"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
                 {events.length === 0 ? (
                   <option value="">No events in database (use custom event name)</option>
@@ -270,15 +282,21 @@ export default function AddEventWinnerModal({
 
           {/* 2. SELECT STUDENT FROM DB */}
           <div className="space-y-1.5 relative">
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1">
-              <User className="w-3 h-3 text-emerald-400" />
-              <span>Student Winner from Database *</span>
+            <label className="nb-label text-[10px] text-[var(--nb-secondary)] flex items-center gap-1">
+              <User className="w-3 h-3 text-emerald-600" />
+              <span>STUDENT WINNER FROM DATABASE *</span>
             </label>
 
             {selectedStudent ? (
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between gap-3">
+              <div 
+                className="p-2.5 rounded bg-[var(--nb-surface-accent)] flex items-center justify-between gap-3"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-surface border border-emerald-500/30 overflow-hidden shrink-0">
+                  <div 
+                    className="w-8 h-8 rounded bg-[var(--nb-surface)] overflow-hidden shrink-0"
+                    style={{ border: '1px solid var(--nb-ink)' }}
+                  >
                     <img
                       src={selectedStudent.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${selectedStudent.rollNumber || selectedStudent.uid}`}
                       alt=""
@@ -286,11 +304,11 @@ export default function AddEventWinnerModal({
                     />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-bold text-content text-xs truncate flex items-center gap-1">
+                    <div className="font-bold text-[var(--nb-content)] text-xs truncate flex items-center gap-1">
                       <span>{selectedStudent.name}</span>
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                     </div>
-                    <div className="text-[10px] text-secondary font-mono truncate">
+                    <div className="text-[10px] text-[var(--nb-secondary)] font-mono truncate">
                       {selectedStudent.rollNumber || 'N/A'} • {selectedStudent.department || 'CSE (AI & ML)'} • {selectedStudent.year || 'III Year'}
                     </div>
                   </div>
@@ -302,16 +320,17 @@ export default function AddEventWinnerModal({
                     setSelectedStudent(null);
                     setStudentSearch('');
                   }}
-                  className="text-xs text-secondary hover:text-content p-1 cursor-pointer transition-colors"
+                  className="nb-btn-ghost p-1 cursor-pointer rounded"
+                  style={{ border: '1px solid var(--nb-ink)' }}
                   title="Change student"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
               <div className="relative">
                 <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--nb-secondary)]" />
                   <input
                     type="text"
                     placeholder="Search by student name, roll number, or department..."
@@ -321,14 +340,18 @@ export default function AddEventWinnerModal({
                       setIsStudentDropdownOpen(true);
                     }}
                     onFocus={() => setIsStudentDropdownOpen(true)}
-                    className="w-full bg-background border border-divider text-xs text-content rounded-xl pl-9 pr-3 py-2 outline-none focus:border-indigo-500/50"
+                    className="w-full bg-[var(--nb-surface-accent)] rounded text-xs text-[var(--nb-content)] pl-9 pr-3 py-2 outline-none font-bold"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   />
                 </div>
 
                 {isStudentDropdownOpen && (
-                  <div className="mt-1 bg-surface border border-divider rounded-xl shadow-xl max-h-48 overflow-y-auto z-20 divide-y divide-divider/50">
+                  <div 
+                    className="mt-1 bg-[var(--nb-surface)] rounded shadow-xl max-h-48 overflow-y-auto z-20 divide-y divide-[var(--nb-ink)]/20"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     {filteredStudents.length === 0 ? (
-                      <div className="p-3 text-[11px] text-secondary text-center italic">
+                      <div className="p-3 text-[11px] text-[var(--nb-secondary)] text-center italic">
                         No students found matching "{studentSearch}"
                       </div>
                     ) : (
@@ -339,10 +362,13 @@ export default function AddEventWinnerModal({
                             setSelectedStudent(st);
                             setIsStudentDropdownOpen(false);
                           }}
-                          className="p-2 hover:bg-surface-accent flex items-center justify-between gap-2.5 cursor-pointer transition-colors"
+                          className="p-2 hover:bg-[var(--nb-surface-accent)] flex items-center justify-between gap-2.5 cursor-pointer transition-colors"
                         >
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6.5 h-6.5 rounded-lg bg-surface-accent overflow-hidden shrink-0">
+                            <div 
+                              className="w-7 h-7 rounded bg-[var(--nb-surface-accent)] overflow-hidden shrink-0"
+                              style={{ border: '1px solid var(--nb-ink)' }}
+                            >
                               <img
                                 src={st.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${st.rollNumber || st.uid}`}
                                 alt=""
@@ -350,12 +376,12 @@ export default function AddEventWinnerModal({
                               />
                             </div>
                             <div className="min-w-0">
-                              <div className="font-semibold text-content text-xs truncate">{st.name}</div>
-                              <div className="text-[9.5px] text-secondary font-mono truncate">{st.rollNumber || 'N/A'} • {st.department || 'AI & ML'}</div>
+                              <div className="font-bold text-[var(--nb-content)] text-xs truncate">{st.name}</div>
+                              <div className="text-[9.5px] text-[var(--nb-secondary)] font-mono truncate">{st.rollNumber || 'N/A'} • {st.department || 'AI & ML'}</div>
                             </div>
                           </div>
 
-                          <span className="text-[10px] text-indigo-400 font-bold shrink-0">Select</span>
+                          <span className="nb-tag text-[10px] font-bold shrink-0">SELECT</span>
                         </div>
                       ))
                     )}
@@ -367,30 +393,34 @@ export default function AddEventWinnerModal({
 
           {/* 3. PODIUM POSITION / TIER */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1">
-              <Trophy className="w-3 h-3 text-amber-400" />
-              <span>Position / Prize Rank *</span>
+            <label className="nb-label text-[10px] text-[var(--nb-secondary)] flex items-center gap-1">
+              <Trophy className="w-3 h-3 text-amber-500" />
+              <span>POSITION / PRIZE RANK *</span>
             </label>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { label: '1st Place', icon: '🏆', color: 'border-amber-500/40 text-amber-300 bg-amber-500/10' },
-                { label: '2nd Place', icon: '🥈', color: 'border-slate-400/40 text-slate-300 bg-slate-500/10' },
-                { label: '3rd Place', icon: '🥉', color: 'border-orange-500/40 text-orange-300 bg-orange-500/10' },
-                { label: 'Special Mention', icon: '🌟', color: 'border-violet-500/40 text-violet-300 bg-violet-500/10' },
+                { label: '1st Place', icon: '🏆', activeBg: 'bg-amber-400 text-black' },
+                { label: '2nd Place', icon: '🥈', activeBg: 'bg-slate-300 text-black' },
+                { label: '3rd Place', icon: '🥉', activeBg: 'bg-amber-600 text-white' },
+                { label: 'Special Mention', icon: '🌟', activeBg: 'bg-indigo-500 text-white' },
               ].map(item => (
                 <button
                   key={item.label}
                   type="button"
                   onClick={() => handlePositionChange(item.label)}
-                  className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 text-center ${
+                  className={`p-2 rounded text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 text-center ${
                     position === item.label
-                      ? `${item.color} shadow-sm ring-1 ring-indigo-500/40`
-                      : 'bg-background border-divider text-secondary hover:text-content hover:bg-surface-accent'
+                      ? `${item.activeBg}`
+                      : 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)] hover:bg-[var(--nb-surface)]'
                   }`}
+                  style={{
+                    border: '1.5px solid var(--nb-ink)',
+                    boxShadow: position === item.label ? 'var(--shadow-hard-sm)' : 'none'
+                  }}
                 >
                   <span className="text-base">{item.icon}</span>
-                  <span className="text-[10.5px] leading-tight">{item.label}</span>
+                  <span className="text-[10.5px] leading-tight uppercase font-mono">{item.label}</span>
                 </button>
               ))}
             </div>
@@ -399,8 +429,8 @@ export default function AddEventWinnerModal({
           {/* 4. PRIZE TITLE & DETAILS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
-                Badge / Prize Title
+              <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">
+                BADGE / PRIZE TITLE
               </label>
               <input
                 type="text"
@@ -408,13 +438,14 @@ export default function AddEventWinnerModal({
                 value={prizeTitle}
                 onChange={(e) => setPrizeTitle(e.target.value)}
                 placeholder="e.g. 🏆 1st Prize • Champion"
-                className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none focus:border-indigo-500/50"
+                className="w-full bg-[var(--nb-surface-accent)] rounded text-xs font-bold text-[var(--nb-content)] py-2 px-3 outline-none"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
-                Award / Cash Prize Details
+              <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">
+                AWARD / CASH PRIZE DETAILS
               </label>
               <input
                 type="text"
@@ -422,31 +453,34 @@ export default function AddEventWinnerModal({
                 value={awardDetails}
                 onChange={(e) => setAwardDetails(e.target.value)}
                 placeholder="e.g. ₹5,000 Cash Prize + Trophy"
-                className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none focus:border-indigo-500/50"
+                className="w-full bg-[var(--nb-surface-accent)] rounded text-xs font-bold text-[var(--nb-content)] py-2 px-3 outline-none"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               />
             </div>
           </div>
 
           {/* 5. PROJECT / TOPIC TITLE (OPTIONAL) */}
           <div>
-            <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
-              Project Title or Winning Topic (Optional)
+            <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">
+              PROJECT TITLE OR TOPIC (OPTIONAL)
             </label>
             <input
               type="text"
               value={projectTitle}
               onChange={(e) => setProjectTitle(e.target.value)}
               placeholder="e.g. Project: MedPrompt AI Multi-Modal Diagnostic Agent"
-              className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none focus:border-indigo-500/50"
+              className="w-full bg-[var(--nb-surface-accent)] rounded text-xs font-bold text-[var(--nb-content)] py-2 px-3 outline-none"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             />
           </div>
 
           {/* Form Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-divider/60">
+          <div className="pt-2 flex items-center justify-end gap-2 border-t-2 border-[var(--nb-ink)]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold cursor-pointer border border-divider transition-all"
+              className="nb-btn-ghost px-4 py-2 rounded text-xs font-bold uppercase cursor-pointer"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             >
               Cancel
             </button>
@@ -454,20 +488,17 @@ export default function AddEventWinnerModal({
             <button
               type="submit"
               disabled={isSubmitting || !selectedStudent}
-              className={`px-5 py-2 rounded-xl text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5 disabled:opacity-40 ${
-                isEditing 
-                  ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30' 
-                  : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'
-              }`}
+              className="nb-btn px-5 py-2 rounded text-xs font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
             >
               {isEditing ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                  <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Updating...' : 'Save Winner Changes'}</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <Sparkles className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Publishing...' : 'Publish to Home Page'}</span>
                 </>
               )}

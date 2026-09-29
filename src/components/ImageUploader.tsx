@@ -66,20 +66,32 @@ export default function ImageUploader({
 
   return (
     <div className="space-y-3">
-      {error && <div className="text-xs text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">{error}</div>}
+      {error && (
+        <div 
+          className="text-xs font-bold text-rose-600 bg-rose-500/10 p-2 rounded"
+          style={{ border: '1.5px solid var(--nb-ink)' }}
+        >
+          {error}
+        </div>
+      )}
       
       {uploadedUrls.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {uploadedUrls.map((url, idx) => (
-            <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-divider">
+            <div 
+              key={idx} 
+              className="relative group w-16 h-16 rounded overflow-hidden"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
               <img src={url} alt="Uploaded" className="w-full h-full object-cover" />
               <button 
                 type="button"
                 onClick={() => removeImage(idx)}
-                className="absolute top-1 right-1 bg-black/75 hover:bg-rose-600 p-1 rounded-md text-white transition-colors cursor-pointer shadow-sm"
+                className="absolute top-1 right-1 bg-black text-white hover:bg-rose-600 p-1 rounded transition-colors cursor-pointer"
+                style={{ border: '1px solid var(--nb-ink)' }}
                 title="Remove photo"
               >
-                <X className="w-3 h-3 text-white" />
+                <X className="w-3 h-3" />
               </button>
             </div>
           ))}
@@ -100,10 +112,11 @@ export default function ImageUploader({
             type="button"
             disabled={isUploading}
             onClick={() => fileInputRef.current?.click()}
-            className="bg-surface-accent hover:bg-divider text-secondary border border-divider text-xs font-bold uppercase py-2 px-4 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 w-full"
+            className="nb-btn-ghost text-xs font-bold uppercase py-2.5 px-4 rounded transition-all cursor-pointer flex items-center justify-center gap-2 w-full"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
             {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-            {isUploading ? 'Uploading...' : buttonLabel}
+            <span>{isUploading ? 'UPLOADING...' : buttonLabel.toUpperCase()}</span>
           </button>
         </div>
       )}

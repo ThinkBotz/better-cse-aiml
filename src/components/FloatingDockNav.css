@@ -1,3 +1,10 @@
+/* ─────────────────────────────────────────────────────────────
+   FloatingDockNav — Option 1: Floating Neo-Brutalist Capsule
+   Floats ~12px above bottom, centered capsule, 2px ink outline
+   Unified bold Electric Yellow active pill with black ink text/icon
+   ───────────────────────────────────────────────────────────── */
+
+/* Wrapper: anchors floating capsule to bottom with safe-area spacing */
 .floating-dock-wrapper {
   position: fixed;
   bottom: 0;
@@ -7,150 +14,104 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  padding: 0 0 clamp(8px, 2vh, 16px) 0;
-  margin: 0;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  pointer-events: none;
   z-index: 45;
+  pointer-events: none;
+  padding: 0 14px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
 }
 
+/* ── Offline Banner (floats neatly right above dock) ── */
 .floating-dock-offline-pill {
   pointer-events: auto;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  background: rgba(244, 63, 94, 0.18);
-  border: 1px solid rgba(244, 63, 94, 0.35);
-  color: #fda4af;
-  font-size: 11px;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  padding: 4px 14px;
+  background: var(--nb-yellow);
+  color: #111111;
+  border: 2px solid var(--nb-ink);
   border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 14px;
   margin-bottom: 8px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 2px 2px 0 var(--nb-ink);
+  white-space: nowrap;
 }
 
+/* ── Floating Capsule Container ── */
 .floating-dock-container {
   pointer-events: auto;
   touch-action: manipulation;
   isolation: isolate;
-  cursor: default;
   position: relative;
-  width: calc(100% - 24px);
-  max-width: 480px;
+  width: 100%;
+  max-width: 460px;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  gap: 4px;
-  padding: 6px 8px;
-  border-radius: 9999px;
-  background: rgba(28, 11, 24, 0.88);
-  border: 1px solid rgba(255, 200, 220, 0.12);
-  box-shadow: 
-    0 16px 36px -6px rgba(15, 4, 13, 0.65),
-    0 4px 16px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (max-width: 640px) {
-  .floating-dock-container {
-    width: calc(100% - 20px);
-    max-width: 100%;
-    padding: 6px 6px;
-    border-radius: 9999px;
-  }
-}
-
-/* Light mode support */
-:root:not(.dark) .floating-dock-container {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(220, 160, 185, 0.25);
-  box-shadow: 
-    0 12px 32px -4px rgba(180, 50, 90, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.05),
-    inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  justify-content: space-between;
+  gap: 3px;
+  padding: 5px 6px;
+  background: var(--nb-surface);
+  border: 2px solid var(--nb-ink);
+  border-radius: 16px;
+  box-shadow: 3.5px 3.5px 0 var(--nb-ink);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .floating-dock-glass-layer {
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+  display: none;
 }
 
+/* ── Individual Nav Item ── */
 .floating-dock-item {
   position: relative;
   flex: 1;
-  min-width: 0;
+  min-height: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px;
-  border-radius: 9999px;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: 10px;
   cursor: pointer;
   background: transparent;
-  border: none;
+  border: 1.5px solid transparent;
   touch-action: manipulation;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  color: var(--nb-secondary);
+}
+
+.floating-dock-item:hover:not(.is-active) {
+  background: var(--nb-surface-accent);
+  color: var(--nb-content);
 }
 
 .floating-dock-item:active {
-  transform: scale(0.92);
+  transform: scale(0.97);
 }
 
-.floating-dock-item:hover .floating-dock-icon {
+/* ── Unified Active State: Entire Item Becomes a Bold Signature Pill ── */
+.floating-dock-item.is-active {
+  background: var(--nb-yellow) !important;
+  color: #111111 !important;
+  border: 1.5px solid var(--nb-ink) !important;
+  box-shadow: 2px 2px 0 var(--nb-ink);
   transform: translateY(-1px);
 }
 
+/* Active indicator layer no longer needs a disjointed background square */
 .floating-dock-active-indicator {
-  position: absolute;
-  inset: 2px;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  z-index: 1;
-  box-shadow: 
-    0 4px 14px rgba(244, 63, 94, 0.45),
-    inset 0 1px 1px rgba(255, 255, 255, 0.3);
-  animation: dock-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: none;
 }
 
-@keyframes dock-pop {
-  0% {
-    transform: scale(0.82);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.floating-dock-active-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 60%;
-  height: 60%;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 9999px;
-  filter: blur(4px);
-  pointer-events: none;
-}
-
+/* ── Icon Wrapper & Icon ── */
 .floating-dock-icon-wrapper {
   position: relative;
   z-index: 2;
@@ -162,52 +123,64 @@
 }
 
 .floating-dock-icon {
-  width: clamp(17px, 4.5vw, 20px);
-  height: clamp(17px, 4.5vw, 20px);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+  width: 20px;
+  height: 20px;
+  transition: all 0.15s ease;
 }
 
+.floating-dock-item.is-active .floating-dock-icon {
+  color: #111111 !important;
+  stroke-width: 2.3px;
+}
+
+/* ── Label ── */
 .floating-dock-label {
   position: relative;
   z-index: 2;
-  font-size: clamp(8px, 2.2vw, 9.5px);
-  font-weight: 600;
-  line-height: 1.1;
-  margin-top: 2px;
-  letter-spacing: -0.01em;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
   text-align: center;
-  transition: color 0.2s ease, font-weight 0.2s ease;
+  transition: color 0.15s ease;
 }
 
+.floating-dock-item.is-active .floating-dock-label {
+  color: #111111 !important;
+  font-weight: 800;
+}
+
+/* ── Unread Counter Badge ── */
 .floating-dock-counter-badge {
   position: absolute;
   top: -5px;
   right: -9px;
-  background: linear-gradient(135deg, #F43F5E 0%, #D97706 100%);
-  color: #ffffff;
-  font-size: 8px;
+  background: var(--nb-coral);
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
   font-weight: 800;
-  font-family: var(--font-sans);
   padding: 1px 5px;
   border-radius: 9999px;
-  border: 1.5px solid #1c0b18;
-  box-shadow: 0 2px 6px rgba(244, 63, 94, 0.5);
+  border: 1.5px solid var(--nb-ink);
+  line-height: 1.3;
+  min-width: 17px;
+  text-align: center;
+  box-shadow: 1px 1px 0 var(--nb-ink);
 }
 
-:root:not(.dark) .floating-dock-counter-badge {
-  border-color: #ffffff;
-}
-
+/* ── Ping Badge ── */
 .floating-dock-ping-badge {
   position: absolute;
   top: -3px;
   right: -5px;
   display: flex;
-  height: 10px;
-  width: 10px;
+  height: 9px;
+  width: 9px;
 }
-

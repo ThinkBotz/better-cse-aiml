@@ -1,50 +1,183 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* ─────────────────────────────────────────────────────────────
+   NOTX Connect — Global Design System
+   Neo-Brutalist "Loud Editorial" aesthetic
+   NO gradients · NO backdrop-blur · NO glow blobs
+   Depth = flat colour blocks + 1.5–2 px solid outlines
+   Hard offset shadow (3px 3px 0 ink) on primary CTAs only
+   ───────────────────────────────────────────────────────────── */
+
+/* 1. FONTS
+   Anton  → display/headline (all-caps, condensed)
+   Plus Jakarta Sans → body
+   JetBrains Mono    → mono/labels
+   ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* 2. TAILWIND THEME TOKENS
+   Wire CSS custom properties into Tailwind utility namespace
+   ─────────────────────────────────────────────────────────── */
 @theme {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-surface-accent: var(--surface-accent);
-  --color-divider: var(--divider);
-  --color-divider-light: var(--divider-light);
-  --color-content: var(--content);
-  --color-primary: var(--primary);
-  --color-secondary: var(--secondary);
-  --color-tertiary: var(--tertiary);
+  /* Semantic surface tokens — kept for backward compat with Tailwind classes */
+  --color-background:     var(--nb-bg);
+  --color-surface:        var(--nb-surface);
+  --color-surface-accent: var(--nb-surface-accent);
+  --color-divider:        var(--nb-divider);
+  --color-divider-light:  var(--nb-divider-light);
+  --color-content:        var(--nb-content);
+  --color-primary:        var(--nb-content);
+  --color-secondary:      var(--nb-secondary);
+  --color-tertiary:       var(--nb-tertiary);
+  --color-accent:         var(--nb-accent);
 
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Typography */
+  --font-sans:    "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Anton", "Plus Jakarta Sans", sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Radius scale — tight neo-brutalist */
+  --radius-none: 0px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-pill: 9999px;
 }
 
-/* Base styling overrides inspired by the plum/burgundy soft premium aesthetic */
+/* 3. COLOUR TOKENS — Light mode (warm off-white paper) */
 :root {
-  --background: #FCF4F7;
-  --surface: #FFFFFF;
-  --surface-accent: #F7E4EC;
-  --divider: rgba(180, 50, 90, 0.08);
-  --divider-light: rgba(180, 50, 90, 0.04);
-  --content: #2B0E20;
-  --primary: #1C0815;
-  --secondary: #6B3650;
-  --tertiary: #9E6883;
+  /* Surfaces */
+  --nb-bg:             #F5F0EB;
+  --nb-surface:        #FFFFFF;
+  --nb-surface-accent: #EDE7DF;
+
+  /* Outlines & dividers */
+  --nb-ink:            #1A1A1A;
+  --nb-divider:        rgba(26, 26, 26, 0.14);
+  --nb-divider-light:  rgba(26, 26, 26, 0.06);
+
+  /* Text */
+  --nb-content:   #1A1A1A;
+  --nb-secondary: #4A4A4A;
+  --nb-tertiary:  #7A7A7A;
+
+  /* Accent — overridden per-brand via JS: style.setProperty('--nb-accent', …) */
+  --nb-accent:    #E63946;
+  --nb-accent-fg: #FFFFFF;
+
+  /* Hard-offset shadow using ink */
+  --shadow-hard-sm: 2px 2px 0 #1A1A1A;
+  --shadow-hard:    3px 3px 0 #1A1A1A;
+  --shadow-hard-lg: 4px 4px 0 #1A1A1A;
+
+  /* Neo-Brutalist Bold Saturated Accent Palette */
+  --nb-yellow:        #FFE600;
+  --nb-yellow-fg:     #111111;
+  --nb-yellow-subtle: #FFF9C4;
+
+  --nb-blue:          #2563EB;
+  --nb-blue-fg:       #FFFFFF;
+  --nb-blue-subtle:   #DBEAFE;
+
+  --nb-green:         #00D26A;
+  --nb-green-fg:      #111111;
+  --nb-green-subtle:  #D1FAE5;
+
+  --nb-coral:         #FF5722;
+  --nb-coral-fg:      #FFFFFF;
+  --nb-coral-subtle:  #FFEDD5;
+
+  --nb-purple:        #7C3AED;
+  --nb-purple-fg:     #FFFFFF;
+  --nb-purple-subtle: #EDE9FE;
+
+  --nb-pink:          #FF2A85;
+  --nb-pink-fg:       #FFFFFF;
+  --nb-pink-subtle:   #FCE7F3;
+
+  --nb-cyan:          #00B4D8;
+  --nb-cyan-fg:       #111111;
+  --nb-cyan-subtle:   #E0F2FE;
+
+  /* Legacy aliases kept so old Tailwind token refs still work */
+  --background:     var(--nb-bg);
+  --surface:        var(--nb-surface);
+  --surface-accent: var(--nb-surface-accent);
+  --divider:        var(--nb-divider);
+  --divider-light:  var(--nb-divider-light);
+  --content:        var(--nb-content);
+  --primary:        var(--nb-content);
+  --secondary:      var(--nb-secondary);
+  --tertiary:       var(--nb-tertiary);
 }
 
+/* 4. DARK MODE TOKENS — deep graphite */
 :root.dark {
-  --background: #150914;
-  --surface: #200D1B;
-  --surface-accent: #2A1324;
-  --divider: rgba(255, 180, 210, 0.09);
-  --divider-light: rgba(255, 180, 210, 0.04);
-  --content: #FDF2F7;
-  --primary: #FCE7F0;
-  --secondary: #DBABC0;
-  --tertiary: #A6738A;
+  --nb-bg:             #111111;
+  --nb-surface:        #1C1C1C;
+  --nb-surface-accent: #252525;
+
+  --nb-ink:            #EBEBEB;
+  --nb-divider:        rgba(235, 235, 235, 0.14);
+  --nb-divider-light:  rgba(235, 235, 235, 0.06);
+
+  --nb-content:   #F0F0F0;
+  --nb-secondary: #ABABAB;
+  --nb-tertiary:  #6E6E6E;
+
+  --nb-accent:    #FF4D5B;
+  --nb-accent-fg: #FFFFFF;
+
+  --nb-yellow:        #FFDE59;
+  --nb-yellow-fg:     #000000;
+  --nb-yellow-subtle: #2C2600;
+
+  --nb-blue:          #3B82F6;
+  --nb-blue-fg:       #FFFFFF;
+  --nb-blue-subtle:   #1E293B;
+
+  --nb-green:         #05DF72;
+  --nb-green-fg:      #000000;
+  --nb-green-subtle:  #062E1B;
+
+  --nb-coral:         #FF6B35;
+  --nb-coral-fg:      #FFFFFF;
+  --nb-coral-subtle:  #3D1708;
+
+  --nb-purple:        #A78BFA;
+  --nb-purple-fg:     #000000;
+  --nb-purple-subtle: #25103F;
+
+  --nb-pink:          #FF65A3;
+  --nb-pink-fg:       #000000;
+  --nb-pink-subtle:   #3D0B20;
+
+  --nb-cyan:          #22D3EE;
+  --nb-cyan-fg:       #000000;
+  --nb-cyan-subtle:   #06283D;
+
+  --shadow-hard-sm: 2px 2px 0 #000000;
+  --shadow-hard:    3px 3px 0 #000000;
+  --shadow-hard-lg: 4px 4px 0 #000000;
+
+  /* Legacy aliases */
+  --background:     var(--nb-bg);
+  --surface:        var(--nb-surface);
+  --surface-accent: var(--nb-surface-accent);
+  --divider:        var(--nb-divider);
+  --divider-light:  var(--nb-divider-light);
+  --content:        var(--nb-content);
+  --primary:        var(--nb-content);
+  --secondary:      var(--nb-secondary);
+  --tertiary:       var(--nb-tertiary);
 }
 
+/* ─────────────────────────────────────────────────────────────
+   5. RESET & BASE
+   ───────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -55,7 +188,7 @@ html {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: var(--background);
+  background-color: var(--nb-bg);
 }
 
 body {
@@ -68,8 +201,9 @@ body {
   padding: 0;
   overflow: hidden;
   font-family: var(--font-sans);
-  background-color: var(--background);
-  color: var(--content);
+  font-size: 14px;
+  background-color: var(--nb-bg);
+  color: var(--nb-content);
   -webkit-font-smoothing: antialiased;
   -webkit-user-select: none;
   user-select: none;
@@ -87,7 +221,7 @@ body {
   min-height: -webkit-fill-available;
   min-height: 100dvh;
   margin: 0 auto;
-  background-color: var(--background);
+  background-color: var(--nb-bg);
   position: relative;
   overflow-x: hidden;
   overflow-y: hidden;
@@ -96,228 +230,643 @@ body {
   padding: 0;
 }
 
-/* Ambient glow atmospheric background for soft depth */
-#root::before {
-  content: '';
-  position: absolute;
-  top: -10%;
-  left: 15%;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(244, 63, 94, 0.12) 0%, rgba(225, 29, 72, 0.04) 50%, transparent 70%);
-  border-radius: 9999px;
-  filter: blur(60px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-:root.dark #root::before {
-  background: radial-gradient(circle, rgba(244, 63, 94, 0.16) 0%, rgba(192, 132, 252, 0.08) 50%, transparent 70%);
-}
-
+/* Remove old ambient glow pseudo-elements */
+#root::before,
 #root::after {
-  content: '';
-  position: absolute;
-  bottom: 5%;
-  right: 10%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(251, 113, 133, 0.1) 0%, transparent 70%);
-  border-radius: 9999px;
-  filter: blur(70px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-:root.dark #root::after {
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, rgba(244, 63, 94, 0.06) 50%, transparent 70%);
+  display: none;
 }
 
 input, textarea, select {
   -webkit-user-select: auto;
   user-select: auto;
-  font-size: 16px; /* Prevents auto-zoom on iOS safari */
+  font-size: 16px; /* Prevents auto-zoom on iOS Safari */
 }
 
-/* Custom modern scrollbars */
+/* ─────────────────────────────────────────────────────────────
+   6. SCROLLBARS — thin, ink-coloured, square
+   ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(20, 8, 18, 0.4);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(244, 63, 94, 0.35);
-  border-radius: 9999px;
+  background: var(--nb-divider);
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(244, 63, 94, 0.65);
+  background: var(--nb-secondary);
 }
 
-/* Animations inspired by smooth floating UI */
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.04); }
+/* ─────────────────────────────────────────────────────────────
+   7. TYPOGRAPHY UTILITIES
+   ───────────────────────────────────────────────────────────── */
+
+/* Display headline — Anton, all-caps, tight */
+.nb-headline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1;
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 4s ease-in-out infinite;
+/* Overline label — mono, all-caps, minimum 12px */
+.nb-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--nb-secondary);
 }
 
-@keyframes floatGentle {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
+/* Body copy */
+.nb-body {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
-.animate-float {
-  animation: floatGentle 5s ease-in-out infinite;
+/* ─────────────────────────────────────────────────────────────
+   8. CARD PRIMITIVES — flat fill + 1.5–2px solid ink outline
+   ───────────────────────────────────────────────────────────── */
+
+.nb-card {
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  position: relative;
 }
 
-/* Reference-inspired UI Utility classes */
+.nb-card-hero {
+  background: var(--nb-surface);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  position: relative;
+  box-shadow: var(--shadow-hard);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.nb-card-hero:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.nb-card-accent {
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  position: relative;
+  box-shadow: var(--shadow-hard);
+}
+
+.nb-card-tinted {
+  background: var(--nb-surface-accent);
+  border: 1.5px solid var(--nb-divider);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+
+/* Saturated Color Blocks & Cards */
+.nb-card-yellow {
+  background: var(--nb-yellow);
+  color: var(--nb-yellow-fg);
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.nb-card-blue {
+  background: var(--nb-blue);
+  color: var(--nb-blue-fg);
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.nb-card-green {
+  background: var(--nb-green);
+  color: var(--nb-green-fg);
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.nb-card-coral {
+  background: var(--nb-coral);
+  color: var(--nb-coral-fg);
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.nb-card-purple {
+  background: var(--nb-purple);
+  color: var(--nb-purple-fg);
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.nb-card-pink {
+  background: var(--nb-pink);
+  color: var(--nb-pink-fg);
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.nb-card-cyan {
+  background: var(--nb-cyan);
+  color: var(--nb-cyan-fg);
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+/* Saturated Pill Badges */
+.nb-pill-yellow {
+  background: var(--nb-yellow);
+  color: var(--nb-yellow-fg);
+  border: 1.5px solid var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.nb-pill-blue {
+  background: var(--nb-blue);
+  color: var(--nb-blue-fg);
+  border: 1.5px solid var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.nb-pill-green {
+  background: var(--nb-green);
+  color: var(--nb-green-fg);
+  border: 1.5px solid var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.nb-pill-coral {
+  background: var(--nb-coral);
+  color: var(--nb-coral-fg);
+  border: 1.5px solid var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.nb-pill-purple {
+  background: var(--nb-purple);
+  color: var(--nb-purple-fg);
+  border: 1.5px solid var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.nb-pill-pink {
+  background: var(--nb-pink);
+  color: var(--nb-pink-fg);
+  border: 1.5px solid var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.nb-pill-cyan {
+  background: var(--nb-cyan);
+  color: var(--nb-cyan-fg);
+  border: 1.5px solid var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   9. SHEET / MODAL PRIMITIVES
+   ───────────────────────────────────────────────────────────── */
+.nb-sheet {
+  background: var(--nb-surface);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.nb-modal {
+  background: var(--nb-surface);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-hard-lg);
+}
+
+.nb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 40;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   10. BUTTON PRIMITIVES — min 44px touch targets
+   ───────────────────────────────────────────────────────────── */
+.nb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--nb-ink);
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-hard-sm);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nb-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.nb-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--nb-ink);
+  background: transparent;
+  color: var(--nb-content);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.nb-btn-ghost:hover {
+  background: var(--nb-surface-accent);
+}
+
+.nb-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--nb-ink);
+  background: transparent;
+  color: var(--nb-content);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.nb-btn-icon:hover {
+  background: var(--nb-surface-accent);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   11. PILL TAG PRIMITIVES — outlined, no fill by default
+   ───────────────────────────────────────────────────────────── */
+.nb-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--nb-ink);
+  background: transparent;
+  color: var(--nb-content);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.nb-tag-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--nb-ink);
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.nb-tag-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--nb-divider);
+  background: var(--nb-surface-accent);
+  color: var(--nb-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   12. DIVIDER
+   ───────────────────────────────────────────────────────────── */
+.nb-divider {
+  width: 100%;
+  height: 1.5px;
+  background: var(--nb-divider);
+  border: none;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   13. INPUT PRIMITIVES
+   ───────────────────────────────────────────────────────────── */
+.nb-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--nb-ink);
+  background: var(--nb-surface);
+  color: var(--nb-content);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+
+.nb-input:focus {
+  border-color: var(--nb-accent);
+}
+
+.nb-input::placeholder {
+  color: var(--nb-tertiary);
+}
+
+/* Ensure inputs with icon padding classes preserve clearance */
+.nb-input.has-icon-left,
+.nb-input[class*="pl-"] {
+  padding-left: 2.625rem !important;
+}
+
+.nb-input.has-icon-right,
+.nb-input[class*="pr-"] {
+  padding-right: 2.75rem !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   14. ANIMATIONS — mechanical, not floaty
+   ───────────────────────────────────────────────────────────── */
+@keyframes nb-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.nb-slide-up {
+  animation: nb-slide-up 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes nb-fade-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.nb-fade-in {
+  animation: nb-fade-in 0.18s ease both;
+}
+
+@keyframes nb-stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nb-stagger-in {
+  animation: nb-stagger-in 0.2s ease both;
+}
+
+@keyframes nb-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+.nb-blink {
+  animation: nb-blink 1s step-end infinite;
+}
+
+@keyframes nb-laser-sweep {
+  0% { top: 8%; opacity: 0.8; }
+  50% { top: 90%; opacity: 1; }
+  100% { top: 8%; opacity: 0.8; }
+}
+.nb-laser-sweep {
+  animation: nb-laser-sweep 2.4s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   15. NAVIGATION DOCK — flat bar, no blur, border-top only
+   ───────────────────────────────────────────────────────────── */
+.nb-dock {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  background: var(--nb-surface);
+  border-top: 2px solid var(--nb-ink);
+  padding: 0 0.5rem;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  min-height: 60px;
+  flex-shrink: 0;
+}
+
+.nb-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--nb-tertiary);
+  transition: color 0.1s ease, background 0.1s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.nb-dock-item.active {
+  color: var(--nb-accent);
+}
+
+.nb-dock-item:active {
+  background: var(--nb-surface-accent);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   16. STAT NUMBERS — big editorial
+   ───────────────────────────────────────────────────────────── */
+.nb-stat {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.nb-stat-sm {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   17. SECTION HEADER — overline + headline pairing
+   ───────────────────────────────────────────────────────────── */
+.nb-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.5rem;
+  border-bottom: 1.5px solid var(--nb-divider);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   18. TOAST / BANNER
+   ───────────────────────────────────────────────────────────── */
+.nb-toast {
+  background: var(--nb-ink);
+  color: var(--nb-bg);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-hard);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   19. OFFLINE INDICATOR
+   ───────────────────────────────────────────────────────────── */
+.nb-offline-bar {
+  background: #F59E0B;
+  color: #1A1A1A;
+  border-bottom: 2px solid #1A1A1A;
+  padding: 0.375rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   20. HOLD-BUTTON PROGRESS RING
+   ───────────────────────────────────────────────────────────── */
+@keyframes nb-ring-fill {
+  from { stroke-dashoffset: 251; }
+  to   { stroke-dashoffset: 0; }
+}
+.nb-ring-fill {
+  animation: nb-ring-fill linear both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   21. LEGACY ALIASES — flat equivalents so existing components
+   don't break immediately during gradual migration
+   ───────────────────────────────────────────────────────────── */
 .ref-card {
-  background: linear-gradient(145deg, rgba(32, 13, 27, 0.95) 0%, rgba(24, 9, 20, 0.98) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 200, 220, 0.12);
-  border-radius: 28px;
-  box-shadow: 
-    0 20px 40px -12px rgba(12, 4, 11, 0.6),
-    inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-:root:not(.dark) .ref-card {
-  background: linear-gradient(145deg, #FFFFFF 0%, #FDF6F9 100%);
-  border: 1px solid rgba(220, 160, 185, 0.22);
-  box-shadow: 
-    0 16px 36px -10px rgba(180, 50, 90, 0.1),
-    0 4px 12px rgba(0, 0, 0, 0.03);
-}
-
-.ref-card:hover {
-  border-color: rgba(244, 63, 94, 0.3);
-  box-shadow: 
-    0 24px 48px -12px rgba(244, 63, 94, 0.25),
-    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
 }
 
 .glass-panel {
-  background: rgba(32, 13, 27, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 200, 220, 0.12);
-}
-
-:root:not(.dark) .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(220, 160, 185, 0.22);
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-divider);
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(38, 15, 32, 0.88) 0%, rgba(26, 10, 22, 0.95) 100%);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 200, 220, 0.12);
-  border-radius: 24px;
-}
-
-:root:not(.dark) .glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(253, 244, 248, 0.95) 100%);
-  border: 1px solid rgba(220, 160, 185, 0.2);
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-divider);
+  border-radius: var(--radius-lg);
 }
 
 .glass-pill {
-  background: rgba(255, 200, 220, 0.08);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 200, 220, 0.14);
-  border-radius: 9999px;
+  background: var(--nb-surface-accent);
+  border: 1.5px solid var(--nb-divider);
+  border-radius: var(--radius-pill);
 }
 
-:root:not(.dark) .glass-pill {
-  background: rgba(247, 228, 236, 0.6);
-  border: 1px solid rgba(220, 160, 185, 0.25);
-}
-
-/* Reference Action Pill Button */
 .ref-pill-button {
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
-  color: #FFFFFF;
+  border-radius: var(--radius-pill);
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 10px 22px;
-  box-shadow: 
-    0 8px 20px rgba(244, 63, 94, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.3);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 44px;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.ref-pill-button:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 
-    0 12px 28px rgba(244, 63, 94, 0.55),
-    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .ref-pill-button:active {
-  transform: translateY(0px) scale(0.98);
+  transform: translate(2px, 2px);
+  box-shadow: none;
 }
 
-/* Secondary Pill Control */
 .ref-pill-secondary {
-  border-radius: 9999px;
-  background: rgba(255, 200, 220, 0.1);
-  color: var(--content);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--nb-content);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  border: 1px solid rgba(255, 200, 220, 0.16);
-  transition: all 0.2s ease;
+  min-height: 44px;
+  border: 1.5px solid var(--nb-ink);
   cursor: pointer;
-}
-
-:root:not(.dark) .ref-pill-secondary {
-  background: rgba(247, 228, 236, 0.7);
-  border-color: rgba(220, 160, 185, 0.3);
+  transition: background 0.1s ease;
 }
 
 .ref-pill-secondary:hover {
-  background: rgba(255, 200, 220, 0.18);
-  border-color: rgba(244, 63, 94, 0.35);
+  background: var(--nb-surface-accent);
 }
 
-:root:not(.dark) .ref-pill-secondary:hover {
-  background: rgba(247, 228, 236, 1);
-}
-
-/* Circular icon action bubble embedded in pill buttons */
 .ref-icon-bubble {
-  width: 28px;
-  height: 28px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.22);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  backdrop-filter: blur(4px);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4);
 }
 
-/* FOCUS MODE STYLES */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) {
-  background-color: var(--surface);
-  color: var(--content);
-}
+/* Remove old focus-mode nth-of-type hack */
 

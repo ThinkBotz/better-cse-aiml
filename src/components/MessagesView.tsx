@@ -1,22 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  MessageSquare, Send, Inbox, Clock, Search, CheckCircle2, Check, CheckCheck, 
-  XCircle, Sparkles, Loader2, UserCheck, Plus, MessageCircle,
-  HelpCircle, AlertCircle, ChevronRight, CornerDownRight, User, Trash2, AlertTriangle
+  MessageSquare, Send, Search, Check, CheckCheck, 
+  X, Sparkles, Loader2, Plus, MessageCircle,
+  AlertCircle, ChevronRight, CornerDownRight, User, Trash2
 } from 'lucide-react';
-import { onSnapshot, collection, query, where } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
-import { UserProfile, UserInvitation, ChatRoom } from '../types';
+import { UserProfile, UserInvitation } from '../types';
 import HoldButton from './HoldButton';
 import { 
   getChatRoomId,
   sendChatMessage,
   respondToChatInvite,
   markMessagesAsRead,
-  updateTypingStatus,
   deleteChatRoom,
   deleteChatMessage,
-  db,
   rtdb
 } from '../firebase';
 
@@ -51,7 +48,6 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
   
   // Form status
   const [actionError, setActionError] = useState('');
-  const [actionSuccess, setActionSuccess] = useState('');
 
   // Delete Chat / Message Modals State
   const [chatToDelete, setChatToDelete] = useState<{ roll: string; name: string } | null>(null);
@@ -61,8 +57,7 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Determine if messages should be cleared based on roles
-    useEffect(() => {
+  useEffect(() => {
     if (initialTargetRoll) {
       const roll = initialTargetRoll.toUpperCase();
       const exists = conversations.some(c => c.classmateRoll.toUpperCase() === roll);
@@ -83,7 +78,6 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
       if (onTargetHandled) onTargetHandled();
     }
   }, [initialTargetRoll, onTargetHandled, conversations, allUsers]);
-
 
   // Real-time listener for RTDB chats where user is a participant
   useEffect(() => {
@@ -142,7 +136,7 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
           else if (firstMyMsg) classmateName = firstMyMsg.recipientName;
         }
 
-        // Convert typing status object/array to array of active roll numbers
+        // Convert typing status
         let typingArr: string[] = [];
         if (Array.isArray(room.typing)) {
           typingArr = room.typing;
@@ -155,128 +149,40 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
           classmateName,
           classmateProfile,
           messages: sortedMsgs,
-          lastMessageAt: room.lastMessageAt || new Date().toISOString(),
+          lastMessageAt: room.lastMessageAt || (sortedMsgs.length > 0 ? sortedMsgs[sortedMsgs.length - 1].createdAt : new Date(0).toISOString()),
           typing: typingArr
         });
       });
 
-      // Sort conversations descending by the time of the last message
       list.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
       setConversations(list);
       setIsLoading(false);
-    }, (error) => {
-      console.error("Error listening to RTDB chats:", error);
-      setIsLoading(false);
     });
 
-    return () => {
-      unsubscribe();
-    };
-  }, [user.rollNumber, allUsers]);
+    return () => unsubscribe();
+  }, [user, allUsers]);
 
-  // Automatically select the first conversation if none selected
-  // Removed auto-select so mobile users see the chat list first.
-  /*
-  useEffect(() => {
-    if (!selectedRoll && conversations.length > 0) {
-      setSelectedRoll(conversations[0].classmateRoll);
-    }
-  }, [conversations, selectedRoll]);
-  */
-
-  // Cleanup viewed messages when leaving a chat
-  const previousRollRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const prev = previousRollRef.current;
-    if (prev && prev !== selectedRoll && user.rollNumber) {
-      markMessagesAsRead(user.rollNumber, prev).catch(console.error);
-    }
-    previousRollRef.current = selectedRoll;
-  }, [selectedRoll, user.rollNumber]);
-
-  // Cleanup on unmount or tab close
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (previousRollRef.current && user.rollNumber) {
-        markMessagesAsRead(user.rollNumber, previousRollRef.current).catch(console.error);
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (previousRollRef.current && user.rollNumber) {
-        markMessagesAsRead(user.rollNumber, previousRollRef.current).catch(console.error);
-      }
-    };
-  }, [user.rollNumber]);
-
-
-  useEffect(() => {
-    if (selectedRoll && user.rollNumber) {
-      markMessagesAsRead(user.rollNumber, selectedRoll).catch(console.error);
-    }
-  }, [selectedRoll, user.rollNumber, conversations]);
-
-  // Scroll to bottom when selected conversation changes or new messages arrive
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedRoll, conversations]);
 
-  // Handle typing indicator update
+  // Mark messages as read when viewing a chat
   useEffect(() => {
-    if (!user.rollNumber || !selectedRoll) return;
+    if (!selectedRoll || !user?.rollNumber) return;
     const chatId = getChatRoomId(user.rollNumber, selectedRoll);
-    
-    if (newMessageText.trim().length > 0) {
-      updateTypingStatus(chatId, user.rollNumber, true);
-      
-      const timeout = setTimeout(() => {
-        if (user.rollNumber) {
-          updateTypingStatus(chatId, user.rollNumber, false);
-        }
-      }, 5000);
-      return () => {
-        clearTimeout(timeout);
-      };
-    } else {
-      updateTypingStatus(chatId, user.rollNumber, false);
-    }
-  }, [newMessageText, selectedRoll, user.rollNumber]);
+    markMessagesAsRead(chatId, user.rollNumber);
+  }, [selectedRoll, user]);
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!selectedRoll || !newMessageText.trim()) return;
-
-    setActionError('');
-    setActionSuccess('');
-
-    const targetConv = conversations.find(c => c.classmateRoll.toUpperCase() === selectedRoll.toUpperCase());
-    let recipientUid = '';
-    let recipientName = 'Student';
-
-    if (targetConv?.classmateProfile) {
-      recipientUid = targetConv.classmateProfile.uid;
-      recipientName = targetConv.classmateProfile.name;
-    } else {
-      // Find recipient in allUsers list
-      const match = allUsers.find(
-        u => u.rollNumber && u.rollNumber.toUpperCase() === selectedRoll.toUpperCase()
-      );
-      if (match) {
-        recipientUid = match.uid;
-        recipientName = match.name;
-      }
-    }
-
-    if (!recipientUid) {
-      setActionError("Cannot send message. Recipient student profile could not be found.");
-      return;
-    }
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessageText.trim() || !selectedRoll || !user || !user.rollNumber) return;
 
     try {
+      const activeConv = conversations.find(c => c.classmateRoll.toUpperCase() === selectedRoll.toUpperCase());
+      const recipientUid = activeConv?.classmateProfile?.uid || '';
+      const recipientName = activeConv?.classmateName || selectedRoll;
+
       await sendChatMessage(
         user,
         selectedRoll,
@@ -286,7 +192,6 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
         messageType
       );
       setNewMessageText('');
-      // Reset type back to chat
       setMessageType('chat');
     } catch (err) {
       console.error("Failed to send message", err);
@@ -312,7 +217,6 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
       const chatId = getChatRoomId(user.rollNumber, chatToDelete.roll);
       await deleteChatRoom(chatId);
       
-      // Optimistically remove conversation from local state
       setConversations(prev => prev.filter(c => c.classmateRoll.toUpperCase() !== chatToDelete.roll.toUpperCase()));
       
       if (selectedRoll?.toUpperCase() === chatToDelete.roll.toUpperCase()) {
@@ -335,7 +239,6 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
       const chatId = getChatRoomId(user.rollNumber, selectedRoll);
       await deleteChatMessage(chatId, messageToDelete.id);
       
-      // Optimistic local state update
       setConversations(prev => prev.map(c => {
         if (c.classmateRoll.toUpperCase() === selectedRoll.toUpperCase()) {
           const remaining = c.messages.filter(m => m.invitationId !== messageToDelete.id);
@@ -360,10 +263,8 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
   const handleStartNewChat = (recipient: UserProfile) => {
     const roll = (recipient.rollNumber || recipient.uid).toUpperCase();
     
-    // Check if conversation already exists in state
     const exists = conversations.some(c => c.classmateRoll.toUpperCase() === roll);
     if (!exists) {
-      // Inject dummy/empty placeholder conversation in list so it displays instantly
       const dummyConv: Conversation = {
         classmateRoll: roll,
         classmateName: recipient.name,
@@ -379,15 +280,13 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
     setSearchQuery('');
   };
 
-  // Find active selected conversation
   const activeConversation = conversations.find(
     c => c.classmateRoll.toUpperCase() === (selectedRoll || '').toUpperCase()
   );
 
-  // Filter students for starting new conversation
   const filteredStudentsForChat = allUsers.filter(u => {
-    if (u.uid === user.uid) return false; // cannot chat with self
-    if (!u.rollNumber) return false; // must have roll number
+    if (u.uid === user.uid) return false;
+    if (!u.rollNumber) return false;
     
     const term = searchQuery.toLowerCase();
     return (
@@ -398,17 +297,23 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
   });
 
   return (
-    <div className="flex-grow flex flex-col md:flex-row min-h-0 bg-background text-content overflow-hidden">
+    <div className="flex-grow flex flex-col md:flex-row min-h-0 bg-[var(--nb-bg)] text-[var(--nb-content)] overflow-hidden">
       {/* LEFT COLUMN: Active Chats List */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-divider/80 flex-col flex-shrink-0 bg-background h-full ${selectedRoll ? 'hidden md:flex' : 'flex'}`}>
+      <div 
+        className={`w-full md:w-80 lg:w-96 flex-col flex-shrink-0 bg-[var(--nb-surface)] h-full ${selectedRoll ? 'hidden md:flex' : 'flex'}`}
+        style={{ borderRight: '2px solid var(--nb-ink)' }}
+      >
         {/* Chat List Header */}
-        <div className="p-3.5 border-b border-divider/80 flex justify-between items-center bg-surface">
+        <div 
+          className="p-3.5 flex justify-between items-center bg-[var(--nb-surface-accent)]"
+          style={{ borderBottom: '2px solid var(--nb-ink)' }}
+        >
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-content flex items-center gap-1.5 font-display">
-              <MessageCircle className="w-4 h-4 text-indigo-400" />
+            <h3 className="nb-headline text-base flex items-center gap-1.5 leading-none">
+              <MessageCircle className="w-4 h-4 text-[var(--nb-accent)]" />
               Classmate Chats
             </h3>
-            <p className="text-[8px] text-violet-400 font-mono tracking-widest uppercase mt-0.5 font-bold">
+            <p className="nb-label text-[10px] text-[var(--nb-secondary)] mt-0.5">
               Direct Peer Network
             </p>
           </div>
@@ -417,42 +322,44 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
             onClick={() => {
               setShowNewChatModal(true);
               setActionError('');
-              setActionSuccess('');
             }}
-            className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all cursor-pointer active:scale-95 flex items-center justify-center shadow-md shadow-indigo-600/20"
+            className="nb-btn-icon w-8 h-8 rounded cursor-pointer"
             title="Start New Conversation"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Search for Chat locally or show New Chat Button */}
-        <div className="p-3 border-b border-divider/80">
+        {/* Search for Chat locally */}
+        <div className="p-3 border-b border-[var(--nb-divider)] bg-[var(--nb-surface)]">
           <button
             onClick={() => setShowNewChatModal(true)}
-            className="w-full bg-surface hover:bg-surface-accent border border-divider rounded-xl px-3 py-2 text-[10px] text-secondary flex items-center gap-2 transition-all text-left cursor-pointer"
+            className="nb-input !min-h-[38px] text-xs text-[var(--nb-secondary)] flex items-center gap-2 text-left cursor-pointer"
           >
-            <Search className="w-3.5 h-3.5 text-tertiary" />
-            Search Roll Number or Name...
+            <Search className="w-3.5 h-3.5 text-[var(--nb-tertiary)]" />
+            <span>Search Roll Number or Name...</span>
           </button>
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto scrollbar-none divide-y divide-neutral-800/60 pb-28">
+        <div className="flex-1 overflow-y-auto pb-28">
           {isLoading && conversations.length === 0 ? (
-            <div className="p-8 text-center text-secondary space-y-2">
-              <Loader2 className="w-5 h-5 animate-spin mx-auto text-indigo-400" />
-              <p className="text-[10px] font-mono">Syncing conversations...</p>
+            <div className="p-8 text-center text-[var(--nb-secondary)] space-y-2">
+              <Loader2 className="w-5 h-5 animate-spin mx-auto text-[var(--nb-accent)]" />
+              <p className="nb-label text-xs">Syncing conversations...</p>
             </div>
           ) : conversations.length === 0 ? (
-            <div className="p-8 text-center text-secondary space-y-3">
-              <div className="w-10 h-10 rounded-full bg-surface-accent flex items-center justify-center mx-auto text-tertiary">
-                <MessageSquare className="w-5 h-5" />
+            <div className="p-8 text-center text-[var(--nb-secondary)] space-y-3">
+              <div 
+                className="w-12 h-12 rounded-md bg-[var(--nb-surface-accent)] flex items-center justify-center mx-auto text-[var(--nb-content)]"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
+                <MessageSquare className="w-6 h-6 text-[var(--nb-accent)]" />
               </div>
-              <p className="text-[11px] font-medium text-secondary leading-relaxed">No active chat sessions.</p>
+              <p className="text-xs font-sans text-[var(--nb-secondary)] leading-relaxed">No active chat sessions.</p>
               <button
                 onClick={() => setShowNewChatModal(true)}
-                className="text-[9px] bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-bold transition-all uppercase cursor-pointer shadow-sm shadow-indigo-600/20"
+                className="nb-btn text-xs !min-h-[38px] px-3.5 cursor-pointer"
               >
                 Find Classmate
               </button>
@@ -462,7 +369,6 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
               const isSelected = selectedRoll?.toUpperCase() === conv.classmateRoll.toUpperCase();
               const lastMsg = conv.messages[conv.messages.length - 1];
               
-              // Count unread or pending actions
               const pendingCount = conv.messages.filter(
                 m => m.recipientRoll.toUpperCase() === (user.rollNumber || '').toUpperCase() && m.status === 'Pending' && m.type === 'invite'
               ).length;
@@ -480,66 +386,73 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedRoll(conv.classmateRoll); }}
-                  className={`w-full text-left p-3 flex items-start gap-3 transition-all relative outline-none cursor-pointer group ${
+                  className={`w-full text-left p-3 flex items-start gap-3 transition-all relative outline-none cursor-pointer border-b border-[var(--nb-divider)] ${
                     isSelected 
-                      ? 'bg-indigo-600/10 border-l-2 border-indigo-500' 
-                      : unreadCount > 0 
-                        ? 'bg-indigo-950/20 border-l-2 border-indigo-400' 
-                        : 'hover:bg-surface-accent/40 border-l-2 border-transparent'
+                      ? 'bg-[var(--nb-surface-accent)]' 
+                      : 'hover:bg-[var(--nb-surface-accent)]/50'
                   }`}
+                  style={{
+                    borderLeft: isSelected 
+                      ? '5px solid var(--nb-accent)' 
+                      : unreadCount > 0 
+                      ? '5px solid var(--nb-ink)' 
+                      : '5px solid transparent'
+                  }}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-surface-accent border border-divider/60 flex items-center justify-center text-content text-xs font-mono font-bold flex-shrink-0 overflow-hidden relative">
+                  <div 
+                    className="w-10 h-10 rounded-md bg-[var(--nb-surface)] flex items-center justify-center text-xs font-mono font-bold flex-shrink-0 overflow-hidden relative"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     <img 
                       src={conv.classmateProfile?.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${conv.classmateRoll}`} 
                       alt="avatar" 
                       className="w-full h-full object-cover" 
                     />
                     {unreadCount > 0 && (
-                      <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-[#000000]"></div>
+                      <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-[var(--nb-accent)] border border-[var(--nb-ink)]" />
                     )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                      <h4 className={`text-[11px] font-bold truncate pr-1 ${unreadCount > 0 ? 'text-indigo-400' : 'text-content'}`}>
+                      <h4 className="nb-headline text-xs tracking-normal truncate pr-1">
                         {conv.classmateName}
                       </h4>
-                      <span className={`text-[7px] font-mono flex-shrink-0 ${unreadCount > 0 ? 'text-indigo-400 font-bold' : 'text-tertiary'}`}>
+                      <span className="nb-label text-[9px] flex-shrink-0 text-[var(--nb-tertiary)]">
                         {lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                     </div>
                     
-                    <p className="text-[8px] text-violet-400 font-mono font-bold tracking-wider mt-0.5 uppercase">
+                    <p className="nb-label text-[9px] text-[var(--nb-accent)] mt-0.5">
                       {conv.classmateRoll}
                     </p>
 
-                    <p className={`text-[10px] truncate mt-0.5 ${unreadCount > 0 ? 'text-content font-medium' : 'text-secondary'}`}>
+                    <p className="text-xs truncate mt-0.5 text-[var(--nb-secondary)] font-sans">
                       {isTyping ? (
-                        <span className="text-indigo-400 animate-pulse italic">typing...</span>
+                        <span className="text-[var(--nb-accent)] font-bold italic">typing...</span>
                       ) : lastMsg ? (
                         <>
-                          <span className="font-bold text-tertiary mr-1">
+                          <strong className="text-[var(--nb-content)] mr-1 font-mono text-[10px]">
                             {lastMsg.senderUid === user.uid ? 'You:' : 'Them:'}
-                          </span>
+                          </strong>
                           {lastMsg.type === 'invite' ? '📬 Team Invite: ' : ''}
                           {lastMsg.message}
                         </>
                       ) : (
-                        <span className="text-indigo-400/70 italic">Tap to start chat...</span>
+                        <span className="text-[var(--nb-tertiary)] italic">Tap to start chat...</span>
                       )}
                     </p>
                   </div>
 
                   {/* Actions & Badges */}
                   <div className="flex items-center gap-1 self-center flex-shrink-0">
-                    {/* Delete entire chat quick action */}
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setChatToDelete({ roll: conv.classmateRoll, name: conv.classmateName });
                       }}
-                      className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 text-secondary hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer"
+                      className="p-1 text-[var(--nb-secondary)] hover:text-rose-600 rounded transition-all cursor-pointer"
                       title="Delete Entire Chat"
                       aria-label="Delete Entire Chat"
                     >
@@ -547,12 +460,12 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                     </button>
 
                     {pendingCount > 0 && (
-                      <span className="bg-amber-500 text-black text-[8px] font-mono font-black w-4 h-4 rounded-full flex items-center justify-center shadow animate-pulse">
+                      <span className="nb-tag text-[9px] font-bold bg-amber-500 text-black border-amber-600">
                         {pendingCount}
                       </span>
                     )}
                     {unreadCount > 0 && pendingCount === 0 && (
-                      <span className="bg-indigo-500 text-white text-[8px] font-mono font-black w-4 h-4 rounded-full flex items-center justify-center shadow">
+                      <span className="nb-tag-accent text-[9px] font-bold">
                         {unreadCount}
                       </span>
                     )}
@@ -565,20 +478,26 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
       </div>
 
       {/* RIGHT COLUMN: Chat Room / Thread View */}
-      <div className={`flex-1 flex-col min-h-0 bg-background ${selectedRoll ? 'flex' : 'hidden md:flex'}`}>
+      <div className={`flex-1 flex-col min-h-0 bg-[var(--nb-bg)] ${selectedRoll ? 'flex' : 'hidden md:flex'}`}>
         {activeConversation ? (
           <>
             {/* Thread Header */}
-            <div className="p-3 border-b border-divider/80 bg-surface flex items-center justify-between flex-shrink-0">
+            <div 
+              className="p-3 bg-[var(--nb-surface)] flex items-center justify-between flex-shrink-0"
+              style={{ borderBottom: '2px solid var(--nb-ink)' }}
+            >
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setSelectedRoll(null)}
-                  className="p-1 -ml-1 text-secondary hover:text-content active:bg-surface-accent rounded-lg transition-colors cursor-pointer md:hidden"
+                  className="nb-btn-icon w-8 h-8 rounded cursor-pointer md:hidden"
                   title="Back to list"
                 >
-                  <ChevronRight className="w-5 h-5 rotate-180" />
+                  <ChevronRight className="w-4 h-4 rotate-180" />
                 </button>
-                <div className="w-8 h-8 rounded-xl bg-surface-accent border border-divider/60 flex items-center justify-center text-content text-xs font-mono font-bold overflow-hidden">
+                <div 
+                  className="w-9 h-9 rounded-md bg-[var(--nb-surface-accent)] flex items-center justify-center text-xs font-mono font-bold overflow-hidden"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
                   <img 
                     src={activeConversation.classmateProfile?.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${activeConversation.classmateRoll}`} 
                     alt="avatar" 
@@ -586,16 +505,16 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                   />
                 </div>
                 <div>
-                  <h3 className="text-[12px] font-bold text-content leading-tight">
+                  <h3 className="nb-headline text-sm tracking-normal leading-tight">
                     {activeConversation.classmateName}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[8px] font-mono font-bold text-violet-400 uppercase bg-violet-500/10 px-1.5 py-0.2 rounded border border-violet-500/20">
+                    <span className="nb-tag text-[9px]">
                       {activeConversation.classmateRoll}
                     </span>
                     {activeConversation.classmateProfile && (
-                      <span className="text-[8px] text-secondary font-mono">
-                        ({activeConversation.classmateProfile.year} • Sect {activeConversation.classmateProfile.section})
+                      <span className="nb-label text-[9px] text-[var(--nb-secondary)]">
+                        ({activeConversation.classmateProfile.year} • Sec {activeConversation.classmateProfile.section})
                       </span>
                     )}
                   </div>
@@ -603,15 +522,14 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-2 py-0.5 text-[8px] font-mono font-bold text-indigo-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                <span className="nb-tag text-[9px]">
                   SECURE
-                </div>
+                </span>
 
                 <button
                   type="button"
                   onClick={() => setChatToDelete({ roll: activeConversation.classmateRoll, name: activeConversation.classmateName })}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 text-[10px] font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="nb-btn-ghost text-xs !min-h-[34px] px-2.5 text-rose-600 dark:text-rose-400 cursor-pointer"
                   title="Delete entire conversation"
                   aria-label="Delete entire conversation"
                 >
@@ -623,50 +541,59 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
 
             {/* Message History Feed */}
             {activeConversation.messages.some(m => m.type === 'invite' && m.status === 'Pending' && m.recipientRoll.toUpperCase() === (user.rollNumber || '').toUpperCase()) ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-background">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4 relative">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-[var(--nb-bg)]">
+                <div 
+                  className="w-14 h-14 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center mb-4"
+                  style={{ border: '2px solid var(--nb-ink)' }}
+                >
                   <Sparkles className="w-7 h-7" />
-                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-[#000000] animate-ping" />
-                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-[#000000]" />
                 </div>
                 
-                <h3 className="text-sm font-bold text-content mb-1.5">
+                <h3 className="nb-headline text-lg mb-1.5">
                   New Conversation Request
                 </h3>
                 
-                <p className="text-[11px] text-secondary max-w-sm mb-4 leading-relaxed">
-                  <span className="text-content font-bold">{activeConversation.classmateName}</span> wants to connect and collaborate. Accept their invitation to unlock the chat interface.
+                <p className="text-xs text-[var(--nb-secondary)] max-w-sm mb-4 leading-relaxed font-sans">
+                  <strong className="text-[var(--nb-content)] font-bold">{activeConversation.classmateName}</strong> wants to connect and collaborate. Accept their invitation to unlock the chat interface.
                 </p>
 
-                <div className="bg-surface border border-divider p-3.5 rounded-xl max-w-sm w-full mb-5">
-                   <p className="text-[11px] text-primary italic whitespace-pre-wrap">"{activeConversation.messages.find(m => m.type === 'invite' && m.status === 'Pending')?.message}"</p>
+                <div 
+                  className="p-3.5 rounded-lg max-w-sm w-full mb-5 bg-[var(--nb-surface)]"
+                  style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
+                   <p className="text-xs italic whitespace-pre-wrap font-sans text-[var(--nb-content)]">
+                     &ldquo;{activeConversation.messages.find(m => m.type === 'invite' && m.status === 'Pending')?.message}&rdquo;
+                   </p>
                 </div>
                 
                 <div className="flex items-center justify-center gap-2.5 w-full max-w-sm">
                   <button
                     onClick={() => handleRespondToInvite(activeConversation.messages.find(m => m.type === 'invite' && m.status === 'Pending')!.invitationId, 'Declined')}
-                    className="flex-1 py-2 rounded-xl border border-divider hover:bg-surface-accent text-secondary hover:text-content font-bold text-[11px] transition-all cursor-pointer"
+                    className="nb-btn-ghost flex-1 text-xs cursor-pointer"
                   >
                     Decline
                   </button>
                   <button
                     onClick={() => handleRespondToInvite(activeConversation.messages.find(m => m.type === 'invite' && m.status === 'Pending')!.invitationId, 'Accepted')}
-                    className="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                    className="nb-btn flex-1 text-xs cursor-pointer"
                   >
                     Accept Request
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-background">
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[var(--nb-bg)]">
                 {activeConversation.messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 text-secondary space-y-2.5">
-                    <div className="w-10 h-10 rounded-full border border-dashed border-divider flex items-center justify-center text-tertiary">
-                      <CornerDownRight className="w-5 h-5 animate-bounce" />
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2.5">
+                    <div 
+                      className="w-12 h-12 rounded-md flex items-center justify-center bg-[var(--nb-surface)]"
+                      style={{ border: '2px dashed var(--nb-divider)' }}
+                    >
+                      <CornerDownRight className="w-5 h-5 text-[var(--nb-accent)]" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-primary">Start the Conversation</h4>
-                      <p className="text-[10px] text-secondary max-w-xs mx-auto mt-0.5 leading-relaxed">
+                      <h4 className="nb-headline text-base">Start the Conversation</h4>
+                      <p className="text-xs text-[var(--nb-secondary)] max-w-xs mx-auto mt-0.5 leading-relaxed font-sans">
                         Send a message or invite to coordinate events and hackathons!
                       </p>
                     </div>
@@ -683,41 +610,47 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                         className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1 relative`}
                       >
                         {!isMe && (
-                          <span className="text-[8px] text-secondary font-mono font-bold uppercase tracking-wider ml-1">
+                          <span className="nb-label text-[9px] text-[var(--nb-tertiary)] ml-1">
                             {msg.senderName} ({msg.senderRoll})
                           </span>
                         )}
 
-                        <div className={`flex items-end gap-1.5 ${isMe ? 'flex-row-reverse' : 'flex-row'} max-w-[92%]`}>
-                          <div className={`rounded-2xl p-3 shadow-md space-y-1.5 ${
-                            isMe 
-                              ? 'bg-indigo-600 text-white rounded-tr-xs' 
-                              : 'bg-surface border border-divider text-content rounded-tl-xs'
-                          }`}>
+                        <div className={`flex items-end gap-1.5 ${isMe ? 'flex-row-reverse' : 'flex-row'} max-w-[90%]`}>
+                          <div 
+                            className={`p-3 rounded-md space-y-1.5 ${
+                              isMe 
+                                ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                                : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
+                            }`}
+                            style={{ 
+                              border: '1.5px solid var(--nb-ink)',
+                              boxShadow: 'var(--shadow-hard-sm)'
+                            }}
+                          >
                             
                             {isInvite && (
-                              <div className={`flex items-center gap-1.5 pb-1.5 border-b ${isMe ? 'border-indigo-400/30' : 'border-divider/60'}`}>
-                                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                                <span className="text-[9px] font-mono font-black uppercase tracking-wider text-amber-300">
+                              <div className="flex items-center gap-1.5 pb-1.5 border-b border-amber-500/40">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                <span className="nb-label text-[9px] text-amber-500 font-bold">
                                   Team Collaboration Invite
                                 </span>
                               </div>
                             )}
 
-                            <p className="text-[11px] font-sans leading-relaxed whitespace-pre-wrap select-text">
+                            <p className="text-xs font-sans leading-relaxed whitespace-pre-wrap select-text">
                               {msg.message}
                             </p>
 
                             {isInvite && (
-                              <div className={`pt-1.5 flex flex-col gap-1.5 ${isMe ? 'border-t border-indigo-400/30' : 'border-t border-divider/60'}`}>
-                                <div className="flex items-center justify-between text-[8px] font-mono text-secondary">
+                              <div className="pt-1.5 flex flex-col gap-1.5 border-t border-[var(--nb-divider)]">
+                                <div className="flex items-center justify-between text-[9px] font-mono">
                                   <span>Proposal Status:</span>
                                   <span className={`font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
                                     msg.status === 'Accepted'
-                                      ? 'bg-indigo-500/20 text-indigo-400'
+                                      ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                                       : msg.status === 'Declined'
-                                      ? 'bg-rose-500/20 text-rose-400'
-                                      : 'bg-amber-500/20 text-amber-400'
+                                      ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                                      : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                   }`}>
                                     {msg.status}
                                   </span>
@@ -727,23 +660,21 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                                   <div className="flex gap-2 pt-1">
                                     <button
                                       onClick={() => handleRespondToInvite(msg.invitationId, 'Accepted')}
-                                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[9px] uppercase py-1 rounded-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+                                      className="nb-btn text-[9px] !min-h-[28px] py-0.5 px-2.5 flex-1 cursor-pointer"
                                     >
-                                      <CheckCircle2 className="w-3 h-3" />
                                       Accept
                                     </button>
                                     <button
                                       onClick={() => handleRespondToInvite(msg.invitationId, 'Declined')}
-                                      className="flex-1 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-bold text-[9px] uppercase py-1 rounded-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+                                      className="nb-btn-ghost text-[9px] !min-h-[28px] py-0.5 px-2.5 flex-1 text-rose-600 dark:text-rose-400 cursor-pointer"
                                     >
-                                      <XCircle className="w-3 h-3" />
                                       Decline
                                     </button>
                                   </div>
                                 )}
 
                                 {msg.status !== 'Pending' && (
-                                  <p className="text-[8px] italic text-secondary text-center font-mono pt-0.5">
+                                  <p className="text-[9px] font-mono text-[var(--nb-secondary)] text-center pt-0.5">
                                     {msg.status === 'Accepted' 
                                       ? `✓ Accepted on ${new Date(msg.createdAt).toLocaleDateString()}`
                                       : `✕ Declined`}
@@ -752,12 +683,12 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                               </div>
                             )}
 
-                            <div className={`flex justify-end items-center gap-1 text-[7px] font-mono mt-1 ${isMe ? 'text-indigo-200' : 'text-secondary'}`}>
+                            <div className="flex justify-end items-center gap-1 text-[8px] font-mono mt-1 opacity-70">
                               <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                               {isMe && (
                                 msg.isRead 
-                                  ? <CheckCheck className="w-3 h-3 text-violet-400" />
-                                  : <Check className="w-3 h-3 text-secondary" />
+                                  ? <CheckCheck className="w-3 h-3 text-[var(--nb-accent)]" />
+                                  : <Check className="w-3 h-3 text-inherit" />
                               )}
                             </div>
                           </div>
@@ -770,7 +701,7 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                                 e.stopPropagation();
                                 setMessageToDelete({ id: msg.invitationId, text: msg.message });
                               }}
-                              className="opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1.5 text-secondary hover:text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer flex-shrink-0 self-center active:scale-90"
+                              className="opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1.5 text-[var(--nb-secondary)] hover:text-rose-600 rounded cursor-pointer flex-shrink-0 self-center"
                               title="Delete message"
                               aria-label="Delete message"
                             >
@@ -782,31 +713,16 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                     );
                   })
                 )}
-                {activeConversation.typing?.some(r => r.toUpperCase() === activeConversation.classmateRoll.toUpperCase()) && (
-                  <div className="flex justify-start">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-surface-accent border border-divider flex items-center justify-center text-content text-[9px] font-mono font-bold flex-shrink-0 overflow-hidden">
-                        <img 
-                          src={activeConversation.classmateProfile?.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${activeConversation.classmateRoll}`} 
-                          alt="avatar" 
-                          className="w-full h-full object-cover" 
-                        />
-                      </div>
-                      <div className="bg-surface border border-divider rounded-2xl rounded-tl-xs px-3.5 py-2 flex items-center gap-1">
-                        <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
                 <div ref={chatEndRef} />
               </div>
             )}
 
             {/* Form Error / Alerts inside chat */}
             {actionError && (
-              <div className="px-4 py-2 bg-rose-500/10 border-t border-rose-500/20 text-rose-400 text-[10px] flex items-center gap-2">
+              <div 
+                className="px-4 py-2 bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2 font-bold"
+                style={{ borderTop: '1.5px solid currentColor' }}
+              >
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{actionError}</span>
               </div>
@@ -814,19 +730,29 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
 
             {/* Chat Input Bar */}
             {activeConversation.messages.some(m => m.type === 'invite' && m.status === 'Pending' && m.recipientRoll.toUpperCase() === (user.rollNumber || '').toUpperCase()) ? (
-              <div className="p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3 border-t border-divider/80 bg-surface flex-shrink-0 text-center">
-                <p className="text-[10px] text-amber-400 font-mono bg-amber-500/10 py-2.5 rounded-xl border border-amber-500/20">
+              <div 
+                className="p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3 bg-[var(--nb-surface)] flex-shrink-0 text-center"
+                style={{ borderTop: '2px solid var(--nb-ink)' }}
+              >
+                <p className="nb-label text-xs text-amber-600 dark:text-amber-400 py-2">
                   Accept the invitation above to start messaging.
                 </p>
               </div>
             ) : activeConversation.messages.some(m => m.type === 'invite' && m.status === 'Pending' && m.senderUid === user.uid) ? (
-              <div className="p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3 border-t border-divider/80 bg-surface flex-shrink-0 text-center">
-                <p className="text-[10px] text-secondary font-mono py-2.5 rounded-xl border border-divider bg-background">
+              <div 
+                className="p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3 bg-[var(--nb-surface)] flex-shrink-0 text-center"
+                style={{ borderTop: '2px solid var(--nb-ink)' }}
+              >
+                <p className="nb-label text-xs text-[var(--nb-secondary)] py-2">
                   Waiting for {activeConversation.classmateName} to accept your invitation...
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSendMessage} className="p-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-3 border-t border-divider/60 bg-surface/90 backdrop-blur-md flex-shrink-0">
+              <form 
+                onSubmit={handleSendMessage} 
+                className="p-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-3 bg-[var(--nb-surface)] flex-shrink-0"
+                style={{ borderTop: '2px solid var(--nb-ink)' }}
+              >
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -840,19 +766,13 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                         ? `Send an invite to chat with ${activeConversation.classmateName}...` 
                         : `Message ${activeConversation.classmateName}...`
                     }
-                    className="flex-1 bg-surface-accent/70 border border-divider/80 focus:border-rose-500/60 rounded-full px-4 py-2.5 text-xs text-content outline-none placeholder:text-secondary transition-all shadow-inner"
+                    className="nb-input text-xs flex-1 rounded-md"
                   />
                   
                   <button
                     type="submit"
                     disabled={!newMessageText.trim()}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                      newMessageText.trim()
-                        ? (!activeConversation.messages || activeConversation.messages.length === 0)
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black active:scale-95 shadow-md shadow-amber-500/25'
-                          : 'bg-gradient-to-r from-rose-500 to-rose-600 text-white active:scale-95 shadow-md shadow-rose-500/30'
-                        : 'bg-surface-accent text-secondary cursor-not-allowed opacity-50'
-                    }`}
+                    className="nb-btn px-4 cursor-pointer disabled:opacity-40"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -862,81 +782,77 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
           </>
         ) : (
           /* Empty Active Session State */
-          <div className="flex-1 flex flex-col relative">
-            <div className="p-3 flex items-center justify-between absolute top-0 left-0 right-0 z-10">
-              <button
-                onClick={() => setSelectedRoll(null)}
-                className="p-1 -ml-1 text-secondary hover:text-content active:bg-surface-accent rounded-lg transition-colors cursor-pointer"
-                title="Back to list"
-              >
-                <ChevronRight className="w-5 h-5 rotate-180" />
-              </button>
+          <div className="flex-1 flex flex-col relative items-center justify-center p-6 text-center space-y-3">
+            <div 
+              className="w-14 h-14 rounded-md bg-[var(--nb-surface)] flex items-center justify-center"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+            >
+              <MessageSquare className="w-7 h-7 text-[var(--nb-accent)]" />
             </div>
-            
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-secondary space-y-3">
-              <div className="w-12 h-12 bg-surface border border-divider rounded-2xl flex items-center justify-center text-tertiary">
-                <MessageSquare className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-primary">No Active Chat</h3>
-                <p className="text-[11px] text-secondary max-w-xs mx-auto mt-0.5 leading-relaxed">
-                  Select a classmate from the list or start a new conversation.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowNewChatModal(true);
-                  setActionError('');
-                  setActionSuccess('');
-                }}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/20 cursor-pointer active:scale-95"
-              >
-                Start New Conversation
-              </button>
+            <div>
+              <h3 className="nb-headline text-lg">No Active Chat</h3>
+              <p className="text-xs text-[var(--nb-secondary)] max-w-xs mx-auto mt-0.5 leading-relaxed font-sans">
+                Select a classmate from the list or start a new conversation.
+              </p>
             </div>
+            <button
+              onClick={() => {
+                setShowNewChatModal(true);
+                setActionError('');
+              }}
+              className="nb-btn text-xs px-4 cursor-pointer"
+            >
+              Start New Conversation
+            </button>
           </div>
         )}
       </div>
 
       {/* NEW CHAT MODAL SCREEN */}
       {showNewChatModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-[999] animate-fade-in">
-          <div className="bg-surface border border-divider rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[999] select-none">
+          <div 
+            className="bg-[var(--nb-surface)] text-[var(--nb-content)] rounded-lg w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+          >
             {/* Modal Header */}
-            <div className="p-3.5 border-b border-divider bg-surface-accent flex justify-between items-center">
+            <div 
+              className="p-3.5 bg-[var(--nb-surface-accent)] flex justify-between items-center"
+              style={{ borderBottom: '2px solid var(--nb-ink)' }}
+            >
               <div>
-                <h4 className="text-xs font-bold text-content uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-indigo-400" />
+                <h4 className="nb-headline text-base flex items-center gap-1.5 leading-none">
+                  <User className="w-4 h-4 text-[var(--nb-accent)]" />
                   Lookup Classmate
                 </h4>
-                <p className="text-[8px] text-violet-400 font-mono tracking-widest uppercase mt-0.5 font-bold">
-                  NOTX Directory
+                <p className="nb-label text-[10px] text-[var(--nb-secondary)] mt-0.5">
+                  NOTX Student Directory
                 </p>
               </div>
               <button
                 onClick={() => setShowNewChatModal(false)}
-                className="p-1 hover:bg-divider/60 rounded-lg text-secondary hover:text-content transition-all cursor-pointer"
+                className="nb-btn-icon w-8 h-8 rounded cursor-pointer"
               >
-                <XCircle className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Search Input */}
-            <div className="p-3 border-b border-divider bg-background">
+            <div className="p-3 border-b border-[var(--nb-divider)] bg-[var(--nb-surface)]">
               <div className="relative">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Enter Name, Roll Number, or branch..."
-                  className="w-full bg-surface border border-divider focus:border-indigo-500/50 rounded-xl pl-9 pr-8 py-2.5 text-xs text-content outline-none"
+                  className="nb-input !pl-9 !pr-8 text-xs"
                   autoFocus
                 />
-                <Search className="w-3.5 h-3.5 text-tertiary absolute left-3 top-3" />
+                <Search className="w-3.5 h-3.5 text-[var(--nb-tertiary)] absolute left-3 top-3.5" />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-3 text-[10px] text-secondary hover:text-content"
+                    className="nb-label absolute right-3 top-3 text-[10px] text-[var(--nb-secondary)] hover:text-[var(--nb-content)]"
                   >
                     Clear
                   </button>
@@ -945,20 +861,23 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
             </div>
 
             {/* Modal Student List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-neutral-800/80 bg-background max-h-64 scrollbar-none">
+            <div className="flex-1 overflow-y-auto divide-y divide-[var(--nb-divider)] max-h-64">
               {filteredStudentsForChat.length === 0 ? (
-                <div className="p-8 text-center text-tertiary text-xs">
-                  No registered students match "{searchQuery}"
+                <div className="p-8 text-center text-xs text-[var(--nb-secondary)] font-sans">
+                  No registered students match &ldquo;{searchQuery}&rdquo;
                 </div>
               ) : (
                 filteredStudentsForChat.map((student) => (
                   <button
                     key={student.uid}
                     onClick={() => handleStartNewChat(student)}
-                    className="w-full text-left p-3 flex items-center justify-between hover:bg-surface-accent/40 transition-all outline-none cursor-pointer"
+                    className="w-full text-left p-3 flex items-center justify-between hover:bg-[var(--nb-surface-accent)] transition-all outline-none cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-surface-accent border border-divider/60 flex items-center justify-center text-content font-mono font-bold text-xs flex-shrink-0 overflow-hidden">
+                      <div 
+                        className="w-9 h-9 rounded-md bg-[var(--nb-surface-accent)] flex items-center justify-center font-mono font-bold text-xs flex-shrink-0 overflow-hidden"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
+                      >
                         <img 
                           src={student.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${student.rollNumber || student.uid}`} 
                           alt="avatar" 
@@ -966,26 +885,26 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                         />
                       </div>
                       <div>
-                        <h5 className="text-[11px] font-bold text-content">{student.name}</h5>
+                        <h5 className="nb-headline text-xs tracking-normal">{student.name}</h5>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[8px] font-mono text-violet-400 uppercase font-bold">
+                          <span className="nb-tag text-[9px]">
                             {student.rollNumber || 'N/A'}
                           </span>
-                          <span className="text-[8px] text-secondary">
+                          <span className="nb-label text-[9px] text-[var(--nb-secondary)]">
                             • {student.year || '3rd Year'} ({student.department || 'CSE'})
                           </span>
                         </div>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-tertiary" />
+                    <ChevronRight className="w-4 h-4 text-[var(--nb-tertiary)]" />
                   </button>
                 ))
               )}
             </div>
 
             {/* Modal Footer */}
-            <div className="p-2.5 bg-surface border-t border-divider text-center">
-              <span className="text-[8px] font-mono text-secondary">
+            <div className="p-2.5 bg-[var(--nb-surface-accent)] border-t border-[var(--nb-divider)] text-center">
+              <span className="nb-label text-[9px] text-[var(--nb-secondary)]">
                 Direct peer-to-peer communication
               </span>
             </div>
@@ -995,20 +914,26 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
 
       {/* DELETE ENTIRE CHAT CONFIRMATION MODAL */}
       {chatToDelete && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-[1000] animate-fade-in">
-          <div className="bg-surface border border-divider rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                <Trash2 className="w-5 h-5 text-rose-400" />
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[1000] select-none">
+          <div 
+            className="bg-[var(--nb-surface)] text-[var(--nb-content)] rounded-lg w-full max-w-sm p-5 space-y-4"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+          >
+            <div className="flex items-center gap-3">
+              <div 
+                className="p-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-md"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
+                <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-content">Delete Entire Chat?</h4>
-                <p className="text-[10px] text-secondary font-mono">Permanent wipeout</p>
+                <h4 className="nb-headline text-base">Delete Entire Chat?</h4>
+                <p className="nb-label text-[9px] text-[var(--nb-secondary)]">Permanent wipeout</p>
               </div>
             </div>
             
-            <p className="text-xs text-secondary leading-relaxed">
-              Are you sure you want to permanently delete all messages and the entire chat history with <span className="font-bold text-content">{chatToDelete.name}</span> ({chatToDelete.roll})? This action cannot be undone.
+            <p className="text-xs text-[var(--nb-secondary)] leading-relaxed font-sans">
+              Are you sure you want to permanently delete all messages and the entire chat history with <strong className="text-[var(--nb-content)]">{chatToDelete.name}</strong> ({chatToDelete.roll})? This action cannot be undone.
             </p>
 
             <div className="flex items-center gap-2 pt-1">
@@ -1016,25 +941,26 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                 type="button"
                 disabled={isDeletingChat}
                 onClick={() => setChatToDelete(null)}
-                className="flex-1 py-2 text-xs font-semibold rounded-xl border border-divider hover:bg-surface-accent text-secondary hover:text-content transition-all cursor-pointer"
+                className="nb-btn-ghost flex-1 text-xs !min-h-[40px] cursor-pointer"
               >
                 Cancel
               </button>
               <HoldButton
                 size="sm"
                 holdTime={1800}
-                backgroundColor="#18181b"
-                fillColor="#e11d48"
-                textColor="#ffffff"
+                backgroundColor="var(--nb-surface-accent)"
+                fillColor="var(--nb-accent)"
+                textColor="var(--nb-content)"
                 fillTextColor="#ffffff"
-                radius={12}
+                radius={4}
                 doneLabel="Chat Deleted"
                 disabled={isDeletingChat}
                 onHold={confirmDeleteChat}
                 icon={<Trash2 className="w-3.5 h-3.5" />}
-                className="flex-1"
+                className="flex-1 text-xs font-mono font-bold uppercase cursor-pointer"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
-                Hold to Delete Chat
+                Hold to Delete
               </HoldButton>
             </div>
           </div>
@@ -1043,24 +969,33 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
 
       {/* DELETE SINGLE MESSAGE CONFIRMATION MODAL */}
       {messageToDelete && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-[1000] animate-fade-in">
-          <div className="bg-surface border border-divider rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                <Trash2 className="w-5 h-5 text-rose-400" />
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[1000] select-none">
+          <div 
+            className="bg-[var(--nb-surface)] text-[var(--nb-content)] rounded-lg w-full max-w-sm p-5 space-y-4"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+          >
+            <div className="flex items-center gap-3">
+              <div 
+                className="p-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-md"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
+                <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-content">Delete Message?</h4>
-                <p className="text-[10px] text-secondary font-mono">Remove from conversation</p>
+                <h4 className="nb-headline text-base">Delete Message?</h4>
+                <p className="nb-label text-[9px] text-[var(--nb-secondary)]">Remove from conversation</p>
               </div>
             </div>
             
-            <p className="text-xs text-secondary leading-relaxed">
+            <p className="text-xs text-[var(--nb-secondary)] leading-relaxed font-sans">
               Are you sure you want to delete this message? It will be removed for all participants.
             </p>
 
-            <div className="bg-background border border-divider rounded-xl p-3 text-xs text-content italic line-clamp-3">
-              "{messageToDelete.text}"
+            <div 
+              className="bg-[var(--nb-surface-accent)] p-3 rounded text-xs text-[var(--nb-content)] italic line-clamp-3 font-sans"
+              style={{ border: '1px solid var(--nb-divider)' }}
+            >
+              &ldquo;{messageToDelete.text}&rdquo;
             </div>
 
             <div className="flex items-center gap-2 pt-1">
@@ -1068,23 +1003,24 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
                 type="button"
                 disabled={isDeletingMessage}
                 onClick={() => setMessageToDelete(null)}
-                className="flex-1 py-2 text-xs font-semibold rounded-xl border border-divider hover:bg-surface-accent text-secondary hover:text-content transition-all cursor-pointer"
+                className="nb-btn-ghost flex-1 text-xs !min-h-[40px] cursor-pointer"
               >
                 Cancel
               </button>
               <HoldButton
                 size="sm"
                 holdTime={1600}
-                backgroundColor="#18181b"
-                fillColor="#e11d48"
-                textColor="#ffffff"
+                backgroundColor="var(--nb-surface-accent)"
+                fillColor="var(--nb-accent)"
+                textColor="var(--nb-content)"
                 fillTextColor="#ffffff"
-                radius={12}
+                radius={4}
                 doneLabel="Deleted"
                 disabled={isDeletingMessage}
                 onHold={confirmDeleteMessage}
                 icon={<Trash2 className="w-3.5 h-3.5" />}
-                className="flex-1"
+                className="flex-1 text-xs font-mono font-bold uppercase cursor-pointer"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               >
                 Hold to Delete
               </HoldButton>

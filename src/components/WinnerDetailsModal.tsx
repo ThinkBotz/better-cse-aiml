@@ -45,41 +45,15 @@ export default function WinnerDetailsModal({
   const isSecond = winner.position.includes('2nd');
   const isThird = winner.position.includes('3rd');
 
-  const rankTheme = isFirst 
-    ? {
-        border: 'border-amber-500/40',
-        glow: 'from-amber-500/25 via-amber-500/5 to-transparent',
-        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-        icon: '🏆',
-        textColor: 'text-amber-400',
-        ring: 'ring-amber-500/40'
-      }
+  const rankBadgeBg = isFirst 
+    ? 'bg-amber-400 text-black' 
     : isSecond
-    ? {
-        border: 'border-slate-400/40',
-        glow: 'from-slate-400/25 via-slate-400/5 to-transparent',
-        badgeBg: 'bg-slate-400/20 text-slate-200 border-slate-400/40',
-        icon: '🥈',
-        textColor: 'text-slate-300',
-        ring: 'ring-slate-400/40'
-      }
+    ? 'bg-slate-300 text-black'
     : isThird
-    ? {
-        border: 'border-orange-500/40',
-        glow: 'from-orange-500/25 via-orange-500/5 to-transparent',
-        badgeBg: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
-        icon: '🥉',
-        textColor: 'text-orange-400',
-        ring: 'ring-orange-500/40'
-      }
-    : {
-        border: 'border-violet-500/40',
-        glow: 'from-violet-500/25 via-violet-500/5 to-transparent',
-        badgeBg: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
-        icon: '🌟',
-        textColor: 'text-violet-400',
-        ring: 'ring-violet-500/40'
-      };
+    ? 'bg-amber-600 text-white'
+    : 'bg-indigo-500 text-white';
+
+  const rankIcon = isFirst ? '🏆' : isSecond ? '🥈' : isThird ? '🥉' : '🌟';
 
   const handleCopyCitation = () => {
     const text = `🏆 Wall of Champions: Congratulations to ${winner.studentName} (${winner.rollNumber || 'AIML'}) for securing ${winner.position} [${winner.prizeTitle || 'Champion'}] in "${winner.eventTitle}"! ${winner.awardDetails ? `Award: ${winner.awardDetails}.` : ''} #DepartmentOfAIML #NOTXConnect`;
@@ -89,34 +63,41 @@ export default function WinnerDetailsModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-200">
-      <div className={`bg-surface border ${rankTheme.border} rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[92vh] relative`}>
-        {/* Decorative Top Glow */}
-        <div className={`absolute top-0 inset-x-0 h-28 bg-gradient-to-b ${rankTheme.glow} pointer-events-none`} />
-
+    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-3 sm:p-4 select-none animate-fadeIn">
+      <div 
+        className="bg-[var(--nb-surface)] rounded-lg w-full max-w-md overflow-hidden flex flex-col max-h-[92vh] relative"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+      >
         {/* Modal Top Bar */}
-        <div className="p-4 border-b border-divider/70 flex items-center justify-between relative z-10 shrink-0">
+        <div 
+          className="p-4 border-b-2 border-[var(--nb-ink)] flex items-center justify-between bg-[var(--nb-surface-accent)] shrink-0"
+        >
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-lg border font-mono tracking-wide ${rankTheme.badgeBg}`}>
-              <span>{rankTheme.icon}</span>
+            <span 
+              className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded font-mono uppercase tracking-wider ${rankBadgeBg}`}
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
+              <span>{rankIcon}</span>
               <span>{winner.position}</span>
             </span>
-            <span className="font-mono text-[10px] text-tertiary">Wall of Champions</span>
+            <span className="nb-label text-[10px] text-[var(--nb-secondary)]">WALL OF CHAMPIONS</span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <button
               onClick={handleCopyCitation}
-              className="p-1.5 rounded-xl bg-surface-accent hover:bg-divider text-secondary hover:text-content border border-divider flex items-center gap-1 text-xs cursor-pointer transition-colors"
+              className="nb-btn-ghost px-2.5 py-1 rounded flex items-center gap-1 text-xs cursor-pointer"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
               title="Copy achievement citation"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span className="text-[10px] font-semibold">{copied ? 'Copied!' : 'Share'}</span>
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span className="nb-label text-[10px]">{copied ? 'COPIED!' : 'SHARE'}</span>
             </button>
 
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-xl bg-surface-accent hover:bg-divider text-secondary hover:text-content border border-divider flex items-center justify-center cursor-pointer transition-colors"
+              className="nb-btn-ghost w-7 h-7 rounded flex items-center justify-center cursor-pointer"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -124,10 +105,16 @@ export default function WinnerDetailsModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 overflow-y-auto space-y-4 relative z-10">
+        <div className="p-5 overflow-y-auto space-y-4">
           {/* Champion Profile Spotlight */}
-          <div className="flex items-center gap-3.5">
-            <div className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-surface border border-divider ring-2 ${rankTheme.ring} shadow-md`}>
+          <div 
+            className="flex items-center gap-3.5 p-3 rounded bg-[var(--nb-surface-accent)]"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
+          >
+            <div 
+              className="relative w-16 h-16 rounded overflow-hidden shrink-0 bg-[var(--nb-surface)]"
+              style={{ border: '2px solid var(--nb-ink)' }}
+            >
               <img
                 src={winner.studentPhoto || `https://api.dicebear.com/9.x/notionists/svg?seed=${winner.rollNumber || winner.studentId}`}
                 alt={winner.studentName}
@@ -137,23 +124,26 @@ export default function WinnerDetailsModal({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <h3 className="font-display text-base font-bold text-content truncate">
+                <h3 className="nb-headline text-lg text-[var(--nb-content)] truncate">
                   {winner.studentName}
                 </h3>
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               </div>
 
               <div className="flex items-center gap-1.5 flex-wrap mt-1">
                 {winner.rollNumber && (
-                  <span className="font-mono text-[10.5px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-md">
+                  <span 
+                    className="font-mono text-[10px] font-bold text-[var(--nb-content)] bg-[var(--nb-surface)] px-2 py-0.5 rounded"
+                    style={{ border: '1px solid var(--nb-ink)' }}
+                  >
                     {winner.rollNumber}
                   </span>
                 )}
-                <span className="text-[11px] text-secondary font-mono truncate">
+                <span className="nb-label text-[11px] text-[var(--nb-secondary)] truncate">
                   {winner.department || 'CSE (AI & ML)'}
                 </span>
                 {(winner.year || winner.section) && (
-                  <span className="text-[10.5px] text-secondary font-mono">
+                  <span className="nb-label text-[10px] text-[var(--nb-secondary)]">
                     • {winner.year}{winner.section ? ` Sec ${winner.section}` : ''}
                   </span>
                 )}
@@ -162,44 +152,53 @@ export default function WinnerDetailsModal({
           </div>
 
           {/* Event & Award Spotlight Card */}
-          <div className="bg-surface-accent/40 border border-divider rounded-2xl p-4 space-y-3">
+          <div 
+            className="bg-[var(--nb-surface)] rounded p-4 space-y-3"
+            style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+          >
             <div>
-              <div className="text-[9.5px] font-bold uppercase tracking-wider text-secondary flex items-center gap-1 mb-1">
-                <Calendar className="w-3 h-3 text-indigo-400" />
-                <span>Department Event</span>
+              <div className="nb-label text-[9.5px] text-[var(--nb-secondary)] flex items-center gap-1 mb-1">
+                <Calendar className="w-3 h-3 text-[var(--nb-accent)]" />
+                <span>DEPARTMENT EVENT</span>
               </div>
-              <div className="text-sm font-bold text-content font-display">
+              <div className="nb-headline text-base text-[var(--nb-content)]">
                 {winner.eventTitle}
               </div>
               {winner.eventDate && (
-                <div className="text-[10.5px] font-mono text-tertiary mt-0.5">
-                  Conducted on {winner.eventDate}
+                <div className="nb-label text-[10px] text-[var(--nb-secondary)] mt-0.5">
+                  CONDUCTED ON {winner.eventDate}
                 </div>
               )}
             </div>
 
-            <div className="pt-2.5 border-t border-divider/60">
-              <div className="text-[9.5px] font-bold uppercase tracking-wider text-secondary flex items-center gap-1 mb-1">
-                <Trophy className="w-3 h-3 text-amber-400" />
-                <span>Prize & Distinction</span>
+            <div className="pt-2.5 border-t-2 border-[var(--nb-ink)]">
+              <div className="nb-label text-[9.5px] text-[var(--nb-secondary)] flex items-center gap-1 mb-1">
+                <Trophy className="w-3 h-3 text-amber-500" />
+                <span>PRIZE & DISTINCTION</span>
               </div>
-              <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <div className="text-xs font-bold text-[var(--nb-content)] flex items-center gap-1.5 font-mono">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span>{winner.prizeTitle || winner.position}</span>
               </div>
               {winner.awardDetails && (
-                <div className="mt-1.5 text-xs text-secondary font-medium leading-relaxed bg-surface/80 border border-divider/60 rounded-xl p-2.5">
+                <div 
+                  className="mt-2 text-xs text-[var(--nb-content)] font-bold leading-relaxed bg-[var(--nb-surface-accent)] rounded p-2.5"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
                   {winner.awardDetails}
                 </div>
               )}
             </div>
 
             {winner.projectTitle && (
-              <div className="pt-2.5 border-t border-divider/60">
-                <div className="text-[9.5px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1 mb-1">
-                  <span>💡 Winning Project / Topic</span>
+              <div className="pt-2.5 border-t-2 border-[var(--nb-ink)]">
+                <div className="nb-label text-[9.5px] text-[var(--nb-accent)] flex items-center gap-1 mb-1">
+                  <span>💡 WINNING PROJECT / TOPIC</span>
                 </div>
-                <div className="text-xs font-semibold text-indigo-200 font-mono bg-indigo-500/10 border border-indigo-500/25 rounded-xl p-2.5">
+                <div 
+                  className="text-xs font-bold text-[var(--nb-content)] font-mono bg-[var(--nb-surface-accent)] rounded p-2.5"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
                   {winner.projectTitle}
                 </div>
               </div>
@@ -207,17 +206,21 @@ export default function WinnerDetailsModal({
           </div>
 
           {/* Verification Footnote */}
-          <div className="flex items-center justify-between text-[10px] text-tertiary font-mono pt-1">
-            <span className="flex items-center gap-1 text-emerald-400">
-              <Award className="w-3 h-3" />
-              Verified Department Winner
+          <div 
+            className="flex items-center justify-between text-[10px] nb-label text-[var(--nb-secondary)] pt-1"
+          >
+            <span className="flex items-center gap-1 text-emerald-600 font-bold">
+              <Award className="w-3.5 h-3.5" />
+              VERIFIED DEPARTMENT WINNER
             </span>
-            <span>{winner.addedBy ? `By ${winner.addedBy}` : 'Admin Verified'}</span>
+            <span>{winner.addedBy ? `BY ${winner.addedBy.toUpperCase()}` : 'ADMIN VERIFIED'}</span>
           </div>
         </div>
 
         {/* Modal Footer / Actions */}
-        <div className="p-4 border-t border-divider/70 bg-surface-accent/30 flex items-center justify-between gap-2 shrink-0">
+        <div 
+          className="p-4 border-t-2 border-[var(--nb-ink)] bg-[var(--nb-surface-accent)] flex items-center justify-between gap-2 shrink-0"
+        >
           {canManageWinners ? (
             <div className="flex items-center gap-2">
               {onEdit && (
@@ -227,7 +230,8 @@ export default function WinnerDetailsModal({
                     onClose();
                     onEdit(winner);
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="nb-btn-ghost px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer uppercase"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit</span>
@@ -238,10 +242,10 @@ export default function WinnerDetailsModal({
                 <HoldButton
                   size="sm"
                   holdTime={1600}
-                  radius={12}
-                  backgroundColor="rgba(244, 63, 94, 0.15)"
+                  radius={4}
+                  backgroundColor="#fee2e2"
                   fillColor="#e11d48"
-                  textColor="#fda4af"
+                  textColor="#e11d48"
                   fillTextColor="#ffffff"
                   doneLabel="Deleted"
                   icon={<Trash2 className="w-3.5 h-3.5" />}
@@ -251,22 +255,23 @@ export default function WinnerDetailsModal({
                       onDelete(winner);
                     }, 400);
                   }}
-                  className="border border-rose-500/30 text-xs font-bold"
+                  className="border-[1.5px] border-[var(--nb-ink)] text-xs font-bold font-mono uppercase"
                 >
                   Hold to Delete
                 </HoldButton>
               )}
             </div>
           ) : (
-            <div className="text-[10px] text-secondary font-mono">
-              Academic Achiever Credential
+            <div className="nb-label text-[10px] text-[var(--nb-secondary)]">
+              ACADEMIC ACHIEVER CREDENTIAL
             </div>
           )}
 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-surface hover:bg-divider text-content border border-divider text-xs font-semibold cursor-pointer transition-colors"
+            className="nb-btn-ghost px-4 py-1.5 rounded text-xs font-bold uppercase cursor-pointer"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
             Close
           </button>

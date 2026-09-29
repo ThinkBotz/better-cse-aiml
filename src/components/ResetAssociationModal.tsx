@@ -179,24 +179,32 @@ export default function ResetAssociationModal({
   const isConfirmDisabled = confirmationInput.trim() !== CONFIRM_PHRASE || !confirmCheckbox || isResetting;
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 select-none animate-fadeIn">
-      <div className="bg-surface border border-divider/90 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-3 sm:p-4 select-none animate-fadeIn">
+      <div 
+        className="bg-[var(--nb-surface)] rounded-lg w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+      >
         {/* Header */}
-        <div className="p-4.5 border-b border-divider/70 flex items-center justify-between bg-surface-accent/40 shrink-0">
+        <div 
+          className="p-4.5 border-b-2 border-[var(--nb-ink)] flex items-center justify-between bg-[var(--nb-surface-accent)] shrink-0"
+        >
           <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-              activeTab === 'reset' 
-                ? 'bg-rose-500/15 border border-rose-500/25 text-rose-400' 
-                : 'bg-indigo-500/15 border border-indigo-500/25 text-indigo-400'
-            }`}>
+            <div 
+              className={`w-8 h-8 rounded flex items-center justify-center ${
+                activeTab === 'reset' 
+                  ? 'bg-rose-500 text-white' 
+                  : 'bg-[var(--nb-surface)] text-[var(--nb-accent)]'
+              }`}
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
               {activeTab === 'reset' ? <AlertTriangle className="w-4 h-4" /> : <Database className="w-4 h-4" />}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-content font-display">
+              <h3 className="nb-headline text-base text-[var(--nb-content)]">
                 {activeTab === 'reset' ? 'Reset Association • Start New Term' : 'System Backup & Data Export'}
               </h3>
-              <p className="text-[10.5px] text-secondary">
-                {activeTab === 'reset' ? 'Clean wipe database and prepare fresh association instance' : 'Download complete archival exports across all collections'}
+              <p className="nb-label text-[10px] text-[var(--nb-secondary)]">
+                {activeTab === 'reset' ? 'CLEAN WIPE DATABASE FOR FRESH ASSOCIATION INSTANCE' : 'DOWNLOAD ARCHIVAL EXPORTS ACROSS ALL COLLECTIONS'}
               </p>
             </div>
           </div>
@@ -204,21 +212,22 @@ export default function ResetAssociationModal({
           <button
             onClick={onClose}
             disabled={isResetting}
-            className="w-7 h-7 rounded-xl bg-surface-accent hover:bg-divider text-secondary hover:text-content border border-divider flex items-center justify-center cursor-pointer transition-colors"
+            className="nb-btn-ghost w-7 h-7 rounded flex items-center justify-center cursor-pointer"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Toggle */}
-        <div className="px-5 pt-3 shrink-0 flex gap-2 border-b border-divider/60">
+        <div className="px-5 pt-3 shrink-0 flex gap-2 border-b-2 border-[var(--nb-ink)] bg-[var(--nb-surface)]">
           <button
             type="button"
             onClick={() => setActiveTab('export')}
-            className={`pb-2.5 px-2 text-xs font-bold font-display flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 ${
+            className={`pb-2.5 px-3 text-xs font-bold uppercase flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 ${
               activeTab === 'export'
-                ? 'border-indigo-500 text-indigo-400'
-                : 'border-transparent text-secondary hover:text-content'
+                ? 'border-[var(--nb-ink)] text-[var(--nb-content)] font-black'
+                : 'border-transparent text-[var(--nb-secondary)] hover:text-[var(--nb-content)]'
             }`}
           >
             <Download className="w-3.5 h-3.5" />
@@ -228,10 +237,10 @@ export default function ResetAssociationModal({
           <button
             type="button"
             onClick={() => setActiveTab('reset')}
-            className={`pb-2.5 px-2 text-xs font-bold font-display flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 ${
+            className={`pb-2.5 px-3 text-xs font-bold uppercase flex items-center gap-1.5 transition-colors cursor-pointer border-b-2 ${
               activeTab === 'reset'
-                ? 'border-rose-500 text-rose-400'
-                : 'border-transparent text-secondary hover:text-content'
+                ? 'border-rose-600 text-rose-600 font-black'
+                : 'border-transparent text-[var(--nb-secondary)] hover:text-[var(--nb-content)]'
             }`}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -241,52 +250,68 @@ export default function ResetAssociationModal({
 
         {/* Tab 1: Export Content */}
         {activeTab === 'export' && (
-          <div className="p-5 overflow-y-auto space-y-4 text-xs">
+          <div className="p-5 overflow-y-auto space-y-4 text-xs bg-[var(--nb-bg)]">
             {/* Database Snapshot Stats */}
-            <div className="bg-surface-accent/40 rounded-2xl p-4 border border-divider/60 space-y-3">
+            <div 
+              className="bg-[var(--nb-surface)] rounded p-4 space-y-3"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-secondary flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Current Database State</span>
+                <span className="nb-label text-[11px] text-[var(--nb-secondary)] flex items-center gap-1.5">
+                  <Database className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
+                  <span>CURRENT DATABASE STATE</span>
                 </span>
-                <span className="text-[10px] font-mono text-tertiary">Department of CSE (AI & ML)</span>
+                <span className="nb-label text-[10px] text-[var(--nb-secondary)]">CSE (AI & ML)</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="bg-surface/80 p-2.5 rounded-xl border border-divider/60 text-center">
-                  <div className="text-base font-bold text-content font-mono">{allUsers.length}</div>
-                  <div className="text-[9.5px] text-secondary font-medium uppercase">Users & Members</div>
+                <div 
+                  className="bg-[var(--nb-surface-accent)] p-2.5 rounded text-center"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
+                  <div className="nb-headline text-lg text-[var(--nb-content)]">{allUsers.length}</div>
+                  <div className="nb-label text-[9px] text-[var(--nb-secondary)]">USERS & MEMBERS</div>
                 </div>
 
-                <div className="bg-surface/80 p-2.5 rounded-xl border border-divider/60 text-center">
-                  <div className="text-base font-bold text-indigo-400 font-mono">{events.length}</div>
-                  <div className="text-[9.5px] text-secondary font-medium uppercase">Events Hosted</div>
+                <div 
+                  className="bg-[var(--nb-surface-accent)] p-2.5 rounded text-center"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
+                  <div className="nb-headline text-lg text-[var(--nb-accent)]">{events.length}</div>
+                  <div className="nb-label text-[9px] text-[var(--nb-secondary)]">EVENTS HOSTED</div>
                 </div>
 
-                <div className="bg-surface/80 p-2.5 rounded-xl border border-divider/60 text-center">
-                  <div className="text-base font-bold text-emerald-400 font-mono">{registrations.length}</div>
-                  <div className="text-[9.5px] text-secondary font-medium uppercase">Registrations</div>
+                <div 
+                  className="bg-[var(--nb-surface-accent)] p-2.5 rounded text-center"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
+                  <div className="nb-headline text-lg text-emerald-600">{registrations.length}</div>
+                  <div className="nb-label text-[9px] text-[var(--nb-secondary)]">REGISTRATIONS</div>
                 </div>
 
-                <div className="bg-surface/80 p-2.5 rounded-xl border border-divider/60 text-center">
-                  <div className="text-base font-bold text-amber-400 font-mono">Full</div>
-                  <div className="text-[9.5px] text-secondary font-medium uppercase">All Collections</div>
+                <div 
+                  className="bg-[var(--nb-surface-accent)] p-2.5 rounded text-center"
+                  style={{ border: '1px solid var(--nb-ink)' }}
+                >
+                  <div className="nb-headline text-lg text-amber-500">FULL</div>
+                  <div className="nb-label text-[9px] text-[var(--nb-secondary)]">COLLECTIONS</div>
                 </div>
               </div>
             </div>
 
             {/* Main Export Action Card */}
-            <div className="bg-gradient-to-br from-indigo-500/10 via-surface to-surface rounded-2xl p-4.5 border border-indigo-500/30 space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h4 className="font-display text-sm font-bold text-content flex items-center gap-1.5">
-                    <FolderArchive className="w-4 h-4 text-indigo-400" />
-                    <span>Complete System Archival JSON</span>
-                  </h4>
-                  <p className="text-secondary text-[11px] mt-1 leading-relaxed">
-                    Generates a single comprehensive JSON package containing users, events, registrations, certificates, event winners, announcements, photo albums, notifications, and settings.
-                  </p>
-                </div>
+            <div 
+              className="bg-[var(--nb-surface)] rounded p-4.5 space-y-3"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+            >
+              <div>
+                <h4 className="nb-headline text-sm text-[var(--nb-content)] flex items-center gap-1.5">
+                  <FolderArchive className="w-4 h-4 text-[var(--nb-accent)]" />
+                  <span>Complete System Archival JSON</span>
+                </h4>
+                <p className="text-[var(--nb-secondary)] text-[11px] mt-1 leading-relaxed">
+                  Generates a single comprehensive JSON package containing users, events, registrations, certificates, event winners, announcements, photo albums, notifications, and settings.
+                </p>
               </div>
 
               <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
@@ -294,7 +319,8 @@ export default function ResetAssociationModal({
                   type="button"
                   onClick={handleDownloadFullBackup}
                   disabled={isExporting}
-                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/30 active:scale-95 flex items-center gap-2"
+                  className="px-4 py-2.5 rounded nb-btn font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
                   {isExporting ? (
                     <>
@@ -304,15 +330,15 @@ export default function ResetAssociationModal({
                   ) : (
                     <>
                       <Download className="w-3.5 h-3.5" />
-                      <span>Download Complete System Backup (.json)</span>
+                      <span>Download Full Backup (.json)</span>
                     </>
                   )}
                 </button>
 
                 {exportSuccess && (
-                  <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+                  <span className="nb-tag text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-white" style={{ border: '1px solid var(--nb-ink)' }}>
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Export saved to your device!</span>
+                    <span>EXPORT SAVED!</span>
                   </span>
                 )}
               </div>
@@ -320,50 +346,52 @@ export default function ResetAssociationModal({
 
             {/* Quick CSV Export Options */}
             <div className="space-y-2 pt-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                Individual Table Spreadsheets (CSV)
+              <span className="nb-label text-[10px] text-[var(--nb-secondary)]">
+                INDIVIDUAL SPREADSHEETS (CSV)
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={handleExportStudentsCSV}
-                  className="p-3 rounded-xl bg-surface border border-divider hover:border-divider hover:bg-surface-accent text-left transition-all cursor-pointer flex items-center justify-between"
+                  className="p-3 rounded bg-[var(--nb-surface)] hover:bg-[var(--nb-surface-accent)] text-left transition-all cursor-pointer flex items-center justify-between"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Users className="w-4 h-4 text-indigo-400" />
+                    <Users className="w-4 h-4 text-[var(--nb-accent)]" />
                     <div>
-                      <div className="font-bold text-content text-xs">Students Directory</div>
-                      <div className="text-[10px] text-secondary font-mono">Roll numbers, emails, sections</div>
+                      <div className="font-bold text-[var(--nb-content)] text-xs">Students Directory</div>
+                      <div className="nb-label text-[9px] text-[var(--nb-secondary)]">ROLL NUMBERS & SECTIONS</div>
                     </div>
                   </div>
-                  <Download className="w-3.5 h-3.5 text-secondary" />
+                  <Download className="w-3.5 h-3.5 text-[var(--nb-secondary)]" />
                 </button>
 
                 <button
                   type="button"
                   onClick={handleExportRegistrationsCSV}
-                  className="p-3 rounded-xl bg-surface border border-divider hover:border-divider hover:bg-surface-accent text-left transition-all cursor-pointer flex items-center justify-between"
+                  className="p-3 rounded bg-[var(--nb-surface)] hover:bg-[var(--nb-surface-accent)] text-left transition-all cursor-pointer flex items-center justify-between"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Calendar className="w-4 h-4 text-emerald-400" />
+                    <Calendar className="w-4 h-4 text-emerald-600" />
                     <div>
-                      <div className="font-bold text-content text-xs">Event Registrations</div>
-                      <div className="text-[10px] text-secondary font-mono">Attendance & participation logs</div>
+                      <div className="font-bold text-[var(--nb-content)] text-xs">Event Registrations</div>
+                      <div className="nb-label text-[9px] text-[var(--nb-secondary)]">PARTICIPATION LOGS</div>
                     </div>
                   </div>
-                  <Download className="w-3.5 h-3.5 text-secondary" />
+                  <Download className="w-3.5 h-3.5 text-[var(--nb-secondary)]" />
                 </button>
               </div>
             </div>
 
             {/* Next step prompt */}
-            <div className="pt-2 border-t border-divider/60 flex items-center justify-between">
-              <span className="text-[10.5px] text-secondary font-medium">Ready to start clean for the new academic year?</span>
+            <div className="pt-2 border-t-2 border-[var(--nb-ink)] flex items-center justify-between">
+              <span className="nb-label text-[10px] text-[var(--nb-secondary)]">READY TO START CLEAN FOR NEW YEAR?</span>
               <button
                 type="button"
                 onClick={() => setActiveTab('reset')}
-                className="text-xs text-rose-400 hover:text-rose-300 font-bold underline cursor-pointer"
+                className="text-xs text-rose-600 hover:text-rose-500 font-bold uppercase underline cursor-pointer"
               >
                 Proceed to Reset →
               </button>
@@ -373,40 +401,48 @@ export default function ResetAssociationModal({
 
         {/* Tab 2: Reset Content */}
         {activeTab === 'reset' && (
-          <div className="p-5 overflow-y-auto space-y-4 text-xs">
+          <div className="p-5 overflow-y-auto space-y-4 text-xs bg-[var(--nb-bg)]">
             {resetCompleteSummary ? (
               <div className="py-6 text-center space-y-4 animate-fadeIn">
-                <div className="w-14 h-14 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
+                <div 
+                  className="w-14 h-14 rounded bg-emerald-500 text-white flex items-center justify-center mx-auto"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
                   <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <div className="max-w-md mx-auto space-y-1">
-                  <h4 className="font-display text-base font-bold text-content">Association Reset Successfully!</h4>
-                  <p className="text-secondary text-xs leading-relaxed">
+                  <h4 className="nb-headline text-lg text-[var(--nb-content)]">Association Reset Successfully!</h4>
+                  <p className="text-[var(--nb-secondary)] text-xs leading-relaxed">
                     All previous student accounts, events, registrations, certificates, and photo records have been permanently wiped.
                   </p>
                 </div>
 
-                <div className="bg-surface-accent/60 border border-divider rounded-2xl p-4 max-w-sm mx-auto text-left space-y-1.5 font-mono text-[11px]">
-                  <div className="text-indigo-400 font-bold border-b border-divider pb-1 mb-1">Clean Slate Summary:</div>
-                  <div className="flex justify-between text-secondary">
+                <div 
+                  className="bg-[var(--nb-surface)] rounded p-4 max-w-sm mx-auto text-left space-y-1.5 font-mono text-[11px]"
+                  style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
+                  <div className="text-[var(--nb-accent)] font-bold border-b border-[var(--nb-ink)] pb-1 mb-1 uppercase font-mono">
+                    Clean Slate Summary:
+                  </div>
+                  <div className="flex justify-between text-[var(--nb-secondary)]">
                     <span>Events Cleared:</span>
-                    <span className="text-content font-bold">{resetCompleteSummary.deletedCounts.events || 0}</span>
+                    <span className="text-[var(--nb-content)] font-bold">{resetCompleteSummary.deletedCounts.events || 0}</span>
                   </div>
-                  <div className="flex justify-between text-secondary">
+                  <div className="flex justify-between text-[var(--nb-secondary)]">
                     <span>Registrations Cleared:</span>
-                    <span className="text-content font-bold">{resetCompleteSummary.deletedCounts.registrations || 0}</span>
+                    <span className="text-[var(--nb-content)] font-bold">{resetCompleteSummary.deletedCounts.registrations || 0}</span>
                   </div>
-                  <div className="flex justify-between text-secondary">
+                  <div className="flex justify-between text-[var(--nb-secondary)]">
                     <span>Certificates Cleared:</span>
-                    <span className="text-content font-bold">{resetCompleteSummary.deletedCounts.certificates || 0}</span>
+                    <span className="text-[var(--nb-content)] font-bold">{resetCompleteSummary.deletedCounts.certificates || 0}</span>
                   </div>
-                  <div className="flex justify-between text-secondary">
+                  <div className="flex justify-between text-[var(--nb-secondary)]">
                     <span>Student Accounts Cleared:</span>
-                    <span className="text-content font-bold">{resetCompleteSummary.deletedCounts.users || 0}</span>
+                    <span className="text-[var(--nb-content)] font-bold">{resetCompleteSummary.deletedCounts.users || 0}</span>
                   </div>
-                  <div className="flex justify-between text-secondary pt-1 border-t border-divider text-[10px]">
+                  <div className="flex justify-between text-[var(--nb-secondary)] pt-1 border-t border-[var(--nb-ink)] text-[10px]">
                     <span>Preserved Root Admin:</span>
-                    <span className="text-emerald-400 font-bold truncate max-w-[140px]">{resetCompleteSummary.preservedAdmin?.email}</span>
+                    <span className="text-emerald-600 font-bold truncate max-w-[140px]">{resetCompleteSummary.preservedAdmin?.email}</span>
                   </div>
                 </div>
 
@@ -417,7 +453,8 @@ export default function ResetAssociationModal({
                       onClose();
                       window.location.reload();
                     }}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-indigo-600/30 active:scale-95"
+                    className="px-6 py-2.5 rounded nb-btn font-bold text-xs uppercase tracking-wider cursor-pointer"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                   >
                     Refresh App & Start New Academic Term
                   </button>
@@ -426,38 +463,48 @@ export default function ResetAssociationModal({
             ) : (
               <>
                 {/* Danger Notice Banner */}
-                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-2">
-                  <div className="flex items-center gap-2 text-rose-400 font-bold text-xs font-display">
+                <div 
+                  className="p-4 rounded bg-rose-500/10 space-y-2 text-rose-600"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
+                  <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider font-mono">
                     <ShieldAlert className="w-4 h-4 shrink-0" />
                     <span>DANGER ZONE: START NEW ASSOCIATION TERM</span>
                   </div>
-                  <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                  <p className="text-[11px] leading-relaxed font-medium">
                     This irreversible operation clears all prior session records from Firestore:
                   </p>
-                  <ul className="text-[10.5px] text-rose-300 list-disc list-inside space-y-0.5 font-mono">
+                  <ul className="text-[10.5px] list-disc list-inside space-y-0.5 font-mono">
                     <li>All Student, Coordinator & Associate accounts are cleared</li>
                     <li>All Events, Workshops & Hackathons are deleted</li>
                     <li>All Registration rosters & Attendance logs are deleted</li>
                     <li>All Issued E-Certificates & Wall of Champions records are cleared</li>
                     <li>All Photo albums, announcements & chats are cleared</li>
                   </ul>
-                  <div className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
-                    🛡️ <strong>Safety Preservation:</strong> Your Administrator profile (<strong>{currentUser.email}</strong>) will be preserved as the active master administrator so you can immediately begin enrolling the new academic year's student body.
+                  <div 
+                    className="text-[10px] text-emerald-700 font-bold bg-white p-2 rounded"
+                    style={{ border: '1px solid var(--nb-ink)' }}
+                  >
+                    🛡️ Safety: Your Administrator profile (<strong>{currentUser.email}</strong>) will be preserved as root admin.
                   </div>
                 </div>
 
                 {/* Pre-reset backup check */}
                 {!hasBackedUp && (
-                  <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-2xl flex items-center justify-between gap-3">
+                  <div 
+                    className="bg-amber-400 text-black p-3 rounded flex items-center justify-between gap-3"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span className="text-[11px] text-amber-300 font-medium">Have you downloaded a backup of the current term?</span>
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span className="text-[11px] font-bold">Have you downloaded a backup of the current term?</span>
                     </div>
                     <button
                       type="button"
                       onClick={handleDownloadFullBackup}
                       disabled={isExporting}
-                      className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10.5px] font-bold cursor-pointer shrink-0"
+                      className="px-2.5 py-1 rounded bg-white text-black text-[10.5px] font-mono font-bold cursor-pointer shrink-0 uppercase"
+                      style={{ border: '1px solid var(--nb-ink)' }}
                     >
                       {isExporting ? 'Exporting...' : 'Download Backup'}
                     </button>
@@ -465,25 +512,31 @@ export default function ResetAssociationModal({
                 )}
 
                 {/* Confirmation Step 1: Checkbox */}
-                <label className="flex items-start gap-2.5 p-3 rounded-xl bg-surface border border-divider cursor-pointer hover:bg-surface-accent transition-colors">
+                <label 
+                  className="flex items-start gap-2.5 p-3 rounded bg-[var(--nb-surface)] cursor-pointer hover:bg-[var(--nb-surface-accent)] transition-colors"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
                   <input
                     type="checkbox"
                     checked={confirmCheckbox}
                     onChange={(e) => setConfirmCheckbox(e.target.checked)}
                     disabled={isResetting}
-                    className="mt-0.5 rounded text-rose-500 focus:ring-rose-500 cursor-pointer"
+                    className="mt-0.5 rounded accent-rose-600 cursor-pointer w-4 h-4"
                   />
-                  <div className="text-[11px] text-content leading-tight">
+                  <div className="text-[11px] text-[var(--nb-content)] leading-tight">
                     <strong>I confirm that I want to wipe all past academic year data.</strong>
-                    <div className="text-[10px] text-secondary mt-0.5">I understand that students, registrations, events, certificates, and media will be permanently erased.</div>
+                    <div className="text-[10px] text-[var(--nb-secondary)] mt-0.5 font-mono">Students, registrations, events, certificates, and media will be permanently erased.</div>
                   </div>
                 </label>
 
                 {/* Confirmation Step 2: Verification Phrase */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center justify-between">
-                    <span>Type confirmation phrase to unlock:</span>
-                    <span className="font-mono text-rose-400 font-bold select-all bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
+                  <label className="nb-label text-[10px] text-[var(--nb-secondary)] flex items-center justify-between">
+                    <span>TYPE CONFIRMATION PHRASE TO UNLOCK:</span>
+                    <span 
+                      className="font-mono text-rose-600 font-bold select-all bg-white px-1.5 py-0.2 rounded"
+                      style={{ border: '1px solid var(--nb-ink)' }}
+                    >
                       {CONFIRM_PHRASE}
                     </span>
                   </label>
@@ -493,20 +546,27 @@ export default function ResetAssociationModal({
                     onChange={(e) => setConfirmationInput(e.target.value)}
                     disabled={isResetting}
                     placeholder={`Type "${CONFIRM_PHRASE}" exactly...`}
-                    className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none font-mono focus:border-rose-500/60 uppercase"
+                    className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] font-bold rounded py-2 px-3 outline-none font-mono uppercase"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   />
                 </div>
 
                 {/* Reset Progress Bar */}
                 {isResetting && (
-                  <div className="space-y-2 p-3 bg-surface rounded-xl border border-divider">
+                  <div 
+                    className="space-y-2 p-3 bg-[var(--nb-surface)] rounded"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  >
                     <div className="flex justify-between items-center text-[10px] font-mono">
-                      <span className="text-secondary">{resetStage}</span>
-                      <span className="text-rose-400 font-bold">{resetPercent}%</span>
+                      <span className="text-[var(--nb-secondary)]">{resetStage}</span>
+                      <span className="text-rose-600 font-bold">{resetPercent}%</span>
                     </div>
-                    <div className="w-full h-2 bg-surface-accent rounded-full overflow-hidden">
+                    <div 
+                      className="w-full h-3 bg-[var(--nb-surface-accent)] rounded overflow-hidden"
+                      style={{ border: '1px solid var(--nb-ink)' }}
+                    >
                       <div
-                        className="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-300"
+                        className="h-full bg-rose-600 transition-all duration-300"
                         style={{ width: `${resetPercent}%` }}
                       />
                     </div>
@@ -514,12 +574,13 @@ export default function ResetAssociationModal({
                 )}
 
                 {/* Action Buttons */}
-                <div className="pt-2 flex items-center justify-end gap-2 border-t border-divider/60">
+                <div className="pt-2 flex items-center justify-end gap-2 border-t-2 border-[var(--nb-ink)]">
                   <button
                     type="button"
                     onClick={onClose}
                     disabled={isResetting}
-                    className="px-4 py-2 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold cursor-pointer border border-divider transition-all"
+                    className="nb-btn-ghost px-4 py-2 rounded text-xs font-bold uppercase cursor-pointer"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     Cancel
                   </button>
@@ -527,16 +588,16 @@ export default function ResetAssociationModal({
                   <HoldButton
                     size="md"
                     holdTime={2500}
-                    radius={14}
-                    backgroundColor="#18181b"
+                    radius={4}
+                    backgroundColor="#fee2e2"
                     fillColor="#e11d48"
-                    textColor="#ffffff"
+                    textColor="#e11d48"
                     fillTextColor="#ffffff"
                     doneLabel="Database Wiped"
                     disabled={isConfirmDisabled}
                     onHold={handleExecuteReset}
                     icon={isResetting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                    className="px-5 shadow-md shadow-rose-600/30 text-xs font-bold uppercase tracking-wider"
+                    className="px-5 text-xs font-bold uppercase tracking-wider border-[2px] border-[var(--nb-ink)] shadow-[2px_2px_0_#1A1A1A]"
                   >
                     {isResetting ? 'Resetting Database...' : 'Hold to Wipe Everything & Reset'}
                   </HoldButton>

@@ -11,11 +11,8 @@ import {
   ChevronRight, 
   Trash2, 
   Edit3, 
-  Upload, 
   Check, 
   AlertTriangle, 
-  Link as LinkIcon,
-  Sparkles,
   Loader2
 } from 'lucide-react';
 import ImageUploader from './ImageUploader';
@@ -264,28 +261,31 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
   // ==========================================
   if (selectedAlbum) {
     return (
-      <div className="flex-1 overflow-y-auto bg-background text-content pb-36 sm:pb-32">
+      <div className="flex-1 overflow-y-auto bg-[var(--nb-bg)] text-[var(--nb-content)] pb-36 sm:pb-32">
         {/* Album Header Bar */}
-        <div className="sticky top-0 bg-surface/95 backdrop-blur-md z-30 border-b border-divider p-4 shadow-sm">
+        <div 
+          className="sticky top-0 bg-[var(--nb-surface)] z-30 p-4"
+          style={{ borderBottom: '2px solid var(--nb-ink)' }}
+        >
           <div className="flex justify-between items-start sm:items-center gap-3 flex-wrap">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[9px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20 uppercase tracking-wider">
+                <span className="nb-tag text-[9px] font-bold">
                   {selectedAlbum.category}
                 </span>
-                <span className="font-mono text-[11px] text-secondary">
+                <span className="nb-tag-muted text-[10px]">
                   {selectedAlbum.images.length} Photos
                 </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-display font-bold text-content mt-1">{selectedAlbum.title}</h2>
-              <div className="flex items-center gap-3 text-[10px] text-secondary font-mono mt-1 flex-wrap">
+              <h2 className="nb-headline text-xl sm:text-2xl mt-1.5">{selectedAlbum.title}</h2>
+              <div className="flex items-center gap-3 text-xs text-[var(--nb-secondary)] font-mono mt-1 flex-wrap">
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-tertiary" /> 
+                  <Calendar className="w-3.5 h-3.5 text-[var(--nb-accent)]" /> 
                   {new Date(selectedAlbum.createdAt).toLocaleDateString()}
                 </span>
                 <span className="flex items-center gap-1">
-                  <User className="w-3 h-3 text-tertiary" /> 
-                  Uploaded by {selectedAlbum.uploadedBy}
+                  <User className="w-3.5 h-3.5 text-[var(--nb-accent)]" /> 
+                  By {selectedAlbum.uploadedBy}
                 </span>
               </div>
             </div>
@@ -297,7 +297,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                   <button 
                     type="button"
                     onClick={() => openEditModal(selectedAlbum)}
-                    className="flex items-center gap-1.5 bg-indigo-600/15 hover:bg-indigo-600 text-indigo-400 hover:text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer border border-indigo-500/30 text-xs font-semibold shadow-xs"
+                    className="nb-btn-ghost text-xs !min-h-[38px] px-3 cursor-pointer"
                     title="Edit Name, Description & Photos"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -310,7 +310,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                       e.stopPropagation();
                       setAlbumToDelete(selectedAlbum);
                     }}
-                    className="flex items-center gap-1.5 bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer border border-rose-500/20 text-xs font-semibold shadow-xs"
+                    className="nb-btn-ghost text-xs !min-h-[38px] px-3 text-rose-600 dark:text-rose-400 cursor-pointer"
                     title="Delete Album"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -322,16 +322,19 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
               <button 
                 type="button"
                 onClick={() => setSelectedAlbum(null)}
-                className="bg-surface-accent hover:bg-divider p-2 rounded-xl transition-colors cursor-pointer text-secondary hover:text-content border border-divider/60"
+                className="nb-btn-icon w-9 h-9 rounded cursor-pointer"
                 title="Back to Gallery"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {selectedAlbum.description && (
-            <p className="text-xs text-secondary mt-3 leading-relaxed max-w-3xl bg-surface-accent/40 p-2.5 rounded-xl border border-divider/40">
+            <p 
+              className="text-xs text-[var(--nb-secondary)] mt-3 leading-relaxed max-w-3xl p-3 rounded-md bg-[var(--nb-surface-accent)] font-sans"
+              style={{ border: '1px solid var(--nb-divider)' }}
+            >
               {selectedAlbum.description}
             </p>
           )}
@@ -340,17 +343,26 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
         {/* Photo Gallery Grid */}
         <div className="p-4">
           {selectedAlbum.images.length === 0 ? (
-            <div className="py-16 text-center bg-surface border border-divider rounded-2xl p-6">
-              <ImageIcon className="w-10 h-10 text-secondary mx-auto mb-2 opacity-50" />
-              <h4 className="text-sm font-bold text-content">No photos in this album</h4>
-              <p className="text-xs text-secondary mt-1">Use the Edit Album button above to add pictures.</p>
+            <div 
+              className="py-16 text-center rounded-lg bg-[var(--nb-surface)] p-6"
+              style={{ border: '2px dashed var(--nb-divider)' }}
+            >
+              <div 
+                className="w-12 h-12 rounded-md mx-auto mb-3 flex items-center justify-center bg-[var(--nb-surface-accent)]"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
+                <ImageIcon className="w-6 h-6 text-[var(--nb-accent)]" />
+              </div>
+              <h4 className="nb-headline text-base">No photos in this album</h4>
+              <p className="text-xs text-[var(--nb-secondary)] mt-1 font-sans">Use the Edit Album button above to add pictures.</p>
               {canModifyAlbum(selectedAlbum) && (
                 <button
                   type="button"
                   onClick={() => openEditModal(selectedAlbum)}
-                  className="mt-4 inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer"
+                  className="nb-btn mt-4 text-xs cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" /> Add Photos Now
+                  <Plus className="w-4 h-4" />
+                  <span>Add Photos Now</span>
                 </button>
               )}
             </div>
@@ -360,12 +372,16 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                 <div 
                   key={idx} 
                   onClick={() => setActiveImageIdx(idx)}
-                  className="relative group aspect-square rounded-2xl overflow-hidden border border-divider bg-surface shadow-xs transition-all hover:border-indigo-500/50 hover:shadow-lg cursor-pointer"
+                  className="relative group aspect-square rounded-md overflow-hidden bg-[var(--nb-surface)] cursor-pointer transition-all"
+                  style={{ 
+                    border: '2px solid var(--nb-ink)',
+                    boxShadow: 'var(--shadow-hard-sm)'
+                  }}
                 >
                   <img 
                     src={img} 
                     alt={`${selectedAlbum.title} ${idx + 1}`} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
                   />
 
                   {/* Individual Photo Delete Button */}
@@ -376,16 +392,19 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                         e.stopPropagation();
                         setPhotoToDeleteIdx(idx);
                       }}
-                      className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-rose-600 text-white rounded-xl backdrop-blur-md transition-all shadow-md z-[2] border border-white/10 cursor-pointer opacity-90 group-hover:opacity-100 active:scale-95"
+                      className="absolute top-2 right-2 p-1.5 bg-[var(--nb-ink)] text-[var(--nb-bg)] rounded transition-all cursor-pointer opacity-90 group-hover:opacity-100"
+                      style={{ border: '1px solid var(--nb-ink)' }}
                       title="Delete this photo"
                       aria-label="Delete this photo"
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-300 group-hover:text-white" />
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
                     </button>
                   )}
 
                   {/* Photo Index Tag */}
-                  <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-md text-[9px] font-mono text-white/90 border border-white/10 pointer-events-none">
+                  <div 
+                    className="absolute bottom-2 left-2 bg-[var(--nb-ink)] text-[var(--nb-bg)] px-1.5 py-0.5 rounded text-[9px] font-mono font-bold pointer-events-none"
+                  >
                     #{idx + 1}
                   </div>
                 </div>
@@ -396,9 +415,9 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
 
         {/* Lightbox Modal */}
         {activeImageIdx !== null && selectedAlbum.images[activeImageIdx] && (
-          <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex flex-col animate-fade-in select-none">
-            <div className="flex justify-between items-center p-3.5 sm:p-4 border-b border-white/10 bg-black/60 backdrop-blur-md flex-shrink-0">
-              <span className="text-xs font-mono font-bold text-neutral-300">
+          <div className="fixed inset-0 bg-black/95 z-50 flex flex-col select-none">
+            <div className="flex justify-between items-center p-3.5 sm:p-4 border-b border-white/20 bg-black/80 flex-shrink-0">
+              <span className="nb-label text-white">
                 Photo {activeImageIdx + 1} of {selectedAlbum.images.length}
               </span>
               <div className="flex items-center gap-2">
@@ -406,7 +425,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                   <button 
                     type="button"
                     onClick={() => setPhotoToDeleteIdx(activeImageIdx)}
-                    className="flex items-center gap-1.5 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white px-3 py-1.5 rounded-xl border border-rose-500/30 transition-all cursor-pointer text-xs font-semibold"
+                    className="flex items-center gap-1.5 bg-rose-600/30 hover:bg-rose-600 text-rose-300 hover:text-white px-3 py-1.5 rounded border border-rose-500/40 transition-all cursor-pointer text-xs font-bold font-mono uppercase"
                     title="Delete Photo"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -416,7 +435,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                 <button 
                   type="button"
                   onClick={() => setActiveImageIdx(null)}
-                  className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-colors cursor-pointer text-white"
+                  className="p-2 rounded bg-white/10 hover:bg-white/20 text-white cursor-pointer"
                   title="Close Fullscreen"
                 >
                   <X className="w-5 h-5" />
@@ -432,7 +451,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                     e.stopPropagation();
                     setActiveImageIdx((prev) => prev !== null ? (prev > 0 ? prev - 1 : selectedAlbum.images.length - 1) : null);
                   }}
-                  className="absolute left-3 sm:left-6 p-2.5 sm:p-3 bg-black/60 hover:bg-black/90 rounded-full text-white backdrop-blur-sm transition-all border border-white/10 shadow-xl z-20 cursor-pointer active:scale-95"
+                  className="absolute left-3 sm:left-6 p-2.5 sm:p-3 bg-black/70 hover:bg-black text-white rounded border border-white/20 cursor-pointer active:scale-95 z-20"
                   aria-label="Previous photo"
                 >
                   <ChevronLeft className="w-6 h-6" />
@@ -442,7 +461,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
               <img 
                 src={selectedAlbum.images[activeImageIdx]} 
                 alt={`${selectedAlbum.title} fullscreen`}
-                className="max-w-full max-h-full object-contain rounded-xl shadow-2xl transition-all duration-200"
+                className="max-w-full max-h-full object-contain rounded-md border border-white/20"
               />
 
               {selectedAlbum.images.length > 1 && (
@@ -452,7 +471,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                     e.stopPropagation();
                     setActiveImageIdx((prev) => prev !== null ? (prev < selectedAlbum.images.length - 1 ? prev + 1 : 0) : null);
                   }}
-                  className="absolute right-3 sm:right-6 p-2.5 sm:p-3 bg-black/60 hover:bg-black/90 rounded-full text-white backdrop-blur-sm transition-all border border-white/10 shadow-xl z-20 cursor-pointer active:scale-95"
+                  className="absolute right-3 sm:right-6 p-2.5 sm:p-3 bg-black/70 hover:bg-black text-white rounded border border-white/20 cursor-pointer active:scale-95 z-20"
                   aria-label="Next photo"
                 >
                   <ChevronRight className="w-6 h-6" />
@@ -462,7 +481,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
           </div>
         )}
 
-        {/* Confirmation Modals (Rendered below for Album/Photo Deletion) */}
+        {/* Confirmation Modals */}
         {renderConfirmModals()}
         {renderEditModal()}
       </div>
@@ -473,29 +492,32 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
   // MAIN GALLERY VIEW (ALBUMS LIST)
   // ==========================================
   return (
-    <div className="flex-1 overflow-y-auto bg-background text-content px-4 pt-4 pb-36 sm:pb-32 space-y-5">
+    <div className="flex-1 overflow-y-auto bg-[var(--nb-bg)] text-[var(--nb-content)] px-4 pt-4 pb-36 sm:pb-32 space-y-5">
       {/* Gallery Header */}
-      <div className="flex justify-between items-end mb-2">
+      <div 
+        className="p-4 rounded-lg bg-[var(--nb-surface)] flex justify-between items-center gap-3"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+      >
         <div>
-          <h1 className="text-xl font-extrabold font-display tracking-tight text-content mb-1">Gallery Albums</h1>
-          <p className="text-xs text-secondary">Cherish memories, snapshots, and milestones from department events.</p>
+          <h1 className="nb-headline text-2xl leading-none">Gallery Albums</h1>
+          <p className="nb-label text-xs text-[var(--nb-secondary)] mt-1">
+            Department memories, event snapshots, and visual milestones
+          </p>
         </div>
         {isAdminOrCoordinator && (
           <button 
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="ref-pill-button text-xs font-bold py-2.5 px-4 shadow-lg shadow-rose-500/30 active:scale-95 transition-all cursor-pointer"
+            className="nb-btn text-xs py-2 px-3.5 !min-h-[38px] cursor-pointer"
           >
-            <div className="ref-icon-bubble w-5 h-5">
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            </div>
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Create Album</span>
           </button>
         )}
       </div>
 
       {/* Albums Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {albums.map((album) => {
           const hasRights = canModifyAlbum(album);
 
@@ -503,23 +525,30 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
             <div 
               key={album.albumId} 
               onClick={() => setSelectedAlbum(album)}
-              className="group ref-card overflow-hidden transition-all cursor-pointer flex flex-col relative active:scale-[0.99]"
+              className="bg-[var(--nb-surface)] rounded-lg overflow-hidden cursor-pointer flex flex-col relative transition-all group"
+              style={{ 
+                border: '2px solid var(--nb-ink)',
+                boxShadow: 'var(--shadow-hard-sm)'
+              }}
             >
-              <div className="aspect-video relative overflow-hidden rounded-t-[28px] bg-surface">
+              <div 
+                className="aspect-video relative overflow-hidden bg-[var(--nb-surface-accent)]"
+                style={{ borderBottom: '2px solid var(--nb-ink)' }}
+              >
                 <img 
                   src={album.thumbnailUrl || album.images[0] || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=800&auto=format'} 
                   alt={album.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 
                 {/* Management Action Buttons (Edit + Delete) */}
                 {hasRights && (
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-[2]">
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-[2]">
                     <button 
                       type="button"
                       onClick={(e) => openEditModal(album, e)}
-                      className="p-2 bg-black/60 hover:bg-rose-600 text-white rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer border border-white/20 active:scale-90"
+                      className="p-1.5 bg-[var(--nb-surface)] text-[var(--nb-content)] hover:bg-[var(--nb-ink)] hover:text-[var(--nb-bg)] rounded transition-all cursor-pointer"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
                       title="Edit Album"
                       aria-label="Edit Album"
                     >
@@ -531,7 +560,8 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                         e.stopPropagation();
                         setAlbumToDelete(album);
                       }}
-                      className="p-2 bg-black/60 hover:bg-rose-600 text-rose-300 hover:text-white rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer border border-white/20 active:scale-90"
+                      className="p-1.5 bg-[var(--nb-surface)] text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white rounded transition-all cursor-pointer"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
                       title="Delete Album"
                       aria-label="Delete Album"
                     >
@@ -541,29 +571,37 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                 )}
 
                 {/* Photo Count Pill */}
-                <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-[10px] font-sans font-bold text-white flex items-center gap-1.5 shadow-md">
-                  <ImageIcon className="w-3 h-3 text-rose-400" />
-                  {album.images.length} Photos
+                <div 
+                  className="absolute bottom-2.5 right-2.5 bg-[var(--nb-ink)] text-[var(--nb-bg)] px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center gap-1 shadow-[1.5px_1.5px_0_#000]"
+                >
+                  <ImageIcon className="w-3 h-3 text-[var(--nb-yellow)]" />
+                  <span>{album.images.length} Photos</span>
                 </div>
 
-                <div className="absolute bottom-3 left-3">
-                  <span className="text-[10px] font-sans font-bold text-rose-200 bg-rose-500/20 border border-rose-400/30 px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-md">
+                <div className="absolute bottom-2.5 left-2.5">
+                  <span className={`text-[9.5px] font-mono font-bold px-2 py-0.5 rounded border border-black shadow-[1.5px_1.5px_0_#000] uppercase ${
+                    album.category === 'Workshops' ? 'nb-pill-blue' :
+                    album.category === 'Hackathons' ? 'nb-pill-purple' :
+                    album.category === 'Seminars' ? 'nb-pill-green' :
+                    album.category === 'Cultural Events' ? 'nb-pill-pink' :
+                    album.category === 'Club Meetings' ? 'nb-pill-coral' : 'nb-pill-yellow'
+                  }`}>
                     {album.category}
                   </span>
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
+              <div className="p-4 flex flex-col flex-1 justify-between gap-3">
                 <div>
-                  <h3 className="font-display font-extrabold text-sm text-content line-clamp-1 group-hover:text-rose-400 transition-colors">
+                  <h3 className="nb-headline text-base tracking-normal line-clamp-1 group-hover:text-[var(--nb-accent)] transition-colors">
                     {album.title}
                   </h3>
-                  <p className="text-xs text-secondary line-clamp-2 mt-1 leading-relaxed">
+                  <p className="text-xs text-[var(--nb-secondary)] line-clamp-2 mt-1 leading-relaxed font-sans">
                     {album.description}
                   </p>
                 </div>
                 
-                <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-divider/60 text-[10px] text-tertiary font-mono">
+                <div className="flex items-center justify-between pt-2 border-t border-[var(--nb-divider)] text-[11px] text-[var(--nb-tertiary)] font-mono">
                   <span>By {album.uploadedBy}</span>
                   <span>{new Date(album.createdAt).toLocaleDateString()}</span>
                 </div>
@@ -573,17 +611,28 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
         })}
 
         {albums.length === 0 && (
-          <div className="col-span-full py-16 text-center bg-surface border border-divider rounded-2xl p-6">
-            <ImageIcon className="w-10 h-10 text-secondary mx-auto mb-3 opacity-50" />
-            <h3 className="text-sm font-bold text-content">No albums available yet</h3>
-            <p className="text-secondary text-xs mt-1">Start by creating the first album for recent department events!</p>
+          <div 
+            className="col-span-full py-16 text-center rounded-lg bg-[var(--nb-surface)] p-6"
+            style={{ border: '2px dashed var(--nb-divider)' }}
+          >
+            <div 
+              className="w-12 h-12 rounded-md mx-auto mb-3 flex items-center justify-center bg-[var(--nb-surface-accent)]"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
+              <ImageIcon className="w-6 h-6 text-[var(--nb-accent)]" />
+            </div>
+            <h3 className="nb-headline text-base">No albums available yet</h3>
+            <p className="text-[var(--nb-secondary)] text-xs mt-1 font-sans">
+              Start by creating the first album for recent department events!
+            </p>
             {isAdminOrCoordinator && (
               <button 
                 type="button"
                 onClick={() => setShowAddModal(true)}
-                className="mt-4 inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer"
+                className="nb-btn mt-4 text-xs cursor-pointer"
               >
-                <Plus className="w-4 h-4" /> Create First Album
+                <Plus className="w-4 h-4" />
+                <span>Create First Album</span>
               </button>
             )}
           </div>
@@ -592,60 +641,69 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
 
       {/* Create Album Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-surface border border-divider w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-divider">
-              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-content flex items-center gap-1.5">
-                <Plus className="w-4 h-4 text-indigo-400" />
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 select-none">
+          <div 
+            className="bg-[var(--nb-surface)] text-[var(--nb-content)] w-full max-w-md rounded-lg max-h-[90vh] flex flex-col overflow-hidden"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+          >
+            <div 
+              className="flex justify-between items-center p-4 bg-[var(--nb-surface-accent)] flex-shrink-0"
+              style={{ borderBottom: '2px solid var(--nb-ink)' }}
+            >
+              <h3 className="nb-headline text-base flex items-center gap-1.5">
+                <Plus className="w-4 h-4 text-[var(--nb-accent)]" />
                 Create New Album
               </h3>
               <button 
                 type="button"
                 onClick={() => setShowAddModal(false)} 
-                className="text-secondary hover:text-content p-1 rounded-lg cursor-pointer"
+                className="nb-btn-icon w-8 h-8 rounded cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateAlbum} className="p-4 overflow-y-auto space-y-4">
+            <form onSubmit={handleCreateAlbum} className="p-4 overflow-y-auto space-y-3.5 text-xs font-sans">
               {error && (
-                <div className="text-xs text-rose-400 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20 flex items-center gap-2">
+                <div 
+                  className="p-2.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-400 flex items-center gap-2 font-bold"
+                  style={{ border: '1.5px solid currentColor' }}
+                >
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
               
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Album Title *</label>
+                <label className="nb-label text-[10px] block mb-1">Album Title *</label>
                 <input 
                   type="text" 
                   required 
                   placeholder="e.g. AI & ML National Symposium 2026"
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
-                  className="w-full bg-background border border-divider rounded-xl py-2 px-3 text-xs text-content outline-none focus:border-indigo-500" 
+                  className="nb-input text-xs" 
                 />
               </div>
               
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Description *</label>
+                <label className="nb-label text-[10px] block mb-1">Description *</label>
                 <textarea 
                   required 
                   rows={3} 
                   placeholder="Tell us what this album captures..."
                   value={description} 
                   onChange={(e) => setDescription(e.target.value)} 
-                  className="w-full bg-background border border-divider rounded-xl py-2 px-3 text-xs text-content outline-none focus:border-indigo-500 resize-none" 
+                  className="nb-input text-xs resize-none leading-relaxed" 
                 />
               </div>
               
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Category *</label>
+                <label className="nb-label text-[10px] block mb-1">Category *</label>
                 <select 
                   value={category} 
                   onChange={(e) => setCategory(e.target.value as any)} 
-                  className="w-full bg-background border border-divider rounded-xl py-2 px-3 text-xs text-content outline-none focus:border-indigo-500"
+                  className="nb-input text-xs cursor-pointer"
                 >
                   <option value="Workshops">Workshops</option>
                   <option value="Hackathons">Hackathons</option>
@@ -658,7 +716,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
 
               {/* Photos Upload & URL Section */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-bold text-secondary uppercase">
+                <label className="nb-label text-[10px] block">
                   Photos ({images.length} selected) *
                 </label>
                 
@@ -671,22 +729,22 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                 />
 
                 {/* Or Add Photo via URL */}
-                <div className="pt-2 border-t border-divider/60">
-                  <span className="text-[10px] text-tertiary block mb-1">Or add photo via direct URL:</span>
+                <div className="pt-2 border-t border-[var(--nb-divider)]">
+                  <span className="nb-label text-[10px] block mb-1">Or add photo via direct URL:</span>
                   <div className="flex gap-2">
                     <input 
                       type="url"
                       placeholder="https://example.com/photo.jpg"
                       value={createUrlInput}
                       onChange={(e) => setCreateUrlInput(e.target.value)}
-                      className="flex-1 bg-background border border-divider rounded-xl py-1.5 px-3 text-xs text-content outline-none focus:border-indigo-500"
+                      className="nb-input text-xs flex-1"
                     />
                     <button
                       type="button"
                       onClick={handleAddCreateUrl}
-                      className="bg-surface-accent hover:bg-divider text-content text-xs font-bold px-3 py-1.5 rounded-xl border border-divider cursor-pointer transition-colors"
+                      className="nb-btn-ghost text-xs px-3 !min-h-[40px] cursor-pointer"
                     >
-                      Add URL
+                      Add
                     </button>
                   </div>
                 </div>
@@ -695,12 +753,16 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                 {images.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2 max-h-32 overflow-y-auto">
                     {images.map((imgUrl, idx) => (
-                      <div key={idx} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-divider bg-background">
+                      <div 
+                        key={idx} 
+                        className="relative w-14 h-14 rounded overflow-hidden bg-[var(--nb-surface-accent)]"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
+                      >
                         <img src={imgUrl} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
-                          className="absolute top-0.5 right-0.5 bg-black/75 hover:bg-rose-600 text-white p-0.5 rounded-md transition-colors"
+                          className="absolute top-0.5 right-0.5 bg-[var(--nb-ink)] text-white p-0.5 rounded cursor-pointer"
                           title="Remove photo"
                         >
                           <X className="w-3 h-3" />
@@ -715,7 +777,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                 <button 
                   type="submit" 
                   disabled={isSubmitting || images.length === 0} 
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs py-3 rounded-xl disabled:opacity-50 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                  className="nb-btn w-full cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -723,7 +785,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                       <span>Creating Album...</span>
                     </>
                   ) : (
-                    <span>Save & Publish Album</span>
+                    <span>Save &amp; Publish Album</span>
                   )}
                 </button>
               </div>
@@ -747,30 +809,41 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
     if (!editingAlbum) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in select-none">
-        <div className="bg-surface border border-indigo-500/30 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 select-none">
+        <div 
+          className="bg-[var(--nb-surface)] text-[var(--nb-content)] w-full max-w-lg rounded-lg max-h-[92vh] flex flex-col overflow-hidden"
+          style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+        >
           {/* Header */}
-          <div className="flex justify-between items-center p-4 border-b border-divider flex-shrink-0">
+          <div 
+            className="flex justify-between items-center p-4 bg-[var(--nb-surface-accent)] flex-shrink-0"
+            style={{ borderBottom: '2px solid var(--nb-ink)' }}
+          >
             <div>
-              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-content flex items-center gap-1.5">
-                <Edit3 className="w-4 h-4 text-indigo-400" />
+              <h3 className="nb-headline text-base flex items-center gap-1.5">
+                <Edit3 className="w-4 h-4 text-[var(--nb-accent)]" />
                 Edit Album
               </h3>
-              <p className="text-[10px] text-secondary mt-0.5">Modify album details or add & remove photos</p>
+              <p className="nb-label text-[10px] text-[var(--nb-secondary)] mt-0.5">
+                Modify album details or add &amp; remove photos
+              </p>
             </div>
             <button 
               type="button"
               onClick={() => setEditingAlbum(null)} 
-              className="text-secondary hover:text-content p-1 rounded-lg cursor-pointer"
+              className="nb-btn-icon w-8 h-8 rounded cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleUpdateAlbum} className="p-4 overflow-y-auto space-y-4 flex-1">
+          <form onSubmit={handleUpdateAlbum} className="p-4 overflow-y-auto space-y-3.5 text-xs font-sans flex-1">
             {editError && (
-              <div className="text-xs text-rose-400 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20 flex items-center gap-2">
+              <div 
+                className="p-2.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-400 flex items-center gap-2 font-bold"
+                style={{ border: '1.5px solid currentColor' }}
+              >
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{editError}</span>
               </div>
@@ -778,35 +851,35 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
             
             {/* Album Title */}
             <div>
-              <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Album Name / Title *</label>
+              <label className="nb-label text-[10px] block mb-1">Album Name / Title *</label>
               <input 
                 type="text" 
                 required 
                 value={editTitle} 
                 onChange={(e) => setEditTitle(e.target.value)} 
-                className="w-full bg-background border border-divider rounded-xl py-2 px-3 text-xs text-content outline-none focus:border-indigo-500" 
+                className="nb-input text-xs" 
               />
             </div>
             
             {/* Description */}
             <div>
-              <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Description *</label>
+              <label className="nb-label text-[10px] block mb-1">Description *</label>
               <textarea 
                 required 
                 rows={3} 
                 value={editDescription} 
                 onChange={(e) => setEditDescription(e.target.value)} 
-                className="w-full bg-background border border-divider rounded-xl py-2 px-3 text-xs text-content outline-none focus:border-indigo-500 resize-none leading-relaxed" 
+                className="nb-input text-xs resize-none leading-relaxed" 
               />
             </div>
             
             {/* Category */}
             <div>
-              <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Category *</label>
+              <label className="nb-label text-[10px] block mb-1">Category *</label>
               <select 
                 value={editCategory} 
                 onChange={(e) => setEditCategory(e.target.value as any)} 
-                className="w-full bg-background border border-divider rounded-xl py-2 px-3 text-xs text-content outline-none focus:border-indigo-500"
+                className="nb-input text-xs cursor-pointer"
               >
                 <option value="Workshops">Workshops</option>
                 <option value="Hackathons">Hackathons</option>
@@ -818,18 +891,21 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
             </div>
 
             {/* Photos Management */}
-            <div className="space-y-3 pt-2 border-t border-divider/60">
+            <div className="space-y-3 pt-2 border-t border-[var(--nb-divider)]">
               <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-secondary uppercase flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
+                <label className="nb-label text-[10px] flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                   Photos in Album ({editImages.length})
                 </label>
-                <span className="text-[9px] text-tertiary">Click photo to set as cover</span>
+                <span className="nb-label text-[9px] text-[var(--nb-tertiary)]">Click photo to set as cover</span>
               </div>
 
               {/* Photos Thumbnail List with Remove and Cover selection */}
               {editImages.length > 0 ? (
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-44 overflow-y-auto p-1 bg-background/60 rounded-xl border border-divider/60">
+                <div 
+                  className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-44 overflow-y-auto p-2 rounded-md bg-[var(--nb-surface-accent)]"
+                  style={{ border: '1.5px solid var(--nb-divider)' }}
+                >
                   {editImages.map((imgUrl, idx) => {
                     const isCover = editThumbnailUrl === imgUrl || (!editThumbnailUrl && idx === 0);
 
@@ -837,16 +913,17 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                       <div 
                         key={idx} 
                         onClick={() => setEditThumbnailUrl(imgUrl)}
-                        className={`relative group aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
-                          isCover ? 'border-indigo-500 shadow-md ring-2 ring-indigo-500/20' : 'border-divider hover:border-indigo-400/50'
-                        }`}
+                        className="relative group aspect-square rounded overflow-hidden cursor-pointer transition-all"
+                        style={{ 
+                          border: isCover ? '2.5px solid var(--nb-accent)' : '1.5px solid var(--nb-ink)'
+                        }}
                         title="Click to set as album cover thumbnail"
                       >
                         <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
                         
                         {/* Cover Badge */}
                         {isCover && (
-                          <div className="absolute top-1 left-1 bg-indigo-600 text-white text-[8px] font-bold uppercase px-1 py-0.2 rounded shadow-xs">
+                          <div className="absolute top-1 left-1 bg-[var(--nb-accent)] text-white text-[8px] font-mono font-bold uppercase px-1 py-0.2 rounded">
                             Cover
                           </div>
                         )}
@@ -864,7 +941,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                               return remaining;
                             });
                           }}
-                          className="absolute top-1 right-1 bg-black/75 hover:bg-rose-600 text-white p-1 rounded-md transition-colors"
+                          className="absolute top-1 right-1 bg-[var(--nb-ink)] text-white p-0.5 rounded cursor-pointer"
                           title="Remove this photo from album"
                         >
                           <X className="w-3 h-3" />
@@ -874,12 +951,12 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                   })}
                 </div>
               ) : (
-                <p className="text-xs text-rose-400 py-2">Album must have at least one photo.</p>
+                <p className="text-xs text-rose-500 py-1 font-bold">Album must have at least one photo.</p>
               )}
 
               {/* Upload More Photos */}
-              <div className="pt-2">
-                <span className="text-[10px] font-bold text-secondary uppercase block mb-1.5">
+              <div className="pt-1">
+                <span className="nb-label text-[10px] block mb-1">
                   + Add More Photos to Album:
                 </span>
                 
@@ -900,20 +977,20 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
               </div>
 
               {/* Or Add Photo via Direct URL */}
-              <div className="pt-2 border-t border-divider/60">
-                <span className="text-[10px] text-tertiary block mb-1">Or add image via direct URL:</span>
+              <div className="pt-2 border-t border-[var(--nb-divider)]">
+                <span className="nb-label text-[10px] block mb-1">Or add image via direct URL:</span>
                 <div className="flex gap-2">
                   <input 
                     type="url"
                     placeholder="https://example.com/extra-photo.jpg"
                     value={editUrlInput}
                     onChange={(e) => setEditUrlInput(e.target.value)}
-                    className="flex-1 bg-background border border-divider rounded-xl py-1.5 px-3 text-xs text-content outline-none focus:border-indigo-500"
+                    className="nb-input text-xs flex-1"
                   />
                   <button
                     type="button"
                     onClick={handleAddEditUrl}
-                    className="bg-indigo-600/15 hover:bg-indigo-600 text-indigo-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-indigo-500/30 cursor-pointer transition-colors"
+                    className="nb-btn-ghost text-xs px-3 !min-h-[40px] cursor-pointer"
                   >
                     Add
                   </button>
@@ -922,18 +999,18 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
             </div>
 
             {/* Footer Buttons */}
-            <div className="pt-3 border-t border-divider flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-[var(--nb-divider)] flex items-center justify-end gap-2">
               <button 
                 type="button" 
                 onClick={() => setEditingAlbum(null)}
-                className="bg-surface-accent hover:bg-divider text-secondary hover:text-content text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer"
+                className="nb-btn-ghost text-xs !min-h-[40px] px-4 cursor-pointer"
               >
                 Cancel
               </button>
               <button 
                 type="submit" 
                 disabled={isUpdating || editImages.length === 0} 
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs py-2.5 px-5 rounded-xl disabled:opacity-50 transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                className="nb-btn text-xs !min-h-[40px] px-5 cursor-pointer disabled:opacity-50"
               >
                 {isUpdating ? (
                   <>
@@ -962,16 +1039,22 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
       <>
         {/* Delete Entire Album Modal */}
         {albumToDelete && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in select-none">
-            <div className="bg-surface border border-rose-500/30 w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-rose-500/15 text-rose-500 mx-auto flex items-center justify-center border border-rose-500/30">
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 select-none">
+            <div 
+              className="bg-[var(--nb-surface)] text-[var(--nb-content)] w-full max-w-sm rounded-lg p-5 text-center space-y-4"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+            >
+              <div 
+                className="w-12 h-12 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
                 <Trash2 className="w-6 h-6" />
               </div>
 
               <div>
-                <h3 className="text-base font-display font-bold text-content">Delete Album?</h3>
-                <p className="text-xs text-secondary mt-1.5 leading-relaxed">
-                  Are you sure you want to delete <strong className="text-content">"{albumToDelete.title}"</strong> and all its {albumToDelete.images.length} photos? This action cannot be undone.
+                <h3 className="nb-headline text-lg">Delete Album?</h3>
+                <p className="text-xs text-[var(--nb-secondary)] mt-1.5 leading-relaxed font-sans">
+                  Are you sure you want to delete <strong className="text-[var(--nb-content)]">&ldquo;{albumToDelete.title}&rdquo;</strong> and all its {albumToDelete.images.length} photos? This action cannot be undone.
                 </p>
               </div>
 
@@ -980,25 +1063,26 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                   type="button"
                   disabled={isDeleting}
                   onClick={() => setAlbumToDelete(null)}
-                  className="flex-1 bg-surface-accent hover:bg-divider text-secondary hover:text-content text-xs font-bold py-2.5 rounded-xl border border-divider cursor-pointer transition-colors"
+                  className="nb-btn-ghost flex-1 text-xs !min-h-[40px] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <HoldButton
                   size="sm"
                   holdTime={2000}
-                  backgroundColor="#18181b"
-                  fillColor="#e11d48"
-                  textColor="#ffffff"
+                  backgroundColor="var(--nb-surface-accent)"
+                  fillColor="var(--nb-accent)"
+                  textColor="var(--nb-content)"
                   fillTextColor="#ffffff"
-                  radius={12}
+                  radius={4}
                   doneLabel="Album Deleted"
                   disabled={isDeleting}
                   onHold={confirmDeleteAlbum}
                   icon={<Trash2 className="w-3.5 h-3.5" />}
-                  className="flex-1"
+                  className="flex-1 text-xs font-mono font-bold uppercase cursor-pointer"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
-                  Hold to Delete Album
+                  Hold to Delete
                 </HoldButton>
               </div>
             </div>
@@ -1007,10 +1091,16 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
 
         {/* Delete Individual Photo Modal */}
         {photoToDeleteIdx !== null && selectedAlbum && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in select-none">
-            <div className="bg-surface border border-rose-500/30 w-full max-w-sm rounded-2xl shadow-2xl p-5 text-center space-y-4">
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 select-none">
+            <div 
+              className="bg-[var(--nb-surface)] text-[var(--nb-content)] w-full max-w-sm rounded-lg p-5 text-center space-y-4"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+            >
               {/* Photo Preview */}
-              <div className="w-24 h-24 rounded-xl overflow-hidden mx-auto border-2 border-rose-500/40 shadow-md">
+              <div 
+                className="w-24 h-24 rounded overflow-hidden mx-auto"
+                style={{ border: '2px solid var(--nb-ink)' }}
+              >
                 <img 
                   src={selectedAlbum.images[photoToDeleteIdx]} 
                   alt="Delete preview" 
@@ -1019,9 +1109,9 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
               </div>
 
               <div>
-                <h3 className="text-base font-display font-bold text-content">Delete Photo?</h3>
-                <p className="text-xs text-secondary mt-1 leading-relaxed">
-                  Remove Photo #{photoToDeleteIdx + 1} from <strong className="text-content">"{selectedAlbum.title}"</strong>?
+                <h3 className="nb-headline text-lg">Delete Photo?</h3>
+                <p className="text-xs text-[var(--nb-secondary)] mt-1 leading-relaxed font-sans">
+                  Remove Photo #{photoToDeleteIdx + 1} from <strong className="text-[var(--nb-content)]">&ldquo;{selectedAlbum.title}&rdquo;</strong>?
                 </p>
               </div>
 
@@ -1030,23 +1120,24 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
                   type="button"
                   disabled={isDeleting}
                   onClick={() => setPhotoToDeleteIdx(null)}
-                  className="flex-1 bg-surface-accent hover:bg-divider text-secondary hover:text-content text-xs font-bold py-2.5 rounded-xl border border-divider cursor-pointer transition-colors"
+                  className="nb-btn-ghost flex-1 text-xs !min-h-[40px] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <HoldButton
                   size="sm"
                   holdTime={1600}
-                  backgroundColor="#18181b"
-                  fillColor="#e11d48"
-                  textColor="#ffffff"
+                  backgroundColor="var(--nb-surface-accent)"
+                  fillColor="var(--nb-accent)"
+                  textColor="var(--nb-content)"
                   fillTextColor="#ffffff"
-                  radius={12}
+                  radius={4}
                   doneLabel="Photo Deleted"
                   disabled={isDeleting}
                   onHold={confirmDeletePhoto}
                   icon={<Trash2 className="w-3.5 h-3.5" />}
-                  className="flex-1"
+                  className="flex-1 text-xs font-mono font-bold uppercase cursor-pointer"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
                   Hold to Delete
                 </HoldButton>

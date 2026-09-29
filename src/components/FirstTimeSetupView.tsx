@@ -52,24 +52,31 @@ export default function FirstTimeSetupView({ user, onComplete }: FirstTimeSetupV
   };
 
   return (
-    <div className="h-full w-full bg-surface flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-surface border border-indigo-500/30 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
-        
+    <div className="h-full w-full bg-[var(--nb-bg)] flex items-center justify-center p-4">
+      <div 
+        className="w-full max-w-md bg-[var(--nb-surface)] rounded-lg p-6 relative overflow-hidden"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+      >
         <div className="text-center mb-6">
-          <div className="inline-flex p-3 bg-indigo-500/10 rounded-full mb-3">
-            <Sparkles className="w-6 h-6 text-indigo-400" />
+          <div 
+            className="inline-flex p-3 bg-[var(--nb-surface-accent)] rounded-lg mb-3 text-[var(--nb-accent)]"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
+          >
+            <Sparkles className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-content mb-1">
+          <h2 className="nb-headline text-2xl text-[var(--nb-content)] mb-1">
             {isPasswordResetOnly ? `Reset Password, ${user.rollNumber}` : `Welcome, ${user.rollNumber}!`}
           </h2>
-          <p className="text-xs text-secondary">
-            {isPasswordResetOnly ? "Please set a new password for your account." : "Please complete your profile setup to continue."}
+          <p className="nb-label text-xs text-[var(--nb-secondary)]">
+            {isPasswordResetOnly ? "PLEASE SET A NEW PASSWORD FOR YOUR ACCOUNT." : "PLEASE COMPLETE YOUR PROFILE SETUP TO CONTINUE."}
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 text-xs text-rose-300 bg-rose-950/50 p-3 rounded-lg border border-rose-800/50 text-center">
+          <div 
+            className="mb-4 text-xs font-bold text-rose-600 bg-rose-500/10 p-3 rounded text-center"
+            style={{ border: '1.5px solid var(--nb-ink)' }}
+          >
             {error}
           </div>
         )}
@@ -78,27 +85,29 @@ export default function FirstTimeSetupView({ user, onComplete }: FirstTimeSetupV
           {!isPasswordResetOnly && (
             <>
               <div>
-                <label className="block text-[10px] font-semibold text-secondary uppercase mb-1">Phone Number *</label>
+                <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">PHONE NUMBER *</label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary" />
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
                   <input 
                     type="text" 
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 9876543210"
-                    className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2.5 pl-9 pr-3 outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[var(--nb-surface-accent)] text-xs font-bold text-[var(--nb-content)] rounded py-2.5 pl-9 pr-3 outline-none"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold text-secondary uppercase mb-1">Year *</label>
+                  <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">YEAR *</label>
                   <select 
                     value={year} 
                     onChange={(e) => setYear(e.target.value)}
-                    className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2.5 px-3 outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[var(--nb-surface-accent)] text-xs font-bold text-[var(--nb-content)] rounded py-2.5 px-3 outline-none"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <option value="1st Year">1st Year</option>
                     <option value="2nd Year">2nd Year</option>
@@ -107,14 +116,15 @@ export default function FirstTimeSetupView({ user, onComplete }: FirstTimeSetupV
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-secondary uppercase mb-1">Section *</label>
+                  <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">SECTION *</label>
                   <input 
                     type="text" 
                     required
                     value={section}
                     onChange={(e) => setSection(e.target.value)}
                     placeholder="A"
-                    className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2.5 px-3 outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-[var(--nb-surface-accent)] text-xs font-bold text-[var(--nb-content)] rounded py-2.5 px-3 outline-none uppercase font-mono"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   />
                 </div>
               </div>
@@ -122,25 +132,27 @@ export default function FirstTimeSetupView({ user, onComplete }: FirstTimeSetupV
           )}
 
           <div>
-            <label className="block text-[10px] font-semibold text-secondary uppercase mb-1">Set New Password *</label>
+            <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1">SET NEW PASSWORD *</label>
             <div className="relative">
-              <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary" />
+              <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
               <input 
                 type="password" 
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Choose a strong password"
-                className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2.5 pl-9 pr-3 outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-[var(--nb-surface-accent)] text-xs font-bold text-[var(--nb-content)] rounded py-2.5 pl-9 pr-3 outline-none"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
               />
             </div>
-            <p className="text-[10px] text-tertiary mt-1">This will replace your temporary password.</p>
+            <p className="nb-label text-[10px] text-[var(--nb-secondary)] mt-1">THIS WILL REPLACE YOUR TEMPORARY CREDENTIAL.</p>
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-violet-500 hover:opacity-95 text-content font-bold text-xs uppercase tracking-wider rounded-xl py-3.5 mt-2 transition-all shadow-lg flex items-center justify-center gap-2"
+            className="w-full nb-btn text-xs font-bold uppercase tracking-wider rounded py-3 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPasswordResetOnly ? "Update Password" : "Complete Setup")}
           </button>

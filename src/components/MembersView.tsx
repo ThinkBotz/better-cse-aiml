@@ -31,33 +31,65 @@ export default function MembersView({ allUsers, events, branding = DEFAULT_BRAND
   });
 
   return (
-    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6 bg-background">
+    <div className="flex-1 overflow-y-auto px-4 py-4 pb-36 sm:pb-32 space-y-6 bg-[var(--nb-bg)] text-[var(--nb-content)]">
       
       {/* Title */}
-      <div>
-        <h3 className="text-base font-display font-bold text-content leading-none">Association Directory</h3>
-        <p className="text-[10px] text-content/40 mt-1.5">Meet the thinkers and creators powering {branding.appName || 'NOTX'} {branding.tagline || 'Connect'}</p>
+      <div 
+        className="p-4 rounded-lg bg-[var(--nb-surface)]"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+      >
+        <h3 className="nb-headline text-xl leading-none">Association Directory</h3>
+        <p className="nb-label text-xs mt-1 text-[var(--nb-secondary)]">
+          Meet the thinkers and creators powering {branding.appName || 'NOTX'} {branding.tagline || 'Connect'}
+        </p>
       </div>
 
       {/* 1. Patrons / Faculty Advisor */}
       {patrons.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-[10px] font-bold text-content/40 tracking-wider uppercase flex items-center gap-1.5 border-b border-divider-light pb-1.5">
-            <Shield className="w-4 h-4 text-indigo-400" />
-            Patrons & Faculty Advisory
-          </h4>
+          <div className="flex items-center gap-2 border-b-2 border-[var(--nb-ink)] pb-2">
+            <div 
+              className="w-7 h-7 rounded flex items-center justify-center bg-[var(--nb-coral)] text-white"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '1.5px 1.5px 0 var(--nb-ink)' }}
+            >
+              <Shield className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="nb-headline text-sm tracking-normal">Patrons &amp; Faculty Advisory</h4>
+            <span className="nb-pill-coral text-[10px] ml-auto font-mono">{patrons.length}</span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {patrons.map(member => (
-              <div key={member.uid} className="bg-surface p-4 rounded-3xl border border-divider-light flex gap-4">
-                <img src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} alt={member.name} className="w-14 h-14 rounded-2xl border border-indigo-500/20 object-cover flex-shrink-0 bg-white/5" />
+              <div 
+                key={member.uid} 
+                className="bg-[var(--nb-surface)] p-4 rounded-lg flex gap-4 transition-all"
+                style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+              >
+                <div 
+                  className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0 bg-[var(--nb-surface-accent)]"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
+                  <img 
+                    src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <h5 className="text-xs font-bold text-content">{member.name}</h5>
-                  <p className="text-[10px] text-indigo-400 font-semibold mt-0.5">{member.position}</p>
-                  <p className="text-[10px] text-content/60 mt-2 leading-relaxed">{member.responsibilities}</p>
+                  <h5 className="nb-headline text-sm tracking-normal">{member.name}</h5>
+                  <span className="nb-pill-coral text-[9.5px] font-mono font-bold mt-1 inline-block">{member.position}</span>
+                  {member.responsibilities && (
+                    <p className="text-xs text-[var(--nb-secondary)] mt-2 leading-relaxed font-sans">{member.responsibilities}</p>
+                  )}
                   
-                  <div className="flex gap-2.5 mt-3 pt-2.5 border-t border-divider-light">
-                    <a href={`mailto:${member.email}`} className="text-content/40 hover:text-content transition-colors">
-                      <Mail className="w-4 h-4" />
+                  <div className="flex gap-2 mt-3 pt-2 border-t border-[var(--nb-divider)]">
+                    <a 
+                      href={`mailto:${member.email}`} 
+                      className="w-8 h-8 rounded flex items-center justify-center bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-ink)] text-[var(--nb-content)] hover:text-[var(--nb-bg)] transition-colors cursor-pointer"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                      title="Send Email"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
                     </a>
                   </div>
                 </div>
@@ -70,26 +102,62 @@ export default function MembersView({ allUsers, events, branding = DEFAULT_BRAND
       {/* 2. Executive Committee */}
       {executive.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-[10px] font-bold text-content/40 tracking-wider uppercase flex items-center gap-1.5 border-b border-divider-light pb-1.5">
-            <Award className="w-4 h-4 text-[#3D5AFE]" />
-            Executive Leadership
-          </h4>
+          <div className="flex items-center gap-2 border-b-2 border-[var(--nb-ink)] pb-2">
+            <div 
+              className="w-7 h-7 rounded flex items-center justify-center bg-[var(--nb-yellow)] text-neutral-900"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '1.5px 1.5px 0 var(--nb-ink)' }}
+            >
+              <Award className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="nb-headline text-sm tracking-normal">Executive Leadership</h4>
+            <span className="nb-pill-yellow text-[10px] ml-auto font-mono">{executive.length}</span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {executive.map(member => (
-              <div key={member.uid} className="bg-surface p-4 rounded-3xl border border-divider-light flex gap-4">
-                <img src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} alt={member.name} className="w-14 h-14 rounded-2xl border border-[#3D5AFE]/20 object-cover flex-shrink-0 bg-white/5" />
+              <div 
+                key={member.uid} 
+                className="bg-[var(--nb-surface)] p-4 rounded-lg flex gap-4 transition-all"
+                style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+              >
+                <div 
+                  className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0 bg-[var(--nb-surface-accent)]"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
+                  <img 
+                    src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <h5 className="text-xs font-bold text-content">{member.name}</h5>
-                  <p className="text-[10px] text-[#3D5AFE] font-semibold mt-0.5">{member.position} • {member.year}</p>
-                  <p className="text-[10px] text-content/60 mt-2 leading-relaxed">{member.responsibilities}</p>
+                  <h5 className="nb-headline text-sm tracking-normal">{member.name}</h5>
+                  <span className="nb-pill-yellow text-[9.5px] font-mono font-bold mt-1 inline-block">
+                    {member.position} {member.year ? `• ${member.year}` : ''}
+                  </span>
+                  {member.responsibilities && (
+                    <p className="text-xs text-[var(--nb-secondary)] mt-2 leading-relaxed font-sans">{member.responsibilities}</p>
+                  )}
                   
-                  <div className="flex gap-3.5 mt-3 pt-2.5 border-t border-divider-light">
-                    <a href={`mailto:${member.email}`} className="text-content/40 hover:text-content transition-colors">
-                      <Mail className="w-4 h-4" />
+                  <div className="flex gap-2 mt-3 pt-2 border-t border-[var(--nb-divider)]">
+                    <a 
+                      href={`mailto:${member.email}`} 
+                      className="w-8 h-8 rounded flex items-center justify-center bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-ink)] text-[var(--nb-content)] hover:text-[var(--nb-bg)] transition-colors cursor-pointer"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                      title="Send Email"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
                     </a>
                     {member.linkedin && (
-                      <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-content/40 hover:text-[#3D5AFE] transition-colors">
-                        <Linkedin className="w-4 h-4" />
+                      <a 
+                        href={member.linkedin} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="w-8 h-8 rounded flex items-center justify-center bg-[var(--nb-surface-accent)] hover:bg-[#0A66C2] text-[var(--nb-content)] hover:text-white transition-colors cursor-pointer"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
+                        title="LinkedIn"
+                      >
+                        <Linkedin className="w-3.5 h-3.5" />
                       </a>
                     )}
                   </div>
@@ -103,26 +171,62 @@ export default function MembersView({ allUsers, events, branding = DEFAULT_BRAND
       {/* 3. Team Leads */}
       {leads.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-[10px] font-bold text-content/40 tracking-wider uppercase flex items-center gap-1.5 border-b border-divider-light pb-1.5">
-            <Terminal className="w-4 h-4 text-[#3D5AFE]" />
-            Technical & Creative Leads
-          </h4>
+          <div className="flex items-center gap-2 border-b-2 border-[var(--nb-ink)] pb-2">
+            <div 
+              className="w-7 h-7 rounded flex items-center justify-center bg-[var(--nb-blue)] text-white"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '1.5px 1.5px 0 var(--nb-ink)' }}
+            >
+              <Terminal className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="nb-headline text-sm tracking-normal">Technical &amp; Creative Leads</h4>
+            <span className="nb-pill-blue text-[10px] ml-auto font-mono">{leads.length}</span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {leads.map(member => (
-              <div key={member.uid} className="bg-surface p-4 rounded-3xl border border-divider-light flex gap-4">
-                <img src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} alt={member.name} className="w-14 h-14 rounded-2xl border border-[#3D5AFE]/20 object-cover flex-shrink-0 bg-white/5" />
+              <div 
+                key={member.uid} 
+                className="bg-[var(--nb-surface)] p-4 rounded-lg flex gap-4 transition-all"
+                style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+              >
+                <div 
+                  className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0 bg-[var(--nb-surface-accent)]"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
+                  <img 
+                    src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <h5 className="text-xs font-bold text-content">{member.name}</h5>
-                  <p className="text-[10px] text-[#3D5AFE] font-semibold mt-0.5">{member.position} • {member.year}</p>
-                  <p className="text-[10px] text-content/60 mt-2 leading-relaxed">{member.responsibilities}</p>
+                  <h5 className="nb-headline text-sm tracking-normal">{member.name}</h5>
+                  <p className="nb-label text-[10px] text-[var(--nb-accent)] mt-0.5">
+                    {member.position} {member.year ? `• ${member.year}` : ''}
+                  </p>
+                  {member.responsibilities && (
+                    <p className="text-xs text-[var(--nb-secondary)] mt-2 leading-relaxed font-sans">{member.responsibilities}</p>
+                  )}
                   
-                  <div className="flex gap-3.5 mt-3 pt-2.5 border-t border-divider-light">
-                    <a href={`mailto:${member.email}`} className="text-content/40 hover:text-content transition-colors">
-                      <Mail className="w-4 h-4" />
+                  <div className="flex gap-2 mt-3 pt-2 border-t border-[var(--nb-divider)]">
+                    <a 
+                      href={`mailto:${member.email}`} 
+                      className="w-8 h-8 rounded flex items-center justify-center bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-ink)] text-[var(--nb-content)] hover:text-[var(--nb-bg)] transition-colors cursor-pointer"
+                      style={{ border: '1.5px solid var(--nb-ink)' }}
+                      title="Send Email"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
                     </a>
                     {member.linkedin && (
-                      <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-content/40 hover:text-[#3D5AFE] transition-colors">
-                        <Linkedin className="w-4 h-4" />
+                      <a 
+                        href={member.linkedin} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="w-8 h-8 rounded flex items-center justify-center bg-[var(--nb-surface-accent)] hover:bg-[#0A66C2] text-[var(--nb-content)] hover:text-white transition-colors cursor-pointer"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
+                        title="LinkedIn"
+                      >
+                        <Linkedin className="w-3.5 h-3.5" />
                       </a>
                     )}
                   </div>
@@ -133,37 +237,75 @@ export default function MembersView({ allUsers, events, branding = DEFAULT_BRAND
         </div>
       )}
 
-            {/* Coordinators by Event */}
+      {/* Coordinators by Event */}
       {coordinators.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-[10px] font-bold text-content/40 tracking-wider uppercase flex items-center gap-1.5 border-b border-divider-light pb-1.5">
-            <Calendar className="w-4 h-4 text-orange-400" />
-            Event Coordinators
-          </h4>
+          <div className="flex items-center gap-2 border-b-2 border-[var(--nb-ink)] pb-2">
+            <div 
+              className="w-7 h-7 rounded flex items-center justify-center bg-[var(--nb-purple)] text-white"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '1.5px 1.5px 0 var(--nb-ink)' }}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="nb-headline text-sm tracking-normal">Event Coordinators</h4>
+            <span className="nb-pill-purple text-[10px] ml-auto font-mono">{coordinators.length}</span>
+          </div>
+
           <div className="space-y-4">
             {Object.entries(coordinatorsByEvent).map(([eventId, eventCoordinators]) => {
               const event = events.find(e => e.eventId === eventId);
               const title = event ? event.title : (eventId === 'unassigned' ? 'General Coordinators' : 'Unknown Event');
               
               return (
-                <div key={eventId} className="bg-surface p-4 rounded-3xl border border-divider-light space-y-3">
-                  <h5 className="text-xs font-bold text-orange-400 uppercase tracking-wider border-b border-divider-light pb-2 mb-3">
+                <div 
+                  key={eventId} 
+                  className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                >
+                  <h5 className="nb-headline text-xs text-[var(--nb-purple)] uppercase tracking-wider border-b border-[var(--nb-divider)] pb-2">
                     {title}
                   </h5>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {eventCoordinators.map(member => (
-                      <div key={member.uid} className="flex gap-4">
-                        <img src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} alt={member.name} className="w-12 h-12 rounded-2xl border border-orange-500/20 object-cover flex-shrink-0 bg-white/5" />
+                      <div 
+                        key={member.uid} 
+                        className="flex gap-3.5 p-2.5 rounded-md bg-[var(--nb-surface-accent)]"
+                        style={{ border: '1px solid var(--nb-divider)' }}
+                      >
+                        <div 
+                          className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-[var(--nb-surface)]"
+                          style={{ border: '1.5px solid var(--nb-ink)' }}
+                        >
+                          <img 
+                            src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} 
+                            alt={member.name} 
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h5 className="text-xs font-bold text-content">{member.name}</h5>
-                          <p className="text-[10px] text-orange-400 font-semibold mt-0.5">{member.position} • {member.year}</p>
-                          <div className="flex gap-3.5 mt-2">
-                            <a href={`mailto:${member.email}`} className="text-content/40 hover:text-content transition-colors">
-                              <Mail className="w-3.5 h-3.5" />
+                          <h6 className="nb-headline text-xs tracking-normal">{member.name}</h6>
+                          <span className="nb-pill-purple text-[9px] font-mono font-bold mt-1 inline-block">
+                            {member.position} {member.year ? `• ${member.year}` : ''}
+                          </span>
+                          <div className="flex gap-2 mt-2">
+                            <a 
+                              href={`mailto:${member.email}`} 
+                              className="w-6 h-6 rounded flex items-center justify-center bg-[var(--nb-surface)] hover:bg-[var(--nb-ink)] text-[var(--nb-content)] hover:text-[var(--nb-bg)] transition-colors cursor-pointer"
+                              style={{ border: '1px solid var(--nb-ink)' }}
+                              title="Send Email"
+                            >
+                              <Mail className="w-3 h-3" />
                             </a>
                             {member.linkedin && (
-                              <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-content/40 hover:text-orange-400 transition-colors">
-                                <Linkedin className="w-3.5 h-3.5" />
+                              <a 
+                                href={member.linkedin} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="w-6 h-6 rounded flex items-center justify-center bg-[var(--nb-surface)] hover:bg-[#0A66C2] text-[var(--nb-content)] hover:text-white transition-colors cursor-pointer"
+                                style={{ border: '1px solid var(--nb-ink)' }}
+                                title="LinkedIn"
+                              >
+                                <Linkedin className="w-3 h-3" />
                               </a>
                             )}
                           </div>
@@ -181,25 +323,45 @@ export default function MembersView({ allUsers, events, branding = DEFAULT_BRAND
       {/* 4. General Body */}
       {generalBody.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-[10px] font-bold text-content/40 tracking-wider uppercase flex items-center gap-1.5 border-b border-divider-light pb-1.5">
-            <Heart className="w-4 h-4 text-purple-400" />
-            Active Student Registry ({generalBody.length})
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="flex items-center gap-2 border-b-2 border-[var(--nb-ink)] pb-2">
+            <div 
+              className="w-7 h-7 rounded flex items-center justify-center bg-[var(--nb-green)] text-neutral-900"
+              style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '1.5px 1.5px 0 var(--nb-ink)' }}
+            >
+              <Heart className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="nb-headline text-sm tracking-normal">Active Student Registry</h4>
+            <span className="nb-pill-green text-[10px] ml-auto font-mono">{generalBody.length}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {generalBody.map(member => (
-              <div key={member.uid} className="bg-surface px-3.5 py-3 rounded-2xl border border-divider-light flex justify-between items-center">
-                <div className="flex items-center gap-3 min-w-0">
-                  <img src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} alt={member.name} className="w-8.5 h-8.5 rounded-lg object-cover border border-purple-500/15 bg-white/5" />
+              <div 
+                key={member.uid} 
+                className="bg-[var(--nb-surface)] px-3 py-2.5 rounded-md flex justify-between items-center gap-2"
+                style={{ border: '1.5px solid var(--nb-ink)' }}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div 
+                    className="w-9 h-9 rounded overflow-hidden flex-shrink-0 bg-[var(--nb-surface-accent)]"
+                    style={{ border: '1px solid var(--nb-ink)' }}
+                  >
+                    <img 
+                      src={member.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${member.rollNumber || member.uid}`} 
+                      alt={member.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
                   <div className="min-w-0">
-                    <h5 className="text-xs font-semibold text-content truncate">{member.name}</h5>
+                    <h5 className="nb-headline text-xs tracking-normal truncate">{member.name}</h5>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="font-mono text-[9px] text-content/40 font-semibold">{member.rollNumber}</span>
-                      <span className="text-[9px] text-content/30">• Sec {member.section} ({member.year})</span>
+                      <span className="font-mono text-[10px] font-bold text-[var(--nb-secondary)]">{member.rollNumber}</span>
+                      <span className="text-[10px] text-[var(--nb-tertiary)]">• {member.section ? `Sec ${member.section}` : ''} {member.year ? `(${member.year})` : ''}</span>
                     </div>
                   </div>
                 </div>
                 {member.skills && (
-                  <span className="text-[8px] max-w-[100px] truncate bg-white/5 text-content/80 font-mono font-medium px-2 py-0.5 rounded border border-divider-light">
+                  <span className="nb-tag text-[9px] max-w-[80px] truncate">
                     {member.skills.split(',')[0]}
                   </span>
                 )}

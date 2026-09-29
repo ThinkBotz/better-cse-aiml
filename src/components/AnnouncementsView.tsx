@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, Plus, X, Search, Calendar, User, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Volume2, Plus, X, Search, Calendar, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import ImageUploader from './ImageUploader';
 import HoldButton from './HoldButton';
 import { UserProfile, Announcement } from '../types';
@@ -30,7 +30,6 @@ export default function AnnouncementsView({
   const [images, setImages] = useState<string[]>([]);
   
   const [activeImage, setActiveImage] = useState<{urls: string[], index: number} | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const insertFormatting = (prefix: string, suffix: string = '') => {
     const textarea = document.getElementById('bulletin-content-textarea') as HTMLTextAreaElement;
@@ -44,13 +43,11 @@ export default function AnnouncementsView({
     const newText = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end);
     setContent(newText);
     
-    // Reset focus and selection
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + prefix.length, end + prefix.length);
     }, 0);
   };
-
 
   const categories = ['All', 'Notice', 'Exam', 'Workshop', 'Result', 'News'];
 
@@ -62,7 +59,6 @@ export default function AnnouncementsView({
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
-      // Extract timestamps if they exist in the ID, fallback to date string comparison
       const tsA = parseInt(a.announcementId.split('_')[1] || '0', 10);
       const tsB = parseInt(b.announcementId.split('_')[1] || '0', 10);
       if (tsA && tsB) return tsB - tsA;
@@ -85,8 +81,6 @@ export default function AnnouncementsView({
         images: images.length > 0 ? images : undefined
       };
       await createAnnouncement(newNotice);
-      // Create Push Notification
-      // Reset
       setTitle('');
       setContent('');
       setImages([]);
@@ -98,22 +92,20 @@ export default function AnnouncementsView({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-background">
+    <div className="flex-1 flex flex-col min-h-0 bg-[var(--nb-bg)] text-[var(--nb-content)]">
       {/* Header and filters */}
-      <div className="px-4 pt-4 pb-2 space-y-3 flex-shrink-0">
-        <div className="flex justify-between items-center">
+      <div className="px-4 pt-4 pb-3 space-y-3 flex-shrink-0 border-b border-[var(--nb-divider)] bg-[var(--nb-surface)]">
+        <div className="flex justify-between items-center gap-3">
           <div>
-            <h3 className="text-lg font-display font-extrabold text-content tracking-tight">Bulletin Board</h3>
-            <p className="text-[11px] text-secondary mt-0.5">Department & Association Circulars</p>
+            <h3 className="nb-headline text-xl leading-none">Bulletin Board</h3>
+            <p className="nb-label text-[11px] mt-1 text-[var(--nb-secondary)]">Department &amp; Association Circulars</p>
           </div>
           {(user.role === 'admin' || (user.role === 'associate' && user.powers?.canManageAnnouncements)) && (
             <button 
               onClick={() => setShowAddForm(true)}
-              className="ref-pill-button text-xs font-bold py-2 px-4 shadow-lg shadow-rose-500/30 active:scale-95 transition-all cursor-pointer"
+              className="nb-btn text-xs py-2 px-3.5 !min-h-[38px] cursor-pointer"
             >
-              <div className="ref-icon-bubble w-5 h-5">
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              </div>
+              <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Add Notice</span>
             </button>
           )}
@@ -121,141 +113,230 @@ export default function AnnouncementsView({
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-tertiary)]" />
           <input 
             type="text" 
             placeholder="Search circulars, titles, keywords..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface-accent/60 backdrop-blur-md border border-divider focus:border-rose-500/50 text-xs text-content placeholder:text-secondary rounded-full py-2.5 pl-10 pr-4 outline-none transition-all shadow-inner"
+            className="nb-input !pl-10 text-xs !min-h-[40px] rounded-md"
           />
         </div>
 
         {/* Categories Tab Bar */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex-shrink-0 text-[11px] font-bold px-3.5 py-1.5 rounded-full border transition-all cursor-pointer ${
-                activeCategory === cat 
-                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white border-transparent shadow-md shadow-rose-500/25' 
-                  : 'bg-surface-accent/50 text-secondary border-divider/60 hover:text-content hover:bg-surface-accent'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none pt-0.5">
+          {categories.map((cat) => {
+            const isSelected = activeCategory === cat;
+            const getSelectedAnnounceCatClass = (category: string) => {
+              switch (category) {
+                case 'All': return 'nb-pill-yellow text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+                case 'Notice': return 'nb-pill-cyan text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+                case 'Exam': return 'nb-pill-coral text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+                case 'Workshop': return 'nb-pill-blue text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+                case 'Result': return 'nb-pill-green text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+                case 'News': return 'nb-pill-pink text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+                default: return 'nb-pill-yellow text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+              }
+            };
+
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`flex-shrink-0 text-xs font-mono font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-md transition-all cursor-pointer ${
+                  isSelected 
+                    ? getSelectedAnnounceCatClass(cat)
+                    : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Announcements Bulletin Feed */}
-      <div className="flex-1 overflow-y-auto px-4 pt-2 pb-36 sm:pb-32 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 sm:pb-32 space-y-4">
         {filteredAnnouncements.length === 0 ? (
-          <div className="ref-card p-8 text-center mt-6">
-            <Volume2 className="w-10 h-10 text-rose-400 mx-auto mb-2 opacity-80 animate-float" />
-            <p className="text-xs text-secondary font-medium">No notices found in this category.</p>
+          <div 
+            className="p-8 sm:p-10 text-center mt-4 rounded-xl bg-[var(--nb-surface)] relative overflow-hidden"
+            style={{ 
+              border: '2px solid var(--nb-ink)', 
+              boxShadow: 'var(--shadow-hard)' 
+            }}
+          >
+            {/* Top decorative badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full nb-pill-cyan text-white text-[10px] font-mono font-bold tracking-wider uppercase border-1.5 border-black shadow-[2px_2px_0_#000]">
+              <span>★ BULLETIN RADAR ★</span>
+            </div>
+
+            <div 
+              className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center nb-card-yellow"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0 var(--nb-ink)' }}
+            >
+              <Volume2 className="w-8 h-8 text-neutral-900 stroke-[2.5]" />
+            </div>
+
+            <h4 className="nb-headline text-lg sm:text-xl text-[var(--nb-content)] mb-1.5">
+              {searchQuery ? 'NO MATCHING CIRCULARS' : 'ALL CAUGHT UP! NO ACTIVE NOTICES'}
+            </h4>
+            
+            <p className="text-xs text-[var(--nb-secondary)] font-sans max-w-md mx-auto leading-relaxed mb-5">
+              {searchQuery 
+                ? `No circulars match "${searchQuery}". Check your keywords or clear your search query.`
+                : activeCategory !== 'All'
+                ? `No circulars posted under "${activeCategory}" yet. Official department circulars, timetable notices, and results will appear right here.`
+                : 'All clear on the bulletin board. Check back soon for departmental circulars, semester exam updates, and guest lecture notices.'}
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              {(activeCategory !== 'All' || searchQuery) && (
+                <button
+                  type="button"
+                  onClick={() => { setActiveCategory('All'); setSearchQuery(''); }}
+                  className="nb-btn-ghost text-xs py-2 px-4 rounded-md cursor-pointer font-mono font-bold uppercase"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
+                  Reset Filters
+                </button>
+              )}
+
+              {(user.role === 'admin' || (user.role === 'associate' && user.powers?.canManageAnnouncements)) && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(true)}
+                  className="nb-btn text-xs py-2 px-4 rounded-md cursor-pointer font-mono font-bold uppercase"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Post First Notice</span>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredAnnouncements.map((item) => (
-            <div 
-              key={item.announcementId}
-              className="ref-card p-4 sm:p-5 flex flex-col gap-3 hover:border-rose-500/30 transition-all duration-200"
-            >
-              <div className="flex justify-between items-start">
-                <span className={`text-[10px] font-sans font-bold px-3 py-1 rounded-full border uppercase tracking-wider ${
-                  item.category === 'Exam' 
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-400/30' 
-                    : item.category === 'Workshop' 
-                    ? 'bg-violet-500/20 text-violet-300 border-violet-400/30'
-                    : item.category === 'Result'
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-400/30'
-                    : 'bg-pink-500/20 text-pink-300 border-pink-400/30'
-                }`}>
-                  {item.category}
-                </span>
-                
-                <div className="flex items-center gap-1.5 text-[10px] text-secondary font-sans font-medium">
-                  <Calendar className="w-3.5 h-3.5 text-rose-400" />
-                  {item.date}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <h4 className="text-xs font-display font-bold text-content tracking-tight leading-snug">{item.title}</h4>
-                
-                <div className="text-[11px] text-secondary leading-relaxed mb-2 prose prose-invert prose-p:my-1 prose-headings:my-2 prose-headings:text-content prose-a:text-indigo-400 max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {item.content}
-                  </ReactMarkdown>
+              <div 
+                key={item.announcementId}
+                className="p-4 sm:p-5 flex flex-col gap-3 rounded-lg bg-[var(--nb-surface)] transition-all"
+                style={{ 
+                  border: '2px solid var(--nb-ink)',
+                  boxShadow: 'var(--shadow-hard-sm)'
+                }}
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-black shadow-[1.5px_1.5px_0_#000] uppercase ${
+                    item.category === 'Exam' 
+                      ? 'nb-pill-coral' 
+                      : item.category === 'Workshop' 
+                      ? 'nb-pill-blue'
+                      : item.category === 'Result'
+                      ? 'nb-pill-green'
+                      : item.category === 'News'
+                      ? 'nb-pill-pink'
+                      : 'nb-pill-cyan'
+                  }`}>
+                    {item.category}
+                  </span>
+                  
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--nb-secondary)] font-mono font-medium">
+                    <Calendar className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
+                    <span>{item.date}</span>
+                  </div>
                 </div>
 
-                {item.images && item.images.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                    {item.images.map((img, idx) => (
-                      <div 
-                        key={idx} 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveImage({ urls: item.images!, index: idx });
+                <div className="space-y-1.5">
+                  <h4 className="nb-headline text-base tracking-normal text-[var(--nb-content)] leading-snug">
+                    {item.title}
+                  </h4>
+                  
+                  <div className="text-xs text-[var(--nb-secondary)] leading-relaxed prose prose-sm dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-headings:text-[var(--nb-content)] prose-a:text-[var(--nb-accent)] prose-a:underline max-w-none font-sans">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {item.content}
+                    </ReactMarkdown>
+                  </div>
+
+                  {item.images && item.images.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 pt-1">
+                      {item.images.map((img, idx) => (
+                        <div 
+                          key={idx} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveImage({ urls: item.images!, index: idx });
+                          }}
+                          className="aspect-video rounded-md overflow-hidden cursor-pointer bg-[var(--nb-surface-accent)] hover:opacity-90 transition-opacity"
+                          style={{ border: '1.5px solid var(--nb-ink)' }}
+                        >
+                          <img src={img} alt="Bulletin Attachment" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between border-t border-[var(--nb-divider)] pt-3 mt-auto">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--nb-secondary)]">
+                    <User className="w-3.5 h-3.5 text-[var(--nb-accent)] flex-shrink-0" />
+                    <span className="truncate">By: <strong className="text-[var(--nb-content)] font-bold">{item.author}</strong></span>
+                  </div>
+                  {(user.role === 'admin' || (user.role === 'associate' && user.powers?.canManageAnnouncements)) && (
+                    <div>
+                      <HoldButton
+                        size="sm"
+                        holdTime={1600}
+                        radius={4}
+                        backgroundColor="var(--nb-surface-accent)"
+                        fillColor="var(--nb-accent)"
+                        textColor="var(--nb-content)"
+                        fillTextColor="#ffffff"
+                        doneLabel="Deleted"
+                        onHold={async () => {
+                          try {
+                            await deleteAnnouncement(item.announcementId);
+                            refreshAnnouncements();
+                          } catch (err) {
+                            console.error("Failed to delete notice", err);
+                          }
                         }}
-                        className="aspect-video rounded-lg overflow-hidden border border-divider bg-surface cursor-pointer hover:border-indigo-500/50 transition-colors"
+                        className="text-[10px] font-mono font-bold uppercase tracking-wider !h-7 !px-2.5 cursor-pointer"
+                        style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
-                        <img src={img} alt="Bulletin Attachment" className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between border-t border-divider/80 pt-2">
-                <div className="flex items-center gap-1.5 text-[10px] text-secondary">
-                  <User className="w-3 h-3 text-indigo-400" />
-                  <span>Issued by: <span className="text-primary font-semibold">{item.author}</span></span>
+                        Hold to Delete
+                      </HoldButton>
+                    </div>
+                  )}
                 </div>
-                {(user.role === 'admin' || (user.role === 'associate' && user.powers?.canManageAnnouncements)) && (
-                  <div>
-                    <HoldButton
-                      size="sm"
-                      holdTime={1600}
-                      radius={8}
-                      backgroundColor="rgba(244, 63, 94, 0.1)"
-                      fillColor="#e11d48"
-                      textColor="#fda4af"
-                      fillTextColor="#ffffff"
-                      doneLabel="Deleted"
-                      onHold={async () => {
-                        try {
-                          await deleteAnnouncement(item.announcementId);
-                          refreshAnnouncements();
-                        } catch (err) {
-                          console.error("Failed to delete notice", err);
-                        }
-                      }}
-                      className="border border-rose-500/25 text-[9px] font-bold uppercase tracking-wider !h-7 !px-2.5"
-                    >
-                      Hold to Delete
-                    </HoldButton>
-                  </div>
-                )}
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         )}
       </div>
 
-      {/* CREATE BULLETIN OVERLAY FORM */}
+      {/* CREATE BULLETIN MODAL */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6 select-none">
-          <div className="bg-background rounded-t-[28px] md:rounded-[28px] border-t md:border border-divider/80 h-[80%] md:h-auto md:max-h-[85vh] w-full md:max-w-2xl flex flex-col overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 select-none">
+          <div 
+            className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-lg bg-[var(--nb-surface)] text-[var(--nb-content)] overflow-hidden"
+            style={{ 
+              border: '2px solid var(--nb-ink)',
+              boxShadow: 'var(--shadow-hard-lg)'
+            }}
+          >
             {/* Header */}
-            <div className="p-3.5 border-b border-divider flex justify-between items-center flex-shrink-0 bg-surface">
-              <h3 className="text-xs font-extrabold uppercase text-primary tracking-wider">Publish Notice Bulletin</h3>
+            <div 
+              className="p-3.5 sm:p-4 flex justify-between items-center flex-shrink-0 bg-[var(--nb-surface-accent)]"
+              style={{ borderBottom: '2px solid var(--nb-ink)' }}
+            >
+              <div>
+                <h3 className="nb-headline text-base">Publish Notice Bulletin</h3>
+                <p className="nb-label text-[10px] text-[var(--nb-secondary)]">Broadcasting to department feed</p>
+              </div>
               <button 
                 onClick={() => setShowAddForm(false)}
-                className="w-7.5 h-7.5 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider cursor-pointer"
+                className="nb-btn-icon w-8 h-8 rounded cursor-pointer"
+                title="Close"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -264,23 +345,23 @@ export default function AnnouncementsView({
             {/* Form */}
             <form onSubmit={handleCreateNotice} className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Notice Title *</label>
+                <label className="nb-label text-[10px] block mb-1">Notice Title *</label>
                 <input 
                   type="text" 
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Mid Exams Schedule or Results Out"
-                  className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                  className="nb-input text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Bulletin Category *</label>
+                <label className="nb-label text-[10px] block mb-1">Bulletin Category *</label>
                 <select 
                   value={category} 
                   onChange={(e) => setCategory(e.target.value as any)}
-                  className="w-full bg-surface border border-divider text-xs text-primary rounded-lg py-2 px-2 outline-none focus:border-indigo-500/50"
+                  className="nb-input text-xs cursor-pointer"
                 >
                   <option value="Notice">Notice</option>
                   <option value="Exam">Exam</option>
@@ -290,24 +371,26 @@ export default function AnnouncementsView({
                 </select>
               </div>
 
-              
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Notice Description / Content *</label>
+                <label className="nb-label text-[10px] block mb-1">Notice Description / Content *</label>
                 
                 {/* Markdown Formatting Toolbar */}
-                <div className="flex flex-wrap items-center gap-1 bg-surface border border-divider border-b-0 rounded-t-lg p-1.5">
-                  <button type="button" onClick={() => insertFormatting('**', '**')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Bold"><Bold className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('*', '*')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Italic"><Italic className="w-3.5 h-3.5" /></button>
-                  <div className="w-px h-4 bg-divider mx-1"></div>
-                  <button type="button" onClick={() => insertFormatting('# ', '')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Heading 1"><Heading1 className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('## ', '')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Heading 2"><Heading2 className="w-3.5 h-3.5" /></button>
-                  <div className="w-px h-4 bg-divider mx-1"></div>
-                  <button type="button" onClick={() => insertFormatting('- ', '')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Bullet List"><List className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('1. ', '')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Numbered List"><ListOrdered className="w-3.5 h-3.5" /></button>
-                  <div className="w-px h-4 bg-divider mx-1"></div>
-                  <button type="button" onClick={() => insertFormatting('>', '')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Quote"><Quote className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('`', '`')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Code"><Code className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('[', '](url)')} className="p-1.5 hover:bg-surface-accent rounded text-secondary hover:text-primary transition-colors" title="Link"><Link className="w-3.5 h-3.5" /></button>
+                <div 
+                  className="flex flex-wrap items-center gap-1 p-1.5 rounded-t-md bg-[var(--nb-surface-accent)]"
+                  style={{ border: '1.5px solid var(--nb-ink)', borderBottom: 'none' }}
+                >
+                  <button type="button" onClick={() => insertFormatting('**', '**')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Bold"><Bold className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={() => insertFormatting('*', '*')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Italic"><Italic className="w-3.5 h-3.5" /></button>
+                  <div className="w-px h-4 bg-[var(--nb-divider)] mx-1" />
+                  <button type="button" onClick={() => insertFormatting('# ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Heading 1"><Heading1 className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={() => insertFormatting('## ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Heading 2"><Heading2 className="w-3.5 h-3.5" /></button>
+                  <div className="w-px h-4 bg-[var(--nb-divider)] mx-1" />
+                  <button type="button" onClick={() => insertFormatting('- ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Bullet List"><List className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={() => insertFormatting('1. ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Numbered List"><ListOrdered className="w-3.5 h-3.5" /></button>
+                  <div className="w-px h-4 bg-[var(--nb-divider)] mx-1" />
+                  <button type="button" onClick={() => insertFormatting('>', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Quote"><Quote className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={() => insertFormatting('`', '`')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Code"><Code className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={() => insertFormatting('[', '](url)')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Link"><Link className="w-3.5 h-3.5" /></button>
                 </div>
                 
                 <textarea 
@@ -317,13 +400,13 @@ export default function AnnouncementsView({
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Draft clear directions, instructions, dates, or contact person details..."
-                  className="w-full bg-surface border border-divider text-xs text-content rounded-b-lg py-2 px-3 outline-none resize-none focus:border-indigo-500/50"
+                  className="nb-input text-xs rounded-t-none"
+                  style={{ borderTop: '1px solid var(--nb-divider)' }}
                 />
               </div>
 
-
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Optional Attachments</label>
+                <label className="nb-label text-[10px] block mb-1">Optional Attachments</label>
                 <ImageUploader 
                   maxFiles={4} 
                   onUploadSuccess={setImages} 
@@ -333,7 +416,7 @@ export default function AnnouncementsView({
 
               <button 
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center cursor-pointer mt-1"
+                className="nb-btn w-full mt-2 cursor-pointer"
               >
                 Broadcast Bulletin Notice
               </button>
@@ -344,16 +427,16 @@ export default function AnnouncementsView({
 
       {/* Lightbox Modal */}
       {activeImage && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex flex-col">
-          <div className="flex justify-between items-center p-4 border-b border-white/10 bg-black/50">
-            <span className="text-sm font-bold text-secondary">
+        <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col">
+          <div className="flex justify-between items-center p-4 border-b border-white/20 bg-black/80">
+            <span className="nb-label text-white">
               {activeImage.index + 1} / {activeImage.urls.length}
             </span>
             <button 
               onClick={() => setActiveImage(null)}
-              className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-colors cursor-pointer"
+              className="p-2 rounded bg-white/10 hover:bg-white/20 text-white cursor-pointer"
             >
-              <X className="w-5 h-5 text-content" />
+              <X className="w-5 h-5" />
             </button>
           </div>
           
@@ -364,7 +447,7 @@ export default function AnnouncementsView({
                   e.stopPropagation();
                   setActiveImage(prev => prev ? { ...prev, index: prev.index > 0 ? prev.index - 1 : prev.urls.length - 1 } : null);
                 }}
-                className="absolute left-4 p-3 bg-black/50 hover:bg-black/80 rounded-full text-content backdrop-blur-sm transition-all"
+                className="absolute left-4 p-3 bg-black/70 hover:bg-black text-white rounded border border-white/20 cursor-pointer"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -373,7 +456,7 @@ export default function AnnouncementsView({
             <img 
               src={activeImage.urls[activeImage.index]} 
               alt="Fullscreen attachment"
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="max-w-full max-h-full object-contain rounded-md border border-white/20"
             />
 
             {activeImage.urls.length > 1 && (
@@ -382,7 +465,7 @@ export default function AnnouncementsView({
                   e.stopPropagation();
                   setActiveImage(prev => prev ? { ...prev, index: prev.index < prev.urls.length - 1 ? prev.index + 1 : 0 } : null);
                 }}
-                className="absolute right-4 p-3 bg-black/50 hover:bg-black/80 rounded-full text-content backdrop-blur-sm transition-all"
+                className="absolute right-4 p-3 bg-black/70 hover:bg-black text-white rounded border border-white/20 cursor-pointer"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>

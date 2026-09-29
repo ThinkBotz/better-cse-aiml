@@ -18,7 +18,7 @@ import {
 import { onSnapshot, collection, doc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
 import { UserProfile, DepartmentEvent, EventRegistration, Album, Announcement, UserInvitation, ChatRoom, AppConfig, SupportInfo, DEFAULT_SUPPORT_INFO, AppBranding, DEFAULT_BRANDING } from './types';
-import BrandLogo, { ACCENT_THEMES } from './components/BrandLogo';
+import BrandLogo, { ACCENT_THEMES, getCssAccent, getCssAccentFg } from './components/BrandLogo';
 import { 
   fetchUsers, 
   fetchEvents, 
@@ -46,11 +46,9 @@ const ContactView = React.lazy(() => import('./components/ContactView'));
 const MessagesView = React.lazy(() => import('./components/MessagesView'));
 
 const ViewLoadingFallback = () => (
-  <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-[280px]">
-    <div className="w-10 h-10 rounded-2xl bg-surface-accent border border-divider/60 flex items-center justify-center shadow-lg">
-      <Loader2 className="w-5 h-5 text-rose-400 animate-spin" />
-    </div>
-    <span className="mt-3 text-xs font-semibold text-secondary animate-pulse">Loading view...</span>
+  <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-[280px] gap-3">
+    <Loader2 className="w-6 h-6 text-[var(--nb-accent)] animate-spin" />
+    <span className="nb-label">Loading…</span>
   </div>
 );
 
@@ -85,9 +83,8 @@ export const OfflineIndicator: React.FC = () => {
   if (isOnline) return null;
 
   return (
-    <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-amber-500/90 backdrop-blur-md px-4 py-2 text-xs font-bold text-white shadow-xl border border-amber-400">
-      <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-      Offline Mode Active
+    <div className="nb-offline-bar">
+      ⚠ Offline Mode Active
     </div>
   );
 };
@@ -100,7 +97,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('notx_theme', theme);
-    const themeColor = theme === 'dark' ? '#09090E' : '#F6F6F9';
+    const themeColor = theme === 'dark' ? '#111111' : '#F5F0EB';
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
       metaThemeColor.setAttribute('content', themeColor);
@@ -169,6 +166,14 @@ export default function App() {
 
   const currentBranding = appConfig.branding || DEFAULT_BRANDING;
   const currentTheme = ACCENT_THEMES[currentBranding.accentColor || 'indigo'] || ACCENT_THEMES.indigo;
+
+  // Inject --nb-accent CSS variable whenever branding changes so all
+  // nb-* utility classes and inline var() references pick up the brand colour.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--nb-accent', getCssAccent(currentBranding.accentColor));
+    root.style.setProperty('--nb-accent-fg', getCssAccentFg(currentBranding.accentColor));
+  }, [currentBranding.accentColor]);
 
   // Keep app config, branding, and support info synchronized in real-time across all devices
   useEffect(() => {
@@ -352,24 +357,22 @@ export default function App() {
 
   if (isBooting && !currentUser) {
     return (
-      <div className="h-full w-full bg-background flex flex-col items-center justify-center p-6 text-center select-none relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="relative mb-6">
-          <BrandLogo branding={currentBranding} size="xl" />
-          <span className="absolute -bottom-1 -right-1 flex h-5 w-5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-5 w-5 bg-gradient-to-r from-indigo-500 to-violet-400 border-2 border-[#000000]"></span>
-          </span>
-        </div>
-        <h2 className="text-xl font-display font-bold text-content tracking-tight">
-          {currentBranding.appName || 'NOTX'} {currentBranding.tagline || 'Connect'}
+      <div className="h-full w-full bg-[var(--nb-bg)] flex flex-col items-center justify-center p-6 text-center select-none">
+        {/* Brand badge */}
+        <BrandLogo branding={currentBranding} size="xl" className="mb-6" />
+
+        <h2 className="nb-headline text-3xl text-[var(--nb-content)]">
+          {currentBranding.appName || 'NOTX'}
         </h2>
-        <p className="text-xs text-secondary mt-1 max-w-xs">
-          {currentBranding.subtitle ? `Department of ${currentBranding.subtitle} • Association Ecosystem` : 'Association Ecosystem'}
+        <p className="nb-label mt-1" style={{ color: 'var(--nb-tertiary)' }}>
+          {currentBranding.tagline || 'Connect'}
+          {currentBranding.subtitle ? ` · ${currentBranding.subtitle}` : ''}
         </p>
-        <div className="flex items-center gap-2 bg-surface/90 px-4 py-2 rounded-xl border border-divider mt-6 shadow-xl backdrop-blur-md">
-          <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
-          <span className="text-[11px] text-secondary font-mono font-medium">Syncing Cloud Services</span>
+
+        {/* Loading row */}
+        <div className="mt-8 flex items-center gap-2 px-4 py-2 border border-[var(--nb-divider)] rounded-md bg-[var(--nb-surface)]">
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--nb-accent)' }} />
+          <span className="nb-label" style={{ color: 'var(--nb-secondary)' }}>Syncing Cloud Services</span>
         </div>
       </div>
     );
@@ -396,73 +399,83 @@ export default function App() {
         </React.Suspense>
       ) : (
         /* Authenticated Application shell */
-        <div className="h-full w-full flex flex-col bg-background text-content overflow-hidden">
-          
-          {/* Top Header / Brand bar */}
-          <header 
-            style={{ paddingTop: 'max(8px, env(safe-area-inset-top, 0px))' }}
-            className="bg-background/85 backdrop-blur-xl border-b border-divider/60 py-2.5 px-4 sm:px-6 flex justify-center items-center flex-shrink-0 z-40 select-none"
+        <div className="h-full w-full flex flex-col bg-[var(--nb-bg)] text-[var(--nb-content)] overflow-hidden">
+
+          {/* ── Top Header ── flat, no blur, 2px ink border-bottom */}
+          <header
+            className="bg-[var(--nb-surface)] border-b-2 border-[var(--nb-ink)] px-4 sm:px-6 flex justify-center items-center flex-shrink-0 z-40 select-none"
+            style={{ paddingTop: 'max(8px, env(safe-area-inset-top, 0px))', paddingBottom: '8px' }}
           >
-            <div className="w-full max-w-6xl flex justify-between items-center gap-2 min-w-0">
-              <div 
+            <div className="w-full max-w-6xl flex justify-between items-center gap-3 min-w-0">
+
+              {/* Brand wordmark */}
+              <button
                 onClick={() => setActiveTab('home')}
-                className="flex items-center gap-2.5 min-w-0 cursor-pointer group"
+                className="flex items-center gap-2.5 min-w-0 cursor-pointer"
                 title={`${currentBranding.appName || 'NOTX'} ${currentBranding.tagline || 'Connect'}`}
               >
                 <BrandLogo branding={currentBranding} size="md" />
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 flex-nowrap">
-                    <h4 className="text-xs sm:text-sm font-display font-extrabold text-content tracking-tight truncate group-hover:text-rose-400 transition-colors">
+                  <div className="flex items-center gap-2 flex-nowrap">
+                    <h1 className="nb-headline text-base sm:text-lg text-[var(--nb-content)] truncate">
                       {currentBranding.appName || 'NOTX'}
-                    </h4>
+                    </h1>
                     {currentBranding.subtitle && (
-                      <span className="text-[8px] sm:text-[9px] font-sans font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full flex-shrink-0">
+                      <span className="nb-pill-yellow text-[9.5px] font-mono font-bold hidden sm:inline-flex shadow-[1.5px_1.5px_0_var(--nb-ink)]">
                         {currentBranding.subtitle}
                       </span>
                     )}
                   </div>
-                  <p className="text-[8px] sm:text-[9px] text-secondary font-medium leading-none mt-0.5 flex items-center gap-1 truncate">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block animate-pulse flex-shrink-0"></span>
-                    {currentBranding.tagline ? `${currentBranding.tagline} Portal` : 'Connected Portal'}
+                  <p className="nb-label text-[10px] mt-0.5 truncate" style={{ color: 'var(--nb-tertiary)' }}>
+                    {currentBranding.tagline ? `${currentBranding.tagline} Portal` : 'Association Ecosystem'}
                   </p>
                 </div>
-              </div>
+              </button>
 
-              {/* Quick Navigation Profile Toggles */}
+              {/* Right controls */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <PWAInstallButton />
-                
+
+                {/* Refresh */}
                 <button
                   onClick={refreshAllData}
                   disabled={isDataLoading}
-                  className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center rounded-full bg-surface-accent/70 hover:bg-rose-500/20 border border-divider/80 hover:border-rose-500/40 transition-all cursor-pointer text-secondary hover:text-rose-400 disabled:opacity-50 shadow-sm"
+                  className="nb-btn-icon disabled:opacity-40"
                   aria-label="Refresh Data"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isDataLoading ? 'animate-spin text-rose-400' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${isDataLoading ? 'animate-spin' : ''}`} style={{ color: isDataLoading ? 'var(--nb-accent)' : undefined }} />
                 </button>
 
+                {/* Theme toggle */}
                 <button
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center rounded-full bg-surface-accent/70 hover:bg-rose-500/20 border border-divider/80 hover:border-rose-500/40 transition-all cursor-pointer text-secondary hover:text-rose-400 shadow-sm"
+                  className="nb-btn-icon"
                   aria-label="Toggle Theme"
                 >
-                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
 
-                <button 
-                  onClick={() => { setActiveTab('profile'); }}
-                  className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-surface-accent/70 hover:bg-surface-accent border border-divider/80 hover:border-rose-500/40 transition-all cursor-pointer group shadow-sm"
+                {/* Profile */}
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className="flex items-center gap-2 h-11 pl-2 pr-3 border-[1.5px] border-[var(--nb-ink)] rounded-md bg-[var(--nb-surface)] shadow-[2px_2px_0_var(--nb-ink)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all cursor-pointer"
                 >
-                  <div className="text-right hidden sm:block">
-                    <p className="text-[10px] font-bold text-content leading-tight truncate max-w-[80px]">{currentUser.name.split(' ')[0]}</p>
-                    <p className="text-[8px] text-rose-400 uppercase font-bold tracking-wide">{currentUser.role}</p>
-                  </div>
-                  <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-rose-500/40 group-hover:border-rose-400 transition-colors bg-surface shadow-inner">
-                    <img 
-                      src={currentUser.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${currentUser.rollNumber || currentUser.uid}`} 
-                      alt={currentUser.name} 
+                  <div className="w-7 h-7 rounded overflow-hidden border-[1.5px] border-[var(--nb-ink)] bg-[var(--nb-surface-accent)] flex-shrink-0">
+                    <img
+                      src={currentUser.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${currentUser.rollNumber || currentUser.uid}`}
+                      alt={currentUser.name}
                       className="w-full h-full object-cover"
                     />
+                  </div>
+                  <div className="text-left hidden sm:block">
+                    <p className="text-xs font-bold text-[var(--nb-content)] leading-tight truncate max-w-[72px]">{currentUser.name.split(' ')[0]}</p>
+                    <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded leading-none uppercase inline-block mt-0.5 ${
+                      currentUser.role === 'admin' ? 'nb-pill-coral' :
+                      currentUser.role === 'president' || currentUser.role === 'associate' ? 'nb-pill-purple' :
+                      currentUser.role === 'coordinator' ? 'nb-pill-blue' : 'nb-pill-green'
+                    }`}>
+                      {currentUser.role}
+                    </span>
                   </div>
                 </button>
               </div>
@@ -470,7 +483,7 @@ export default function App() {
           </header>
 
           {/* Core View Display */}
-          <div className="flex-1 flex flex-col min-h-0 relative w-full overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0 relative w-full overflow-hidden" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
             <div className="flex-1 flex flex-col min-h-0 w-full max-w-6xl mx-auto">
             <React.Suspense fallback={<ViewLoadingFallback />}>
             {activeTab === 'home' && (
@@ -518,25 +531,22 @@ export default function App() {
 
             {activeTab === 'messages' && (
               appConfig.isChatEnabled ? (
-                <MessagesView 
+                <MessagesView
                   user={currentUser}
                   allUsers={allUsers}
                   initialTargetRoll={messageTargetRoll}
                   onTargetHandled={() => setMessageTargetRoll(null)}
                 />
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-surface-accent flex items-center justify-center border border-divider/60 mb-4">
-                    <MessageSquare className="w-8 h-8 text-secondary opacity-50" />
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
+                  <div className="nb-card-tinted w-16 h-16 flex items-center justify-center">
+                    <MessageSquare className="w-8 h-8" style={{ color: 'var(--nb-tertiary)' }} />
                   </div>
-                  <h3 className="text-lg font-display font-bold text-content">Chat Disabled</h3>
-                  <p className="text-sm text-secondary mt-2 max-w-xs">
+                  <h3 className="nb-headline text-2xl" style={{ color: 'var(--nb-content)' }}>Chat Disabled</h3>
+                  <p className="nb-body max-w-xs" style={{ color: 'var(--nb-secondary)' }}>
                     The peer-to-peer messaging system has been temporarily disabled by the administration.
                   </p>
-                  <button 
-                    onClick={() => setActiveTab('home')}
-                    className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider py-2.5 px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/20"
-                  >
+                  <button onClick={() => setActiveTab('home')} className="nb-btn">
                     Return Home
                   </button>
                 </div>
@@ -586,17 +596,20 @@ export default function App() {
           {/* OVERLAY SLIDING SHEETS / DRAWER MODALS */}
           <React.Suspense fallback={<ViewLoadingFallback />}>
           {showMembersModal && (
-            <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6 transition-all">
-              <div className="bg-background rounded-t-[28px] md:rounded-[28px] border-t md:border border-divider/80 max-h-[92dvh] md:max-h-[85vh] h-[92dvh] md:h-auto w-full md:max-w-3xl flex flex-col overflow-hidden shadow-2xl">
-                <div className="p-3.5 sm:p-4 border-b border-divider/80 flex justify-between items-center flex-shrink-0 bg-surface">
-                  <span className="text-[11px] font-bold text-indigo-400 bg-indigo-500/15 px-3 py-1 rounded-full border border-indigo-500/30 font-mono">
-                    Directory
-                  </span>
-                  <button 
+            <div className="fixed inset-0 bg-black/55 z-50 flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6">
+              <div className="nb-sheet md:nb-modal max-h-[92dvh] md:max-h-[85vh] h-[92dvh] md:h-auto w-full md:max-w-3xl flex flex-col overflow-hidden">
+                {/* Sheet handle */}
+                <div className="pt-2.5 pb-0 flex justify-center md:hidden flex-shrink-0">
+                  <div className="w-10 h-1 rounded-full bg-[var(--nb-divider)]" />
+                </div>
+                <div className="p-4 border-b-[1.5px] border-[var(--nb-divider)] flex justify-between items-center flex-shrink-0">
+                  <span className="nb-tag">Directory</span>
+                  <button
                     onClick={() => setShowMembersModal(false)}
-                    className="w-8 h-8 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider/80 cursor-pointer transition-colors"
+                    className="nb-btn-icon"
+                    aria-label="Close"
                   >
-                    <span className="text-sm font-semibold">✕</span>
+                    <span className="text-base font-bold leading-none">✕</span>
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto min-h-0">
@@ -607,22 +620,24 @@ export default function App() {
           )}
 
           {showContactModal && (
-            <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6 transition-all">
-              <div className="bg-background rounded-t-[28px] md:rounded-[28px] border-t md:border border-divider/80 max-h-[85dvh] md:max-h-[80vh] h-[85dvh] md:h-auto w-full md:max-w-2xl flex flex-col overflow-hidden shadow-2xl">
-                <div className="p-3.5 sm:p-4 border-b border-divider/80 flex justify-between items-center flex-shrink-0 bg-surface">
-                  <span className="text-[11px] font-bold text-violet-400 bg-violet-500/15 px-3 py-1 rounded-full border border-violet-500/30 font-mono">
-                    Query Desk
-                  </span>
-                  <button 
+            <div className="fixed inset-0 bg-black/55 z-50 flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6">
+              <div className="nb-sheet md:nb-modal max-h-[85dvh] md:max-h-[80vh] h-[85dvh] md:h-auto w-full md:max-w-2xl flex flex-col overflow-hidden">
+                <div className="pt-2.5 pb-0 flex justify-center md:hidden flex-shrink-0">
+                  <div className="w-10 h-1 rounded-full bg-[var(--nb-divider)]" />
+                </div>
+                <div className="p-4 border-b-[1.5px] border-[var(--nb-divider)] flex justify-between items-center flex-shrink-0">
+                  <span className="nb-tag">Query Desk</span>
+                  <button
                     onClick={() => setShowContactModal(false)}
-                    className="w-8 h-8 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider/80 cursor-pointer transition-colors"
+                    className="nb-btn-icon"
+                    aria-label="Close"
                   >
-                    <span className="text-sm font-semibold">✕</span>
+                    <span className="text-base font-bold leading-none">✕</span>
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto min-h-0">
-                  <ContactView 
-                    user={currentUser} 
+                  <ContactView
+                    user={currentUser}
                     supportInfo={appConfig.supportInfo}
                     onSupportInfoUpdated={(info) => setAppConfig(prev => ({ ...prev, supportInfo: info }))}
                   />

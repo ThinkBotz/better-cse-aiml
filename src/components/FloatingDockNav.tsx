@@ -72,14 +72,14 @@ export const FloatingDockNav: React.FC<FloatingDockNavProps> = ({
     <div className={`floating-dock-wrapper select-none ${className}`}>
       {/* Offline Warning Banner if disconnected */}
       {isOffline && (
-        <div 
+        <div
           className="floating-dock-offline-pill"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
         >
-          <WifiOff className="w-3 h-3 text-amber-400" />
+          <WifiOff className="w-3 h-3" />
           <span>Offline Mode</span>
         </div>
       )}
@@ -114,36 +114,22 @@ export const FloatingDockNav: React.FC<FloatingDockNavProps> = ({
               onPointerDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchEnd={(e) => {
-                // Prevent mobile ghost-clicks and event bleed-through to underlying views
                 e.stopPropagation();
               }}
-              className={`floating-dock-item group ${isActive ? 'is-active' : ''}`}
+              data-tab={item.id}
+              className={`floating-dock-item ${isActive ? 'is-active' : ''}`}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
             >
-              {/* Active Tab Glow & Background Highlight */}
-              {isActive && (
-                <div className="floating-dock-active-indicator">
-                  <div className="floating-dock-active-glow" />
-                </div>
-              )}
-
-              {/* Icon Container with Badge */}
+              {/* Icon + badge */}
               <div className="floating-dock-icon-wrapper">
-                <Icon
-                  className={`floating-dock-icon ${
-                    isActive
-                      ? 'text-white scale-105 filter drop-shadow'
-                      : 'text-[#DBABC0]/70 dark:text-[#DBABC0]/70 group-hover:text-white transition-colors'
-                  }`}
-                />
+                <Icon className="floating-dock-icon" />
 
-                {/* Notifications & Pending Invites Badge */}
                 {item.badge !== undefined && (
                   item.isPing ? (
                     <span className="floating-dock-ping-badge">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-neutral-900" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--nb-coral)] opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--nb-coral)] border border-[var(--nb-surface)]" />
                     </span>
                   ) : (
                     <span className="floating-dock-counter-badge">
@@ -153,14 +139,8 @@ export const FloatingDockNav: React.FC<FloatingDockNavProps> = ({
                 )}
               </div>
 
-              {/* Text Label */}
-              <span
-                className={`floating-dock-label ${
-                  isActive
-                    ? 'font-bold text-white'
-                    : 'text-[#DBABC0]/75 dark:text-[#DBABC0]/75 group-hover:text-white'
-                }`}
-              >
+              {/* Label */}
+              <span className="floating-dock-label">
                 {item.label}
               </span>
             </button>

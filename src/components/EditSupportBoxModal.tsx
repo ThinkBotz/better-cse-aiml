@@ -71,54 +71,71 @@ export default function EditSupportBoxModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-surface border border-divider w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 select-none">
+      <div 
+        className="bg-[var(--nb-surface)] text-[var(--nb-content)] w-full max-w-lg rounded-lg max-h-[92vh] flex flex-col overflow-hidden"
+        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
+      >
         
         {/* Header */}
-        <div className="p-4 border-b border-divider flex justify-between items-center bg-surface-accent">
+        <div 
+          className="p-4 flex justify-between items-center bg-[var(--nb-surface-accent)]"
+          style={{ borderBottom: '2px solid var(--nb-ink)' }}
+        >
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <ShieldCheck className="w-4 h-4" />
+            <div 
+              className="w-8 h-8 rounded bg-[var(--nb-ink)] text-[var(--nb-bg)] flex items-center justify-center"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+            >
+              <ShieldCheck className="w-4 h-4 text-[var(--nb-accent)]" />
             </div>
             <div>
-              <h3 className="font-bold text-content text-sm flex items-center gap-1.5 font-display">
-                Edit Support Box (Admin)
-              </h3>
-              <p className="text-[10px] text-secondary">
+              <h3 className="nb-headline text-base">Edit Support Box (Admin)</h3>
+              <p className="nb-label text-[10px] text-[var(--nb-secondary)]">
                 Updates help desk contacts across Profile and Support views dynamically
               </p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="text-tertiary hover:text-content p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+            className="nb-btn-icon w-8 h-8 rounded cursor-pointer"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-4 sm:p-5 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-4 sm:p-5 space-y-4 text-xs font-sans">
           
           {saveSuccess && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+            <div 
+              className="p-3 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center gap-2 text-xs font-bold"
+              style={{ border: '1.5px solid currentColor' }}
+            >
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>Support Box updated successfully! Changes are live across all devices.</span>
             </div>
           )}
 
           {errorMessage && (
-            <div className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl flex items-center gap-2 text-rose-400 text-xs font-semibold">
+            <div 
+              className="p-3 rounded bg-rose-500/10 text-rose-700 dark:text-rose-400 flex items-center gap-2 text-xs font-bold"
+              style={{ border: '1.5px solid currentColor' }}
+            >
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Title & Subtitle */}
-          <div className="space-y-3 bg-surface-accent/40 p-3.5 rounded-2xl border border-divider/60">
-            <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider font-mono">Desk Identity</h4>
+          <div 
+            className="space-y-3 bg-[var(--nb-surface-accent)] p-3.5 rounded-md"
+            style={{ border: '1.5px solid var(--nb-divider)' }}
+          >
+            <h4 className="nb-label text-[11px] text-[var(--nb-content)]">Desk Identity</h4>
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1">
+              <label className="nb-label text-[10px] block mb-1">
                 Support Desk Title *
               </label>
               <input 
@@ -127,12 +144,12 @@ export default function EditSupportBoxModal({
                 value={formData.title}
                 onChange={(e) => handleChange('title', e.target.value)}
                 placeholder="e.g. Help & Support Desk"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none"
+                className="nb-input text-xs"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1">
+              <label className="nb-label text-[10px] block mb-1">
                 Badge Tag
               </label>
               <input 
@@ -140,12 +157,12 @@ export default function EditSupportBoxModal({
                 value={formData.badge || 'OFFICIAL CHANNELS'}
                 onChange={(e) => handleChange('badge', e.target.value)}
                 placeholder="e.g. OFFICIAL CHANNELS"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none"
+                className="nb-input text-xs"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1">
+              <label className="nb-label text-[10px] block mb-1">
                 Subtitle / Description
               </label>
               <input 
@@ -153,18 +170,21 @@ export default function EditSupportBoxModal({
                 value={formData.subtitle}
                 onChange={(e) => handleChange('subtitle', e.target.value)}
                 placeholder="e.g. Reach out to departmental coordinators, faculty advisors, and lab heads"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none"
+                className="nb-input text-xs"
               />
             </div>
           </div>
 
           {/* Contact Channels */}
-          <div className="space-y-3 bg-surface-accent/40 p-3.5 rounded-2xl border border-divider/60">
-            <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider font-mono">Contact Details</h4>
+          <div 
+            className="space-y-3 bg-[var(--nb-surface-accent)] p-3.5 rounded-md"
+            style={{ border: '1.5px solid var(--nb-divider)' }}
+          >
+            <h4 className="nb-label text-[11px] text-[var(--nb-content)]">Contact Details</h4>
             
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-indigo-400" />
+              <label className="nb-label text-[10px] block mb-1 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                 Department Official Email *
               </label>
               <input 
@@ -173,13 +193,13 @@ export default function EditSupportBoxModal({
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
                 placeholder="e.g. hod.cse.aml@aits.edu"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none font-mono"
+                className="nb-input text-xs font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-indigo-400" />
+              <label className="nb-label text-[10px] block mb-1 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                 Hotline / Phone Number *
               </label>
               <input 
@@ -188,32 +208,35 @@ export default function EditSupportBoxModal({
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}
                 placeholder="e.g. +91 98765 43210"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none font-mono"
+                className="nb-input text-xs font-mono"
               />
             </div>
           </div>
 
           {/* Location & Timings */}
-          <div className="space-y-3 bg-surface-accent/40 p-3.5 rounded-2xl border border-divider/60">
-            <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider font-mono">Physical Office / Lab</h4>
+          <div 
+            className="space-y-3 bg-[var(--nb-surface-accent)] p-3.5 rounded-md"
+            style={{ border: '1.5px solid var(--nb-divider)' }}
+          >
+            <h4 className="nb-label text-[11px] text-[var(--nb-content)]">Physical Office / Lab</h4>
             
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-violet-400" />
-                Location & Lab Room
+              <label className="nb-label text-[10px] block mb-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
+                Location &amp; Lab Room
               </label>
               <input 
                 type="text"
                 value={formData.location}
                 onChange={(e) => handleChange('location', e.target.value)}
                 placeholder="e.g. NOTX AI & ML Innovation Lab: Room 314, Block 3, 2nd Floor"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none"
+                className="nb-input text-xs"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-violet-400" />
+              <label className="nb-label text-[10px] block mb-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                 Operational Hours / Days
               </label>
               <input 
@@ -221,18 +244,21 @@ export default function EditSupportBoxModal({
                 value={formData.timing}
                 onChange={(e) => handleChange('timing', e.target.value)}
                 placeholder="e.g. Mon-Fri 9:00 AM - 4:30 PM"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none"
+                className="nb-input text-xs"
               />
             </div>
           </div>
 
           {/* Immediate Assistance / Notice */}
-          <div className="space-y-3 bg-surface-accent/40 p-3.5 rounded-2xl border border-divider/60">
-            <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider font-mono">Immediate Guidance Note</h4>
+          <div 
+            className="space-y-3 bg-[var(--nb-surface-accent)] p-3.5 rounded-md"
+            style={{ border: '1.5px solid var(--nb-divider)' }}
+          >
+            <h4 className="nb-label text-[11px] text-[var(--nb-content)]">Immediate Guidance Note</h4>
             
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+              <label className="nb-label text-[10px] block mb-1 flex items-center gap-1.5">
+                <HelpCircle className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
                 Heading
               </label>
               <input 
@@ -240,12 +266,12 @@ export default function EditSupportBoxModal({
                 value={formData.urgentHelpTitle}
                 onChange={(e) => handleChange('urgentHelpTitle', e.target.value)}
                 placeholder="e.g. Need Immediate Assistance?"
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none"
+                className="nb-input text-xs"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-secondary uppercase tracking-wider mb-1">
+              <label className="nb-label text-[10px] block mb-1">
                 Notice / Help Text
               </label>
               <textarea 
@@ -253,7 +279,7 @@ export default function EditSupportBoxModal({
                 value={formData.urgentHelpText}
                 onChange={(e) => handleChange('urgentHelpText', e.target.value)}
                 placeholder="e.g. For urgent exam hall clearances, project evaluations, or permissions..."
-                className="w-full bg-background border border-divider focus:border-indigo-500 text-xs text-content rounded-xl py-2 px-3 outline-none resize-none leading-relaxed"
+                className="nb-input text-xs resize-none leading-relaxed"
               />
             </div>
           </div>
@@ -263,23 +289,23 @@ export default function EditSupportBoxModal({
             <button
               type="button"
               onClick={handleResetDefaults}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-divider bg-surface hover:bg-surface-accent text-secondary hover:text-content text-xs font-semibold transition-all cursor-pointer"
+              className="nb-btn-ghost text-xs !min-h-[40px] px-3 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset Defaults
+              <span>Reset Defaults</span>
             </button>
 
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-2.5 shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="nb-btn flex-1 !min-h-[40px] cursor-pointer disabled:opacity-50"
             >
               {isSaving ? (
-                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               ) : (
                 <>
                   <Save className="w-3.5 h-3.5" />
-                  Save Dynamic Changes
+                  <span>Save Changes</span>
                 </>
               )}
             </button>

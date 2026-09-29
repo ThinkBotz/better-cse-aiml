@@ -213,117 +213,176 @@ export default function LoginView({
   };
 
   return (
-    <div className="h-full w-full flex flex-col justify-between overflow-y-auto px-5 py-8 bg-background text-content">
-      {/* Brand Header */}
-      <div className="flex flex-col items-center text-center mt-2">
-        <BrandLogo branding={branding} size="xl" className="mb-4 shadow-2xl shadow-rose-500/20" />
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 text-[11px] font-sans font-bold border border-rose-400/30 mb-2">
-          <span>{branding.subtitle ? `${branding.subtitle} Department` : 'CSE (AI & ML) Department'}</span>
+    <div className="h-full w-full flex flex-col sm:flex-row overflow-y-auto bg-[var(--nb-bg)]">
+
+      {/* ── LEFT / TOP HERO STRIP ── Bold saturated yellow with ink typography & stickers ── */}
+      <div
+        className="flex-shrink-0 flex flex-col items-start justify-between p-6 sm:p-10 sm:w-[44%] sm:min-h-full min-h-[220px]"
+        style={{ 
+          background: 'var(--nb-yellow)', 
+          borderRight: '2.5px solid var(--nb-ink)', 
+          borderBottom: '2.5px solid var(--nb-ink)',
+          color: '#111111' 
+        }}
+      >
+        {/* Logo + wordmark */}
+        <div className="flex items-center gap-3">
+          <div className="p-1 rounded-md bg-white border-2 border-black shadow-[2px_2px_0_#111]">
+            <BrandLogo branding={branding} size="md" />
+          </div>
+          <div>
+            <span className="nb-pill-coral text-[10px] font-mono font-bold uppercase inline-block mb-0.5">
+              {branding.subtitle || 'CSE (AI & ML)'}
+            </span>
+            <p className="font-display text-lg tracking-wider text-[#111111]">
+              {branding.appName || 'NOTX'}
+            </p>
+          </div>
         </div>
-        <h2 className="text-2xl font-display font-extrabold text-content tracking-tight leading-tight">
-          {branding.appName || 'NOTX'}{' '}
-          <span className="bg-gradient-to-r from-rose-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+
+        {/* Big headline + sticker pills */}
+        <div className="mt-8 sm:mt-0 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <span className="nb-pill-pink text-[10px] font-mono font-bold shadow-[2px_2px_0_#111]">
+              ⚡ DIGITAL PASSES
+            </span>
+            <span className="nb-pill-cyan text-[10px] font-mono font-bold shadow-[2px_2px_0_#111]">
+              🏆 WALL OF FAME
+            </span>
+          </div>
+
+          <h1
+            className="nb-headline leading-none text-[#111111]"
+            style={{ fontSize: 'clamp(2.75rem, 8vw, 4.25rem)' }}
+          >
             {branding.tagline || 'Connect'}
-          </span>
-        </h2>
-        <p className="text-xs text-secondary mt-1 max-w-xs">
-          Sign in to access your student passes, events & bulletin
-        </p>
+          </h1>
+          
+          <p
+            className="text-xs sm:text-sm font-semibold leading-relaxed max-w-[280px] text-neutral-800"
+          >
+            Your high-octane departmental hub. Instant pass verification, live notices, and association events.
+          </p>
+        </div>
+
+        {/* Bottom tag */}
+        <div
+          className="mt-6 sm:mt-0 font-mono font-bold text-xs uppercase px-3.5 py-1.5 rounded-md bg-[#111111] text-[#FFE600] border-2 border-black shadow-[2.5px_2.5px_0_rgba(0,0,0,0.3)] self-start"
+        >
+          {branding.subtitle ? `${branding.subtitle} Association` : 'Association Ecosystem'}
+        </div>
       </div>
 
-      {/* Main Login Card / Sign Up inspired by reference */}
-      <div className="my-4 sm:my-6 ref-card p-5 sm:p-7 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-36 h-36 bg-rose-500/15 rounded-full blur-[40px] pointer-events-none" />
-        
+      {/* ── RIGHT / BOTTOM FORM PANEL ── crisp surface with bold ink accents ── */}
+      <div className="flex-1 flex flex-col justify-center p-6 sm:p-12 bg-[var(--nb-surface)]">
+
+        {/* Error banner */}
         {error && (
-          <div className="mb-4 text-xs font-semibold text-rose-200 bg-rose-950/60 border border-rose-500/40 rounded-2xl p-3.5 flex items-start gap-2.5 shadow-md">
-            <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
-            <span>{error}</span>
+          <div className="mb-5 flex items-start gap-2.5 p-3.5 border-2 border-[var(--nb-ink)] rounded-md nb-pill-coral font-bold shadow-[3px_3px_0_var(--nb-ink)]">
+            <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span className="text-xs sm:text-sm">{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4.5">
+        {/* Login form */}
+        <form onSubmit={handleLogin} className="space-y-4 max-w-md w-full mx-auto">
+          <div className="border-b-2 border-[var(--nb-ink)] pb-3 mb-2">
+            <h2 className="nb-headline text-2xl text-[var(--nb-content)]">SIGN IN</h2>
+            <p className="nb-label text-xs text-[var(--nb-secondary)] mt-0.5">Use your University Roll Number or Department Email</p>
+          </div>
+
+          {/* Roll / Email */}
           <div>
-            <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1.5 ml-2">Roll Number or Department Email</label>
+            <label className="nb-label block mb-1.5 font-bold">Roll Number or Email</label>
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" />
-              <input 
-                type="text" 
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
+              <input
+                type="text"
                 value={emailOrRoll}
                 onChange={(e) => setEmailOrRoll(e.target.value)}
-                placeholder="e.g. 23A81A4202 or username"
-                className="w-full bg-surface-accent/60 border border-divider/80 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 text-sm text-content placeholder:text-secondary rounded-full py-3 pl-11 pr-4 outline-none transition-all shadow-inner"
+                placeholder="e.g. 23A81A4202"
+                className="nb-input !pl-10 font-mono text-xs rounded-md"
+                autoComplete="username"
               />
             </div>
           </div>
 
+          {/* Password */}
           <div>
-            <div className="flex justify-between items-center mb-1.5 ml-2">
-              <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider">Access Password</label>
-            </div>
+            <label className="nb-label block mb-1.5 font-bold">Access Password</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" />
-              <input 
-                type={showPassword ? "text" : "password"} 
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
+              <input
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-surface-accent/60 border border-divider/80 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 text-sm text-content placeholder:text-secondary rounded-full py-3 pl-11 pr-11 outline-none transition-all shadow-inner"
+                className="nb-input !pl-10 !pr-12 text-xs rounded-md"
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary hover:text-content transition-colors focus:outline-none p-1 cursor-pointer"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 cursor-pointer text-[var(--nb-secondary)] hover:text-[var(--nb-content)]"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4 text-rose-400" />
-                ) : (
-                  <Eye className="w-4 h-4 text-secondary hover:text-content" />
-                )}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <button 
-            type="submit" 
+          {/* Submit */}
+          <button
+            type="submit"
             disabled={loading}
-            className="w-full ref-pill-button py-3.5 text-xs font-extrabold uppercase tracking-wider shadow-xl shadow-rose-500/30 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+            className="w-full mt-3 py-3 px-4 rounded-md font-mono font-bold text-xs uppercase tracking-wider text-white bg-[var(--nb-blue)] hover:bg-blue-600 border-2 border-[var(--nb-ink)] shadow-[3px_3px_0_var(--nb-ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
-              <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+              <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
             ) : (
               <>
-                <div className="ref-icon-bubble w-6 h-6">
-                  <KeyRound className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span>Sign In Securely</span>
+                <KeyRound className="w-4 h-4" />
+                Sign In To Portal
               </>
             )}
           </button>
-          
-          <div className="bg-surface-accent/40 border border-divider/60 rounded-2xl p-3 text-center mt-3 backdrop-blur-md">
-            <p className="text-[11px] text-secondary leading-relaxed">
-              Accounts are managed centrally. Contact <strong className="text-rose-300">ADMIN or President</strong> for default credentials.
+
+          {/* Info note */}
+          <div 
+            className="p-3 rounded-md bg-[var(--nb-yellow-subtle)] dark:bg-[var(--nb-surface-accent)] text-neutral-900 dark:text-neutral-100"
+            style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '2px 2px 0 var(--nb-ink)' }}
+          >
+            <p className="text-xs font-medium leading-relaxed">
+              Default password is your <strong>Roll Number</strong>. Contact{' '}
+              <strong className="underline">HOD or Association President</strong> if you need an access reset.
             </p>
           </div>
-        </form>
 
-        <div className="relative flex items-center py-4">
-          <div className="flex-grow border-t border-divider/60"></div>
-          <span className="flex-shrink-0 mx-4 text-[10px] uppercase text-secondary font-bold tracking-widest">Or</span>
-          <div className="flex-grow border-t border-divider/60"></div>
-        </div>
-        
-        <button 
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full ref-pill-secondary py-3.5 text-xs font-bold uppercase tracking-wider justify-center shadow-md active:scale-98"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Sign in with Google
-        </button>
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-[2px] bg-[var(--nb-divider)]" />
+            <span className="nb-label text-[11px] font-mono font-bold px-2 py-0.5 bg-[var(--nb-surface-accent)] rounded border border-[var(--nb-ink)]">
+              OR
+            </span>
+            <div className="flex-1 h-[2px] bg-[var(--nb-divider)]" />
+          </div>
+
+          {/* Google login */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-md font-mono font-bold text-xs uppercase tracking-wider bg-white dark:bg-neutral-900 text-[var(--nb-content)] border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)] hover:bg-[var(--nb-surface-accent)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </button>
+        </form>
       </div>
     </div>
   );

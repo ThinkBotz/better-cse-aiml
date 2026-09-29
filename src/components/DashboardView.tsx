@@ -169,168 +169,207 @@ export default function DashboardView({
     .slice(0, 3);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 sm:pb-32 space-y-5 bg-background text-content">
-      
-      {/* Dynamic Welcoming Card inspired by the reference design */}
-      <div className="relative rounded-[28px] bg-gradient-to-br from-[#230D1D] via-[#1C0917] to-[#140611] dark:from-[#230D1D] dark:via-[#1C0917] dark:to-[#140611] p-5 sm:p-6 border border-white/10 dark:border-rose-400/15 overflow-hidden shadow-2xl shadow-rose-950/30">
-        {/* Soft atmospheric radial glows */}
-        <div className="absolute -right-10 -top-10 w-44 h-44 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-10 -bottom-10 w-44 h-44 bg-violet-500/15 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative flex items-center justify-between gap-4 sm:gap-6">
-          <div className="flex items-center gap-4 sm:gap-5 min-w-0 flex-1">
-            {/* User Avatar with status pulse dot */}
-            <div className="relative flex-shrink-0">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] bg-gradient-to-tr from-rose-500 via-pink-400 to-violet-500 shadow-lg shadow-rose-500/25">
-                <img 
-                  src={user.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${user.rollNumber || user.uid}`} 
-                  alt={user.name}
-                  className="w-full h-full rounded-full object-cover bg-[#1c0817]"
-                />
-              </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#1c0817] flex items-center justify-center shadow-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-5 bg-[var(--nb-bg)] text-[var(--nb-content)]">
+
+      {/* ── WELCOME HERO STRIP (BOLD NEO-BRUTALIST COLOR BLOCK) ── */}
+      <div
+        className="flex items-center gap-4 p-4 sm:p-5 rounded-lg nb-card-yellow"
+        style={{ border: '2.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+      >
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          <div
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-white"
+            style={{ border: '2px solid var(--nb-ink)' }}
+          >
+            <img
+              src={user.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${user.rollNumber || user.uid}`}
+              alt={user.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          {/* Online dot */}
+          <span
+            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
+            style={{ border: '2px solid var(--nb-ink)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+          </span>
+        </div>
+
+        {/* Text */}
+        <div className="min-w-0 flex-1">
+          <p className="nb-label text-xs text-black/70 font-bold">
+            GOOD {new Date().getHours() < 12 ? 'MORNING' : new Date().getHours() < 18 ? 'AFTERNOON' : 'EVENING'}
+          </p>
+          <h2
+            className="nb-headline leading-none truncate text-black"
+            style={{ fontSize: 'clamp(1.5rem, 5vw, 2.2rem)' }}
+          >
+            {user.name}!
+          </h2>
+          {/* Badge row */}
+          <div className="flex items-center gap-2 flex-wrap mt-2">
+            <span className={`nb-pill-${user.role === 'admin' ? 'coral' : user.role === 'associate' ? 'purple' : 'blue'} text-[10px] px-2 py-0.5 rounded flex items-center gap-1`}>
+              {user.role === 'admin' ? <ShieldCheck className="w-3 h-3" /> : user.role === 'associate' ? <Award className="w-3 h-3" /> : <GraduationCap className="w-3 h-3" />}
+              {user.role.toUpperCase()}
+            </span>
+            {user.rollNumber && (
+              <span className="nb-pill-green text-[10px] px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                <Hash className="w-3 h-3" />
+                {user.rollNumber}
               </span>
-            </div>
-
-            {/* Profile Information */}
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-rose-300/80 uppercase tracking-widest font-sans">
-                  Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg sm:text-2xl font-display font-extrabold text-white tracking-tight truncate">
-                  {user.name}!
-                </h3>
-                {user.role === 'admin' ? (
-                  <ShieldCheck className="w-5 h-5 text-rose-400 shrink-0" />
-                ) : (
-                  <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
-                )}
-              </div>
-
-              {/* Pill Badges Row */}
-              <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                {/* Role Symbol Badge */}
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-rose-200 bg-rose-500/20 border border-rose-400/30 px-3 py-1 rounded-full uppercase tracking-wider font-sans shadow-xs">
-                  {user.role === 'admin' ? (
-                    <ShieldCheck className="w-3 h-3 text-rose-300" />
-                  ) : user.role === 'associate' ? (
-                    <Award className="w-3 h-3 text-rose-300" />
-                  ) : (
-                    <GraduationCap className="w-3 h-3 text-rose-300" />
-                  )}
-                  {user.role}
-                </span>
-
-                {/* Roll Number Symbol Badge */}
-                {user.rollNumber && (
-                  <span className="inline-flex items-center gap-1.5 font-sans text-[10px] text-violet-200 font-bold tracking-wider bg-violet-500/20 px-3 py-1 rounded-full border border-violet-400/30 shadow-xs">
-                    <Hash className="w-3 h-3 text-violet-300" />
-                    {user.rollNumber}
-                  </span>
-                )}
-
-                {/* Academic Year/Section Symbol Badge */}
-                {user.role === 'student' && (user.year || user.section) ? (
-                  <span className="inline-flex items-center gap-1.5 text-[10px] text-pink-200 font-bold bg-white/10 border border-white/15 px-3 py-1 rounded-full backdrop-blur-md">
-                    <BookOpen className="w-3 h-3 text-pink-300" />
-                    {user.year ? `${user.year}` : ''}{user.section ? ` • Sec ${user.section}` : ''}
-                  </span>
-                ) : user.position ? (
-                  <span className="inline-flex items-center gap-1.5 text-[10px] text-pink-200 font-bold bg-white/10 border border-white/15 px-3 py-1 rounded-full backdrop-blur-md">
-                    <Award className="w-3 h-3 text-pink-300" />
-                    {user.position}
-                  </span>
-                ) : null}
-              </div>
-            </div>
+            )}
+            {user.role === 'student' && (user.year || user.section) ? (
+              <span className="nb-pill-pink text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
+                <BookOpen className="w-3 h-3" />
+                {user.year}{user.section ? ` · SEC ${user.section}` : ''}
+              </span>
+            ) : user.position ? (
+              <span className="nb-pill-cyan text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
+                <Award className="w-3 h-3" />
+                {user.position}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
 
-      {/* WALL OF CHAMPIONS • EVENT WINNERS SECTION */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0">
-              <Trophy className="w-3.5 h-3.5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h4 className="font-display text-xs font-bold uppercase text-secondary tracking-wider">
-                  Wall of Champions • Event Winners
-                </h4>
-                {winners.length > 0 && (
-                  <span className="font-sans text-[10px] font-extrabold bg-rose-500/15 text-rose-400 border border-rose-500/30 px-2.5 py-0.5 rounded-full">
-                    {winners.length} {winners.length === 1 ? 'Champion' : 'Champions'}
-                  </span>
-                )}
-              </div>
-            </div>
+      {/* ── 4-CARD BOLD COLOR STATS GRID ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div 
+          onClick={() => onNavigate('events')}
+          className="nb-card-blue p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="nb-label text-[10px] text-white/90">TOTAL EVENTS</span>
+            <Calendar className="w-4 h-4 text-white" />
           </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            {canManageWinners && (
-              <button
-                type="button"
-                onClick={handleOpenAdd}
-                className="ref-pill-button text-[11px] font-bold tracking-wider py-2 px-4 shadow-lg shadow-rose-500/30 active:scale-95 transition-all cursor-pointer shrink-0"
-              >
-                <div className="ref-icon-bubble w-5 h-5">
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                </div>
-                <span>Add Winner</span>
-              </button>
-            )}
-          </div>
+          <div className="nb-headline text-2xl sm:text-3xl text-white">{events.length}</div>
+          <span className="text-[10px] font-bold text-white/90 mt-1 uppercase font-mono">Campus Events →</span>
         </div>
 
-        {/* Search & Rank Filter Controls (when winners exist) */}
+        <div 
+          onClick={() => onNavigate('events')}
+          className="nb-card-green p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="nb-label text-[10px] text-black/80">REGISTERED</span>
+            <CheckCircle2 className="w-4 h-4 text-black" />
+          </div>
+          <div className="nb-headline text-2xl sm:text-3xl text-black">{myRegs.length}</div>
+          <span className="text-[10px] font-bold text-black/80 mt-1 uppercase font-mono">My Passes →</span>
+        </div>
+
+        <div 
+          onClick={() => onNavigate('announcements')}
+          className="nb-card-coral p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="nb-label text-[10px] text-white/90">NOTICES</span>
+            <Volume2 className="w-4 h-4 text-white" />
+          </div>
+          <div className="nb-headline text-2xl sm:text-3xl text-white">{announcements.length}</div>
+          <span className="text-[10px] font-bold text-white/90 mt-1 uppercase font-mono">Bulletins →</span>
+        </div>
+
+        <div 
+          onClick={() => {
+            const el = document.getElementById('wall-of-champions');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }}
+          className="nb-card-purple p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="nb-label text-[10px] text-white/90">CHAMPIONS</span>
+            <Trophy className="w-4 h-4 text-white" />
+          </div>
+          <div className="nb-headline text-2xl sm:text-3xl text-white">{winners.length}</div>
+          <span className="text-[10px] font-bold text-white/90 mt-1 uppercase font-mono">Wall of Fame →</span>
+        </div>
+      </div>
+
+      {/* â”€â”€ WALL OF CHAMPIONS â”€â”€ */}
+      <div id="wall-of-champions" className="space-y-3">
+        {/* Section header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0"
+              style={{ background: '#F59E0B', border: '1.5px solid var(--nb-ink)', color: '#1A1A1A' }}
+            >
+              <Trophy className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="nb-headline text-sm" style={{ color: 'var(--nb-content)' }}>
+                Wall of Champions
+              </h3>
+              {winners.length > 0 && (
+                <span className="nb-tag text-[11px]">
+                  {winners.length} {winners.length === 1 ? 'Champion' : 'Champions'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {canManageWinners && (
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="nb-btn text-[11px] py-2 px-4 self-end sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Winner
+            </button>
+          )}
+        </div>
+
+        {/* Search + rank filter bar */}
         {winners.length > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-surface/60 backdrop-blur-md border border-divider p-2.5 rounded-full">
-            {/* Search Input */}
+          <div
+            className="flex flex-col sm:flex-row sm:items-center gap-2.5 p-2.5"
+            style={{ border: '1.5px solid var(--nb-ink)', borderRadius: '8px', background: 'var(--nb-surface)' }}
+          >
             <div className="relative flex-1 min-w-[180px]">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--nb-tertiary)' }} />
               <input
                 type="text"
                 value={winnerSearch}
                 onChange={(e) => setWinnerSearch(e.target.value)}
-                placeholder="Search champions by name, roll no, event, or project..."
-                className="w-full bg-surface-accent/70 border border-divider/60 text-xs text-content rounded-full pl-9 pr-8 py-2 outline-none focus:border-rose-500/50"
+                placeholder="Search by name, roll no, eventâ€¦"
+                className="nb-input !pl-9 !pr-8 text-[13px] py-2"
               />
               {winnerSearch && (
                 <button
                   type="button"
                   onClick={() => setWinnerSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-content p-0.5 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+                  style={{ color: 'var(--nb-tertiary)' }}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 shrink-0 px-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
               {[
-                { id: 'all', label: 'All Ranks' },
-                { id: '1st', label: '🏆 1st' },
-                { id: '2nd', label: '🥈 2nd' },
-                { id: '3rd', label: '🥉 3rd' },
-                { id: 'Special', label: '🌟 Special' },
+                { id: 'all', label: 'All' },
+                { id: '1st', label: 'ðŸ† 1st' },
+                { id: '2nd', label: 'ðŸ¥ˆ 2nd' },
+                { id: '3rd', label: 'ðŸ¥‰ 3rd' },
+                { id: 'Special', label: 'ðŸŒŸ Special' },
               ].map(f => (
                 <button
                   key={f.id}
                   type="button"
                   onClick={() => setWinnerRankFilter(f.id as any)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold font-sans transition-all cursor-pointer whitespace-nowrap ${
-                    winnerRankFilter === f.id
-                      ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/25'
-                      : 'bg-surface-accent/50 hover:bg-surface-accent text-secondary hover:text-content border border-divider/60'
-                  }`}
+                  className="px-3 py-1.5 text-[11px] font-bold font-mono uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors"
+                  style={winnerRankFilter === f.id
+                    ? { background: 'var(--nb-accent)', color: 'var(--nb-accent-fg)', border: '1.5px solid var(--nb-ink)', borderRadius: '6px' }
+                    : { background: 'var(--nb-surface-accent)', color: 'var(--nb-secondary)', border: '1.5px solid var(--nb-divider)', borderRadius: '6px' }
+                  }
                 >
                   {f.label}
                 </button>
@@ -339,288 +378,290 @@ export default function DashboardView({
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Winners grid / empty */}
         {winners.length === 0 ? (
-          canManageWinners ? (
-            <div className="bg-gradient-to-br from-surface via-surface-accent/30 to-surface rounded-2xl p-4 sm:p-5 border border-dashed border-amber-500/30 text-center space-y-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/25 mx-auto flex items-center justify-center text-amber-400">
-                <Trophy className="w-5 h-5" />
-              </div>
-              <div className="max-w-md mx-auto space-y-1">
-                <h5 className="font-display text-xs font-bold text-content">No Event Winners Featured Yet</h5>
-                <p className="text-[11px] text-secondary leading-relaxed">
-                  Admins can dynamically spotlight hackathon champions, quiz masters, and competition winners directly on the home page by selecting students from the database.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleOpenAdd}
-                className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer active:scale-95"
+          <div
+            className="p-8 sm:p-10 text-center rounded-xl bg-[var(--nb-surface)] relative overflow-hidden"
+            style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+          >
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full nb-pill-purple text-white text-[10px] font-mono font-bold tracking-wider uppercase border-1.5 border-black shadow-[2px_2px_0_#000]">
+              <span>★ PODIUM SPOTLIGHT ★</span>
+            </div>
+
+            <div
+              className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center nb-card-yellow"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0 var(--nb-ink)' }}
+            >
+              <Trophy className="w-8 h-8 text-neutral-900 stroke-[2.5]" />
+            </div>
+
+            <h5 className="nb-headline text-lg sm:text-xl text-[var(--nb-content)] mb-1.5">
+              THE PODIUM IS WAITING
+            </h5>
+
+            <p className="text-xs text-[var(--nb-secondary)] font-sans max-w-md mx-auto leading-relaxed mb-5">
+              {canManageWinners 
+                ? 'Department champions, hackathon winners, and quiz titans will be spotlighted on this Wall of Fame. Feature your first winner now!'
+                : 'Department competition winners, coding sprint champions, and hackathon leaders will be officially celebrated here.'}
+            </p>
+
+            {canManageWinners && (
+              <button 
+                type="button" 
+                onClick={handleOpenAdd} 
+                className="nb-btn text-xs py-2 px-4 rounded-md mx-auto cursor-pointer font-mono font-bold uppercase inline-flex items-center gap-2"
               >
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                Feature First Winner
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                Feature First Champion
               </button>
-            </div>
-          ) : (
-            <div className="bg-surface rounded-2xl p-4 text-center border border-divider/80">
-              <p className="text-xs text-secondary font-medium">Department competition winners and podium finishes will be announced here.</p>
-            </div>
-          )
-        ) : (
-          (() => {
-            const filteredWinners = winners.filter((winner) => {
-              if (winnerRankFilter !== 'all') {
-                if (winnerRankFilter === '1st' && !winner.position.includes('1st')) return false;
-                if (winnerRankFilter === '2nd' && !winner.position.includes('2nd')) return false;
-                if (winnerRankFilter === '3rd' && !winner.position.includes('3rd')) return false;
-                if (winnerRankFilter === 'Special' && !winner.position.toLowerCase().includes('special')) return false;
-              }
-              if (!winnerSearch.trim()) return true;
-              const q = winnerSearch.toLowerCase().trim();
-              return (
-                (winner.studentName || '').toLowerCase().includes(q) ||
-                (winner.rollNumber || '').toLowerCase().includes(q) ||
-                (winner.eventTitle || '').toLowerCase().includes(q) ||
-                (winner.prizeTitle || '').toLowerCase().includes(q) ||
-                (winner.projectTitle || '').toLowerCase().includes(q) ||
-                (winner.department || '').toLowerCase().includes(q)
-              );
-            });
-
-            if (filteredWinners.length === 0) {
-              return (
-                <div className="bg-surface rounded-2xl p-6 text-center border border-divider/80 space-y-2">
-                  <p className="text-xs text-secondary font-medium">No event winners match "{winnerSearch}".</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWinnerSearch('');
-                      setWinnerRankFilter('all');
-                    }}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 font-bold underline cursor-pointer"
-                  >
-                    Reset Search & Filters
-                  </button>
-                </div>
-              );
+            )}
+          </div>
+        ) : (() => {
+          const filteredWinners = winners.filter((winner) => {
+            if (winnerRankFilter !== 'all') {
+              if (winnerRankFilter === '1st' && !winner.position.includes('1st')) return false;
+              if (winnerRankFilter === '2nd' && !winner.position.includes('2nd')) return false;
+              if (winnerRankFilter === '3rd' && !winner.position.includes('3rd')) return false;
+              if (winnerRankFilter === 'Special' && !winner.position.toLowerCase().includes('special')) return false;
             }
-
+            if (!winnerSearch.trim()) return true;
+            const q = winnerSearch.toLowerCase().trim();
             return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {filteredWinners.map((winner) => {
-                  const isFirst = winner.position.includes('1st');
-                  const isSecond = winner.position.includes('2nd');
-                  const isThird = winner.position.includes('3rd');
-                  const rankTheme = isFirst 
-                    ? {
-                        border: 'border-amber-500/40 hover:border-amber-500/70',
-                        bg: 'from-amber-500/10 via-surface to-surface',
-                        badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-                        icon: '🏆',
-                        ring: 'ring-amber-500/30'
-                      }
-                    : isSecond
-                    ? {
-                        border: 'border-slate-400/40 hover:border-slate-400/70',
-                        bg: 'from-slate-400/10 via-surface to-surface',
-                        badgeBg: 'bg-slate-400/20 text-slate-200 border-slate-400/40',
-                        icon: '🥈',
-                        ring: 'ring-slate-400/30'
-                      }
-                    : isThird
-                    ? {
-                        border: 'border-orange-500/40 hover:border-orange-500/70',
-                        bg: 'from-orange-500/10 via-surface to-surface',
-                        badgeBg: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
-                        icon: '🥉',
-                        ring: 'ring-orange-500/30'
-                      }
-                    : {
-                        border: 'border-violet-500/40 hover:border-violet-500/70',
-                        bg: 'from-violet-500/10 via-surface to-surface',
-                        badgeBg: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
-                        icon: '🌟',
-                        ring: 'ring-violet-500/30'
-                      };
+              (winner.studentName || '').toLowerCase().includes(q) ||
+              (winner.rollNumber || '').toLowerCase().includes(q) ||
+              (winner.eventTitle || '').toLowerCase().includes(q) ||
+              (winner.prizeTitle || '').toLowerCase().includes(q) ||
+              (winner.projectTitle || '').toLowerCase().includes(q) ||
+              (winner.department || '').toLowerCase().includes(q)
+            );
+          });
 
-                  return (
-                    <div
-                      key={winner.winnerId}
-                      onClick={() => setWinnerToView(winner)}
-                      className={`relative rounded-2xl bg-gradient-to-b ${rankTheme.bg} p-3.5 border ${rankTheme.border} transition-all shadow-md hover:shadow-xl flex flex-col justify-between group overflow-hidden cursor-pointer active:scale-[0.99]`}
-                    >
-                      {/* Subtle Glow in background */}
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-white/3 rounded-full blur-2xl pointer-events-none" />
-
-                      <div>
-                        {/* Top Row: Position Badge & Action Buttons (View, Edit, Delete) */}
-                        <div className="flex items-center justify-between gap-2 mb-2.5">
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg border font-mono tracking-wide ${rankTheme.badgeBg}`}>
-                            <span>{rankTheme.icon}</span>
-                            <span>{winner.position}</span>
-                          </span>
-
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            {winner.eventDate && (
-                              <span className="font-mono text-[9px] text-tertiary mr-1 hidden sm:inline">
-                                {winner.eventDate}
-                              </span>
-                            )}
-
-                            {/* View action button */}
-                            <button
-                              type="button"
-                              onClick={() => setWinnerToView(winner)}
-                              title="View champion credential details"
-                              className="p-1 rounded-lg text-secondary hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-
-                            {/* Admin Edit button */}
-                            {canManageWinners && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEdit(winner)}
-                                title="Edit winner details"
-                                className="p-1 rounded-lg text-secondary hover:text-amber-300 hover:bg-amber-500/10 transition-colors cursor-pointer"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            {/* Admin Delete button */}
-                            {canManageWinners && (
-                              <button
-                                type="button"
-                                onClick={() => setWinnerToDelete(winner)}
-                                title="Remove winner from Wall of Fame"
-                                className="p-1 rounded-lg text-secondary hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Student Info Row */}
-                        <div className="flex items-center gap-2.5 mb-2.5">
-                          <div className={`relative w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-surface border border-divider/80 ring-1 ${rankTheme.ring}`}>
-                            <img
-                              src={winner.studentPhoto || `https://api.dicebear.com/9.x/notionists/svg?seed=${winner.rollNumber || winner.studentId}`}
-                              alt={winner.studentName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1">
-                              <h5 className="font-display text-xs font-bold text-content truncate group-hover:text-amber-300 transition-colors">
-                                {winner.studentName}
-                              </h5>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <span className="font-mono text-[9.5px] font-semibold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.2 rounded">
-                                {winner.rollNumber}
-                              </span>
-                              <span className="text-[9.5px] text-secondary font-mono truncate">
-                                {winner.department || 'CSE (AI & ML)'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Event & Prize Details */}
-                        <div className="space-y-1.5 pt-2 border-t border-divider/60">
-                          <div className="flex items-center gap-1.5 text-secondary">
-                            <Calendar className="w-3 h-3 text-indigo-400 shrink-0" />
-                            <span className="text-[10.5px] font-bold text-content truncate">{winner.eventTitle}</span>
-                          </div>
-
-                          {winner.prizeTitle && (
-                            <div className="text-[10px] font-bold text-amber-300 flex items-center gap-1">
-                              <Sparkles className="w-2.5 h-2.5 text-amber-400 shrink-0" />
-                              <span className="truncate">{winner.prizeTitle}</span>
-                            </div>
-                          )}
-
-                          {winner.awardDetails && (
-                            <div className="text-[10px] text-secondary font-medium leading-relaxed bg-surface/70 border border-divider/60 rounded-lg px-2 py-1 line-clamp-2">
-                              {winner.awardDetails}
-                            </div>
-                          )}
-
-                          {winner.projectTitle && (
-                            <div className="text-[9.5px] text-indigo-300 font-mono italic truncate bg-indigo-500/10 border border-indigo-500/20 rounded-md px-1.5 py-0.5">
-                              💡 {winner.projectTitle}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-2 pt-1.5 border-t border-divider/40 flex justify-between items-center text-[8.5px] text-tertiary font-mono">
-                        <span className="text-amber-400/80 font-medium">Click for Full Credential</span>
-                        <span>{winner.addedBy ? `By ${winner.addedBy}` : 'Department'}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+          if (filteredWinners.length === 0) {
+            return (
+              <div 
+                className="p-8 text-center rounded-xl bg-[var(--nb-surface)] space-y-3" 
+                style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+              >
+                <div className="w-10 h-10 rounded-lg mx-auto flex items-center justify-center nb-pill-coral text-white font-mono font-bold text-sm">
+                  0
+                </div>
+                <h6 className="nb-headline text-base text-[var(--nb-content)]">No Champions Match "{winnerSearch}"</h6>
+                <p className="text-xs text-[var(--nb-secondary)] font-sans">
+                  Try adjusting your search criteria or clear the filters.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setWinnerSearch(''); setWinnerRankFilter('all'); }}
+                  className="nb-btn-ghost text-xs py-1.5 px-3 rounded-md cursor-pointer font-mono font-bold uppercase inline-block"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                >
+                  Reset Filter
+                </button>
               </div>
             );
-          })()
-        )}
+          }
+
+          // rank accent colours (saturated neo-brutalist)
+          const rankStyle = (position: string) => {
+            if (position.includes('1st')) return { accent: 'var(--nb-yellow)', fg: '#000000', icon: '🏆', borderTop: '4px solid var(--nb-yellow)', pillClass: 'nb-pill-yellow' };
+            if (position.includes('2nd')) return { accent: 'var(--nb-cyan)', fg: '#000000', icon: '🥈', borderTop: '4px solid var(--nb-cyan)', pillClass: 'nb-pill-cyan' };
+            if (position.includes('3rd')) return { accent: 'var(--nb-coral)', fg: '#FFFFFF', icon: '🥉', borderTop: '4px solid var(--nb-coral)', pillClass: 'nb-pill-coral' };
+            return { accent: 'var(--nb-purple)', fg: '#FFFFFF', icon: '🌟', borderTop: '4px solid var(--nb-purple)', pillClass: 'nb-pill-purple' };
+          };
+
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {filteredWinners.map((winner) => {
+                const rs = rankStyle(winner.position);
+                return (
+                  <div
+                    key={winner.winnerId}
+                    onClick={() => setWinnerToView(winner)}
+                    className="nb-card flex flex-col justify-between cursor-pointer group"
+                    style={{ borderTop: rs.borderTop, borderLeft: '2px solid var(--nb-ink)', borderRight: '2px solid var(--nb-ink)', borderBottom: '2px solid var(--nb-ink)' }}
+                  >
+                    {/* Top row */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-bold font-mono px-2 py-0.5 rounded ${rs.pillClass}`}
+                      >
+                        {rs.icon} {winner.position}
+                      </span>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {winner.eventDate && (
+                          <span className="nb-label text-[10px] hidden sm:inline" style={{ color: 'var(--nb-tertiary)' }}>
+                            {winner.eventDate}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setWinnerToView(winner)}
+                          className="nb-btn-icon w-8 h-8"
+                          title="View credential"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        {canManageWinners && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(winner)}
+                            className="nb-btn-icon w-8 h-8"
+                            title="Edit"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {canManageWinners && (
+                          <button
+                            type="button"
+                            onClick={() => setWinnerToDelete(winner)}
+                            className="nb-btn-icon w-8 h-8"
+                            title="Remove"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Student info */}
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <div
+                        className="w-10 h-10 rounded overflow-hidden flex-shrink-0"
+                        style={{ border: '2px solid var(--nb-ink)' }}
+                      >
+                        <img
+                          src={winner.studentPhoto || `https://api.dicebear.com/9.x/notionists/svg?seed=${winner.rollNumber || winner.studentId}`}
+                          alt={winner.studentName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h5 className="text-sm font-bold truncate" style={{ color: 'var(--nb-content)' }}>
+                          {winner.studentName}
+                        </h5>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="nb-pill-blue text-[9px] px-1.5 py-0.2 rounded font-mono">{winner.rollNumber}</span>
+                          <span className="nb-label text-[10px] truncate" style={{ color: 'var(--nb-tertiary)' }}>
+                            {winner.department || 'CSE (AI & ML)'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Event + prize */}
+                    <div
+                      className="space-y-1.5 pt-2"
+                      style={{ borderTop: '1.5px solid var(--nb-divider)' }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3 h-3 flex-shrink-0 text-[var(--nb-accent)]" />
+                        <span className="text-[12px] font-bold truncate" style={{ color: 'var(--nb-content)' }}>
+                          {winner.eventTitle}
+                        </span>
+                      </div>
+                      {winner.prizeTitle && (
+                        <div className="text-[11px] font-bold flex items-center gap-1 text-amber-500 font-mono">
+                          <Sparkles className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{winner.prizeTitle}</span>
+                        </div>
+                      )}
+                      {winner.awardDetails && (
+                        <div
+                          className="text-[11px] leading-relaxed px-2 py-1 rounded line-clamp-2"
+                          style={{ background: 'var(--nb-surface-accent)', border: '1px solid var(--nb-divider)', color: 'var(--nb-secondary)' }}
+                        >
+                          {winner.awardDetails}
+                        </div>
+                      )}
+                      {winner.projectTitle && (
+                        <div
+                          className="text-[11px] font-mono italic truncate px-1.5 py-0.5 rounded"
+                          style={{ background: 'var(--nb-surface-accent)', border: '1px solid var(--nb-divider)', color: 'var(--nb-secondary)' }}
+                        >
+                          💡 {winner.projectTitle}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-2 pt-1.5 flex justify-between items-center nb-label text-[10px]" style={{ borderTop: '1px solid var(--nb-divider)', color: 'var(--nb-tertiary)' }}>
+                      <span className="font-bold text-[var(--nb-accent)]">Tap for Credential</span>
+                      <span>{winner.addedBy ? `By ${winner.addedBy}` : 'Department'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Upcoming Events Carousel */}
+      {/* ── UPCOMING EVENTS ── */}
       <div>
-        <div className="flex justify-between items-center mb-2.5">
-          <h4 className="font-display text-[11px] font-bold uppercase text-secondary tracking-wider">Upcoming Events</h4>
-          <button 
-            onClick={() => onNavigate('events')} 
-            className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-0.5 uppercase tracking-wider cursor-pointer"
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="nb-headline text-sm" style={{ color: 'var(--nb-content)' }}>Upcoming Events</h3>
+          <button
+            onClick={() => onNavigate('events')}
+            className="nb-label flex items-center gap-1 cursor-pointer font-bold"
+            style={{ color: 'var(--nb-accent)' }}
           >
-            See All <ChevronRight className="w-3 h-3" />
+            See All <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {upcomingEvents.length === 0 ? (
-          <div className="bg-surface rounded-2xl p-5 text-center border border-divider/80">
-            <p className="text-xs text-secondary font-medium">No upcoming events listed right now.</p>
+          <div
+            className="p-5 text-center rounded-md"
+            style={{ border: '1.5px solid var(--nb-divider)', background: 'var(--nb-surface)' }}
+          >
+            <p className="nb-body" style={{ color: 'var(--nb-secondary)' }}>No upcoming events listed right now.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {upcomingEvents.map((event) => {
               const isRegistered = myRegs.some(r => r.eventId === event.eventId);
               return (
-                <div 
+                <div
                   key={event.eventId}
                   onClick={() => onSelectEvent(event)}
-                  className="w-full bg-surface hover:bg-surface-accent rounded-2xl border border-divider/80 hover:border-indigo-500/40 overflow-hidden transition-all cursor-pointer shadow-lg group flex flex-col"
+                  className="nb-card flex flex-col cursor-pointer group"
                 >
-                  <div className="relative h-28 sm:h-32">
-                    <img 
-                      src={event.posterImage} 
+                  {/* Poster */}
+                  <div className="relative -mx-4 -mt-4 mb-3 h-28 sm:h-32 overflow-hidden rounded-t-[7px]" style={{ marginLeft: '-1rem', marginRight: '-1rem', marginTop: '-1rem' }}>
+                    <img
+                      src={event.posterImage}
                       alt={event.title}
-                      className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 left-2 bg-surface/85 backdrop-blur-xs text-violet-300 text-[9px] font-bold px-2 py-0.5 rounded-md border border-divider/60 font-mono">
+                    {/* Category tag */}
+                    <span
+                      className={`absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded font-mono font-bold border border-black shadow-[1.5px_1.5px_0_#000] uppercase ${
+                        event.category === 'Workshops' ? 'nb-pill-blue' :
+                        event.category === 'Hackathons' ? 'nb-pill-purple' :
+                        event.category === 'Seminars' ? 'nb-pill-green' :
+                        event.category === 'Cultural Events' ? 'nb-pill-pink' :
+                        event.category === 'Club Meetings' ? 'nb-pill-coral' : 'nb-pill-yellow'
+                      }`}
+                    >
                       {event.category}
-                    </div>
+                    </span>
                   </div>
-                  <div className="p-3 flex-1 flex flex-col justify-between">
-                    <h5 className="font-display text-xs font-bold text-content truncate">{event.title}</h5>
-                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-divider/60">
-                      <span className="font-mono text-[10px] text-secondary">{event.date}</span>
-                      {isRegistered ? (
-                        <span className="text-[9px] bg-indigo-500/10 text-indigo-400 font-bold px-2 py-0.5 rounded border border-indigo-500/20">
-                          Registered
-                        </span>
-                      ) : (
-                        <span className="text-[9px] bg-indigo-500/10 text-indigo-400 font-bold px-1.5 py-0.5 rounded border border-indigo-500/20">
-                          Open
-                        </span>
-                      )}
-                    </div>
+
+                  <h5 className="text-sm font-bold truncate" style={{ color: 'var(--nb-content)' }}>
+                    {event.title}
+                  </h5>
+                  <div
+                    className="flex justify-between items-center mt-2 pt-2"
+                    style={{ borderTop: '1.5px solid var(--nb-divider)' }}
+                  >
+                    <span className="nb-label" style={{ color: 'var(--nb-secondary)' }}>{event.date}</span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                        isRegistered ? 'nb-pill-green' : 'nb-pill-blue'
+                      }`}
+                    >
+                      {isRegistered ? 'REGISTERED' : 'OPEN'}
+                    </span>
                   </div>
                 </div>
               );
@@ -629,119 +670,135 @@ export default function DashboardView({
         )}
       </div>
 
-      {/* Pinned Announcements */}
+      {/* ── LATEST BULLETINS ── */}
       <div>
-        <div className="flex justify-between items-center mb-2.5">
-          <h4 className="font-display text-[11px] font-bold uppercase text-secondary tracking-wider">Latest Bulletins</h4>
-          <button 
-            onClick={() => onNavigate('announcements')} 
-            className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-0.5 uppercase tracking-wider cursor-pointer"
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="nb-headline text-sm" style={{ color: 'var(--nb-content)' }}>Latest Bulletins</h3>
+          <button
+            onClick={() => onNavigate('announcements')}
+            className="nb-label flex items-center gap-1 cursor-pointer font-bold"
+            style={{ color: 'var(--nb-accent)' }}
           >
-            All Bulletins <ChevronRight className="w-3 h-3" />
+            All Bulletins <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {recentAnnouncements.map((announce) => (
-            <div 
+            <div
               key={announce.announcementId}
               onClick={() => onNavigate('announcements')}
-              className="bg-surface hover:bg-surface-accent p-3.5 rounded-xl border border-divider/80 hover:border-divider/80 transition-all cursor-pointer flex gap-3 items-start shadow-sm"
+              className="nb-card flex gap-3 items-start cursor-pointer hover:bg-[var(--nb-surface-accent)] transition-colors"
             >
-              <div className="w-7.5 h-7.5 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 text-indigo-400 flex-shrink-0 mt-0.5">
+              <div
+                className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 mt-0.5 border border-black shadow-[1.5px_1.5px_0_#000] ${
+                  announce.category === 'Exam' ? 'nb-pill-coral' :
+                  announce.category === 'Workshop' ? 'nb-pill-blue' :
+                  announce.category === 'Result' ? 'nb-pill-green' :
+                  announce.category === 'News' ? 'nb-pill-pink' : 'nb-pill-cyan'
+                }`}
+              >
                 <Volume2 className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-[9px] font-bold text-indigo-400 tracking-wide uppercase font-mono">{announce.category}</span>
-                  <span className="font-mono text-[9px] text-tertiary">{announce.date}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border border-black shadow-[1.5px_1.5px_0_#000] uppercase ${
+                    announce.category === 'Exam' ? 'nb-pill-coral' :
+                    announce.category === 'Workshop' ? 'nb-pill-blue' :
+                    announce.category === 'Result' ? 'nb-pill-green' :
+                    announce.category === 'News' ? 'nb-pill-pink' : 'nb-pill-cyan'
+                  }`}>
+                    {announce.category}
+                  </span>
+                  <span className="nb-label text-[10px]" style={{ color: 'var(--nb-tertiary)' }}>{announce.date}</span>
                 </div>
-                <h5 className="text-xs font-bold text-primary mt-0.5 truncate">{announce.title}</h5>
-                <p className="text-[11px] text-secondary mt-0.5 line-clamp-1 leading-relaxed">{announce.content}</p>
+                <h5 className="text-sm font-bold mt-1 truncate" style={{ color: 'var(--nb-content)' }}>{announce.title}</h5>
+                <p className="nb-body text-[12px] mt-0.5 line-clamp-1" style={{ color: 'var(--nb-secondary)' }}>{announce.content}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Dynamic Add / Edit Event Winner Modal (CREATE & UPDATE) */}
+      {/* â”€â”€ MODALS â”€â”€ */}
+
       {isAddWinnerOpen && (
         <AddEventWinnerModal
           isOpen={isAddWinnerOpen}
-          onClose={() => {
-            setIsAddWinnerOpen(false);
-            setWinnerToEdit(null);
-          }}
+          onClose={() => { setIsAddWinnerOpen(false); setWinnerToEdit(null); }}
           events={events}
           allUsers={allUsers}
           currentUser={user}
           initialWinner={winnerToEdit}
-          onWinnerSaved={(winnerId) => {
-            setToastMessage(winnerToEdit ? "Wall of Champions winner updated successfully!" : "New Champion published to Wall of Fame!");
+          onWinnerSaved={() => {
+            setToastMessage(winnerToEdit ? 'Winner updated!' : 'New Champion published!');
             setTimeout(() => setToastMessage(null), 3500);
           }}
         />
       )}
 
-      {/* View Champion Details Modal (READ) */}
       {winnerToView && (
         <WinnerDetailsModal
           isOpen={Boolean(winnerToView)}
           winner={winnerToView}
           onClose={() => setWinnerToView(null)}
           canManageWinners={canManageWinners}
-          onEdit={(w) => {
-            setWinnerToView(null);
-            handleOpenEdit(w);
-          }}
-          onDelete={(w) => {
-            setWinnerToView(null);
-            setWinnerToDelete(w);
-          }}
+          onEdit={(w) => { setWinnerToView(null); handleOpenEdit(w); }}
+          onDelete={(w) => { setWinnerToView(null); setWinnerToDelete(w); }}
         />
       )}
 
-      {/* In-App Delete Confirmation Modal (DELETE) */}
+      {/* Delete confirm modal */}
       {winnerToDelete && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-3 select-none animate-in fade-in duration-150">
-          <div className="bg-surface border border-rose-500/30 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden p-5 space-y-4">
-            <div className="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-400 mx-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 select-none" style={{ background: 'rgba(0,0,0,0.6)' }}>
+          <div
+            className="w-full max-w-sm p-5 space-y-4 rounded-md"
+            style={{ background: 'var(--nb-surface)', border: '2px solid var(--nb-ink)' }}
+          >
+            <div
+              className="w-11 h-11 rounded flex items-center justify-center mx-auto"
+              style={{ background: 'var(--nb-accent)', border: '2px solid var(--nb-ink)', color: 'var(--nb-accent-fg)' }}
+            >
               <Trash2 className="w-5 h-5" />
             </div>
-            <div className="text-center space-y-1.5">
-              <h4 className="font-display text-sm font-bold text-content">Remove from Wall of Champions?</h4>
-              <p className="text-xs text-secondary leading-relaxed">
-                Are you sure you want to remove <strong className="text-content">{winnerToDelete.studentName}</strong> ({winnerToDelete.position}) for <span className="text-indigo-300">"{winnerToDelete.eventTitle}"</span>?
+            <div className="text-center space-y-1">
+              <h4 className="text-sm font-bold" style={{ color: 'var(--nb-content)' }}>Remove from Wall of Champions?</h4>
+              <p className="nb-body text-[12px]" style={{ color: 'var(--nb-secondary)' }}>
+                Remove <strong style={{ color: 'var(--nb-content)' }}>{winnerToDelete.studentName}</strong>{' '}
+                ({winnerToDelete.position}) for "{winnerToDelete.eventTitle}"?
               </p>
             </div>
-            <div className="p-3 bg-surface-accent/60 rounded-xl border border-divider/60 flex items-center gap-2.5 text-left">
+            <div
+              className="flex items-center gap-2.5 p-3 rounded-md"
+              style={{ background: 'var(--nb-surface-accent)', border: '1px solid var(--nb-divider)' }}
+            >
               <img
                 src={winnerToDelete.studentPhoto || `https://api.dicebear.com/9.x/notionists/svg?seed=${winnerToDelete.rollNumber || winnerToDelete.studentId}`}
                 alt=""
-                className="w-8 h-8 rounded-lg object-cover bg-surface"
+                className="w-8 h-8 rounded object-cover"
               />
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-content truncate">{winnerToDelete.studentName}</div>
-                <div className="text-[10px] text-secondary font-mono">{winnerToDelete.rollNumber} • {winnerToDelete.position}</div>
+              <div className="min-w-0">
+                <div className="text-xs font-bold truncate" style={{ color: 'var(--nb-content)' }}>{winnerToDelete.studentName}</div>
+                <div className="nb-label text-[10px]" style={{ color: 'var(--nb-secondary)' }}>{winnerToDelete.rollNumber} Â· {winnerToDelete.position}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={isDeletingWinner}
                 onClick={() => setWinnerToDelete(null)}
-                className="flex-1 py-2 rounded-xl bg-surface-accent hover:bg-divider text-secondary hover:text-content border border-divider text-xs font-semibold cursor-pointer transition-colors"
+                className="nb-btn-ghost flex-1"
               >
                 Cancel
               </button>
               <HoldButton
                 size="sm"
                 holdTime={1800}
-                backgroundColor="#18181b"
-                fillColor="#e11d48"
-                textColor="#ffffff"
-                fillTextColor="#ffffff"
-                radius={12}
+                backgroundColor="var(--nb-surface)"
+                fillColor="var(--nb-accent)"
+                textColor="var(--nb-content)"
+                fillTextColor="var(--nb-accent-fg)"
+                radius={8}
                 doneLabel="Removed"
                 disabled={isDeletingWinner}
                 onHold={confirmDeleteWinner}
@@ -754,10 +811,13 @@ export default function DashboardView({
         </div>
       )}
 
-      {/* Toast feedback */}
+      {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-surface/95 border border-indigo-500/40 shadow-2xl backdrop-blur-md px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-semibold text-content animate-in slide-in-from-bottom-2 duration-200">
-          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+        <div
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 flex items-center gap-2 text-sm font-semibold rounded-md"
+          style={{ background: 'var(--nb-ink)', color: 'var(--nb-surface)', border: '2px solid var(--nb-ink)' }}
+        >
+          <Sparkles className="w-4 h-4 flex-shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
