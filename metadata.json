@@ -1,0 +1,6 @@
+{
+  "name": "ThinkBotz Connect",
+  "description": "Mini campus and department management platform specifically for the CSE (AI & ML) department and student association.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

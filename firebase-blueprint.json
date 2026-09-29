@@ -1,0 +1,270 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-specific attributes for Students, Associates, and Admins.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "associate", "admin"] },
+        "phone": { "type": "string" },
+        "profile_pic": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "branch": { "type": "string" },
+        "year": { "type": "string" },
+        "section": { "type": "string" },
+        "skills": { "type": "string" },
+        "position": { "type": "string" },
+        "department": { "type": "string" },
+        "linkedin": { "type": "string" },
+        "responsibilities": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "Departmental event details.",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "duration": { "type": "string" },
+        "venue": { "type": "string" },
+        "facultyCoordinator": { "type": "string" },
+        "studentCoordinators": { "type": "string" },
+        "maxParticipants": { "type": "integer" },
+        "registrationDeadline": { "type": "string" },
+        "posterImage": { "type": "string" },
+        "rules": { "type": "string" },
+        "requirements": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["eventId", "title", "category", "date", "startTime", "venue"]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "Student event registration details.",
+      "type": "object",
+      "properties": {
+        "registrationId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "status": { "type": "string", "enum": ["Registered", "Attended", "Absent"] },
+        "appliedAt": { "type": "string" },
+        "studentName": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "phone": { "type": "string" },
+        "year": { "type": "string" },
+        "teamName": { "type": "string" }
+      },
+      "required": ["registrationId", "studentId", "eventId", "status", "appliedAt"]
+    },
+    "Gallery": {
+      "title": "Gallery",
+      "description": "Event gallery images or videos.",
+      "type": "object",
+      "properties": {
+        "galleryId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "category": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["galleryId", "imageUrl", "category", "uploadedBy", "createdAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Departmental announcements and notices.",
+      "type": "object",
+      "properties": {
+        "announcementId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "author": { "type": "string" }
+      },
+      "required": ["announcementId", "title", "content", "category", "date"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System or push notification records.",
+      "type": "object",
+      "properties": {
+        "notificationId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "targetRole": { "type": "string" }
+      },
+      "required": ["notificationId", "title", "message", "type", "createdAt"]
+    },
+    "Invitation": {
+      "title": "Invitation",
+      "description": "Student-to-student collaboration invites and messages.",
+      "type": "object",
+      "properties": {
+        "invitationId": { "type": "string" },
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderRoll": { "type": "string" },
+        "recipientUid": { "type": "string" },
+        "recipientRoll": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Accepted", "Declined"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["invitationId", "senderUid", "senderName", "senderRoll", "recipientUid", "recipientRoll", "recipientName", "message", "status", "createdAt"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Global application configuration including chat status, certificate management, and support desk info.",
+      "type": "object",
+      "properties": {
+        "isChatEnabled": { "type": "boolean" },
+        "isCertificatesEnabled": { "type": "boolean" },
+        "certificateTemplate": { "type": "object" },
+        "supportInfo": { "type": "object" }
+      }
+    },
+    "Album": {
+      "title": "Album",
+      "description": "Department event photo albums with multi-image collections.",
+      "type": "object",
+      "properties": {
+        "albumId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["albumId", "title", "description", "images", "category", "uploadedBy", "createdAt"]
+    },
+    "ChatRoom": {
+      "title": "ChatRoom",
+      "description": "Direct peer-to-peer chat conversations between students.",
+      "type": "object",
+      "properties": {
+        "chatId": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "messages": { "type": "array" },
+        "lastMessageAt": { "type": "string" },
+        "typing": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["chatId", "participants", "messages", "lastMessageAt"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Issued student participation or excellence certificate records with verifiable Certificate ID.",
+      "type": "object",
+      "properties": {
+        "certificateId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "eventTitle": { "type": "string" },
+        "eventDate": { "type": "string" },
+        "eventVenue": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "department": { "type": "string" },
+        "year": { "type": "string" },
+        "section": { "type": "string" },
+        "issueDate": { "type": "string" },
+        "issuedAt": { "type": "string" },
+        "issuedBy": { "type": "string" },
+        "status": { "type": "string", "enum": ["Issued", "Verified", "Revoked"] },
+        "qrVerificationData": { "type": "string" }
+      },
+      "required": ["certificateId", "eventId", "eventTitle", "studentId", "studentName", "rollNumber", "issueDate", "issuedAt", "status"]
+    },
+    "EventWinner": {
+      "title": "EventWinner",
+      "description": "Department event winner and achiever spotlight details for Home page.",
+      "type": "object",
+      "properties": {
+        "winnerId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "eventTitle": { "type": "string" },
+        "eventDate": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "rollNumber": { "type": "string" },
+        "department": { "type": "string" },
+        "year": { "type": "string" },
+        "section": { "type": "string" },
+        "studentPhoto": { "type": "string" },
+        "position": { "type": "string" },
+        "prizeTitle": { "type": "string" },
+        "awardDetails": { "type": "string" },
+        "projectTitle": { "type": "string" },
+        "addedAt": { "type": "string" },
+        "addedBy": { "type": "string" }
+      },
+      "required": ["winnerId", "eventId", "eventTitle", "studentId", "studentName", "rollNumber", "position"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of user profile records."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Collection of events."
+    },
+    "/registrations/{registrationId}": {
+      "schema": { "$ref": "#/entities/Registration" },
+      "description": "Collection of event registrations."
+    },
+    "/certificates/{certificateId}": {
+      "schema": { "$ref": "#/entities/Certificate" },
+      "description": "Collection of issued certificates and verifiable credentials."
+    },
+    "/event_winners/{winnerId}": {
+      "schema": { "$ref": "#/entities/EventWinner" },
+      "description": "Collection of event winners and academic achievers featured on home page."
+    },
+    "/albums/{albumId}": {
+      "schema": { "$ref": "#/entities/Album" },
+      "description": "Collection of photo albums."
+    },
+    "/gallery/{galleryId}": {
+      "schema": { "$ref": "#/entities/Gallery" },
+      "description": "Collection of gallery media."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Collection of announcements."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Collection of notifications."
+    },
+    "/invitations/{invitationId}": {
+      "schema": { "$ref": "#/entities/Invitation" },
+      "description": "Collection of student invitations and messages."
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/ChatRoom" },
+      "description": "Collection of direct chat conversations."
+    },
+    "/appSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/AppSettings" },
+      "description": "Application settings and dynamic support desk contact information."
+    }
+  }
+}

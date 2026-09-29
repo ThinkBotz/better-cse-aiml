@@ -1,0 +1,3704 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  ShieldAlert, 
+  Users, 
+  Key, 
+  Calendar, 
+  CheckCircle, 
+  XCircle, 
+  UserPlus, 
+  PlusCircle, 
+  Check, 
+  Settings, 
+  Search, 
+  Mail, 
+  Phone, 
+  UserCheck, 
+  Sparkles,
+  Award,
+  ArrowRight,
+  QrCode,
+  Download,
+  ShieldCheck,
+  RefreshCw,
+  X,
+  AlertCircle,
+  Camera,
+  Edit3,
+  LifeBuoy,
+  PhoneCall,
+  Database,
+  Trash2,
+  Filter,
+  Copy,
+  ExternalLink,
+  Eye,
+  FileCheck,
+  Lock,
+  Unlock,
+  Zap,
+  CheckSquare,
+  Square,
+  SlidersHorizontal,
+  FolderArchive,
+  AlertTriangle
+} from 'lucide-react';
+import { 
+  UserProfile, 
+  DepartmentEvent, 
+  EventRegistration, 
+  AssociatePowers, 
+  SupportInfo, 
+  DEFAULT_SUPPORT_INFO,
+  CertificateTemplate,
+  DEFAULT_CERTIFICATE_TEMPLATE,
+  IssuedCertificate
+} from '../types';
+import { 
+  updateUserProfile, 
+  createUserProfile, 
+  createMultipleUserProfiles, 
+  deleteUserProfile, 
+  updateRegistrationStatus, 
+  createRegistration, 
+  clearAllDatabaseData, 
+  getAppConfig, 
+  updateAppConfig, 
+  updateSupportInfo, 
+  findUserForLogin,
+  toggleCertificatesEnabled,
+  updateCertificateTemplate,
+  subscribeToCertificates,
+  issueCertificate,
+  deleteCertificate,
+  syncCertificatesForAttendees,
+  generateCertificateId,
+  generateBatchCertificatesForEvent,
+  revokeBatchCertificatesForEvent,
+  exportAllDatabaseData,
+  subscribeToAppConfig
+} from '../firebase';
+import QRCameraScanner from "./QRCameraScanner";
+import EditSupportBoxModal from './EditSupportBoxModal';
+import CertificateTemplateModal from './CertificateTemplateModal';
+import CertificateCard from './CertificateCard';
+import CertificateRecipientsModal from './CertificateRecipientsModal';
+import CertificateVerificationModal from './CertificateVerificationModal';
+import ResetAssociationModal from './ResetAssociationModal';
+import EditBrandingModal from './EditBrandingModal';
+import BrandLogo from './BrandLogo';
+import HoldButton from './HoldButton';
+import { AppBranding, DEFAULT_BRANDING } from '../types';
+
+interface AdminPanelViewProps {
+  currentUser: UserProfile;
+  allUsers: UserProfile[];
+  events: DepartmentEvent[];
+  registrations: EventRegistration[];
+  onClose: () => void;
+  refreshData: () => void;
+}
+
+type PanelTab = 'associates' | 'coordinators' | 'attendance' | 'students' | 'certificates' | 'settings';
+
+export default function AdminPanelView({
+  currentUser,
+  allUsers,
+  events,
+  registrations,
+  onClose,
+  refreshData
+}: AdminPanelViewProps) {
+  const [activeTab, setActiveTab] = useState<PanelTab>(() => {
+    const isAdmin = currentUser.role === 'admin' || currentUser.role === 'president';
+    const isAssociate = currentUser.role === 'associate';
+    const isCoordinator = currentUser.role === 'coordinator';
+    const canManageRoles = isAdmin;
+    if (canManageRoles) return 'associates';
+    return 'attendance';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Registration and attendance tracker states
+  const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.eventId || '');
+
+  // Bulk Students states
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkMode, setBulkMode] = useState<'series' | 'column'>('series');
+  
+  // Series fields
+  const [seriesPrefix, setSeriesPrefix] = useState('');
+  const [seriesStart, setSeriesStart] = useState('');
+  const [seriesEnd, setSeriesEnd] = useState('');
+  
+  // Column fields
+  const [bulkText, setBulkText] = useState('');
+  
+  // Password options
+  const [passwordOption, setPasswordOption] = useState<'roll' | 'preset' | 'random'>('roll');
+  const [presetPassword, setPresetPassword] = useState('Welcome@123');
+
+  // Success/error feedback
+  const [feedbackMsg, setFeedbackMsg] = useState('');
+  const [feedbackErr, setFeedbackErr] = useState('');
+  
+  // Student search
+  const [studentSearch, setStudentSearch] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+
+  // QR Check-in scanner states
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scannedRollInput, setScannedRollInput] = useState('');
+  const [scanResultMsg, setScanResultMsg] = useState('');
+  const [scanResultType, setScanResultType] = useState<'success' | 'info' | 'error'>('success');
+  const [spotRegisterStudent, setSpotRegisterStudent] = useState<UserProfile | null>(null);
+
+  // Forms states
+  const [showCreateAssociate, setShowCreateAssociate] = useState(false);
+  const [assocSearchRoll, setAssocSearchRoll] = useState('');
+  const [assocRollFocused, setAssocRollFocused] = useState(false);
+  const [assocPosition, setAssocPosition] = useState('President');
+  const [assocPowers, setAssocPowers] = useState<AssociatePowers>({
+    canManageEvents: false,
+    canManageAnnouncements: false,
+    canViewRegistrations: true,
+    canManageGallery: false
+  });
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDemoteId, setConfirmDemoteId] = useState<string | null>(null);
+
+  const [showCreateCoordinator, setShowCreateCoordinator] = useState(false);
+  const [coordSearchRoll, setCoordSearchRoll] = useState('');
+  const [coordRollFocused, setCoordRollFocused] = useState(false);
+  const [coordAssignedEvents, setCoordAssignedEvents] = useState<string[]>([]);
+
+  // Editing state for event assignments
+  const [activeEditingCoordId, setActiveEditingCoordId] = useState<string | null>(null);
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
+
+  // Reset Association & Data Export modal state
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetModalInitialTab, setResetModalInitialTab] = useState<'export' | 'reset'>('export');
+
+  const isTopAdmin = currentUser.role === 'admin';
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'president';
+  const isAssociate = currentUser.role === 'associate';
+  const isCoordinator = currentUser.role === 'coordinator';
+
+  // Determine allowed tabs based on role and powers
+  const canManageRoles = isAdmin;
+  const canViewAttendanceTab = isAdmin || 
+    (isAssociate && currentUser.powers?.canViewRegistrations) || 
+    isCoordinator;
+
+  const [isChatEnabled, setIsChatEnabled] = useState(true);
+  const [supportInfo, setSupportInfo] = useState<SupportInfo>(DEFAULT_SUPPORT_INFO);
+  const [isEditSupportModalOpen, setIsEditSupportModalOpen] = useState(false);
+  
+  const [isCertificatesEnabled, setIsCertificatesEnabled] = useState(true);
+  const [certificateTemplate, setCertificateTemplate] = useState<CertificateTemplate>(DEFAULT_CERTIFICATE_TEMPLATE);
+  const [isEditCertModalOpen, setIsEditCertModalOpen] = useState(false);
+  
+  const [branding, setBranding] = useState<AppBranding>(DEFAULT_BRANDING);
+  const [isEditBrandingModalOpen, setIsEditBrandingModalOpen] = useState(false);
+  
+  useEffect(() => {
+    const unsub = subscribeToAppConfig(config => {
+      setIsChatEnabled(config.isChatEnabled);
+      if (config.supportInfo) {
+        setSupportInfo(config.supportInfo);
+      }
+      if (config.isCertificatesEnabled !== undefined) {
+        setIsCertificatesEnabled(config.isCertificatesEnabled);
+      }
+      if (config.certificateTemplate) {
+        setCertificateTemplate(config.certificateTemplate);
+      }
+      if (config.branding) {
+        setBranding(config.branding);
+      }
+    });
+    return () => unsub();
+  }, []);
+  
+  const handleToggleChat = async () => {
+    const newState = !isChatEnabled;
+    setIsChatEnabled(newState);
+    await updateAppConfig(newState);
+    setFeedbackMsg(`Chat feature ${newState ? 'enabled' : 'disabled'} successfully.`);
+    setTimeout(() => setFeedbackMsg(''), 3000);
+  };
+
+  const handleToggleCertificates = async (newVal?: boolean) => {
+    const nextVal = newVal !== undefined ? newVal : !isCertificatesEnabled;
+    setIsCertificatesEnabled(nextVal);
+    try {
+      await toggleCertificatesEnabled(nextVal);
+      setFeedbackMsg(`Certificate feature is now ${nextVal ? 'ENABLED' : 'PAUSED'}.`);
+      setTimeout(() => setFeedbackMsg(''), 3000);
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setIsCertificatesEnabled(!nextVal);
+      setFeedbackErr('Failed to update certificate feature toggle.');
+      setTimeout(() => setFeedbackErr(''), 3000);
+    }
+  };
+
+  const handleSaveCertificateTemplate = async (newTemplate: CertificateTemplate) => {
+    await updateCertificateTemplate(newTemplate);
+    setCertificateTemplate(newTemplate);
+    setFeedbackMsg("Certificate template updated successfully!");
+    setTimeout(() => setFeedbackMsg(''), 3000);
+    refreshData();
+  };
+
+  // Certificate DB & Issuance states
+  const [dbCertificates, setDbCertificates] = useState<IssuedCertificate[]>([]);
+  const [certSubTab, setCertSubTab] = useState<'batch' | 'db' | 'template'>('batch');
+  const [certEventFilter, setCertEventFilter] = useState<string>('all');
+  const [certSearch, setCertSearch] = useState('');
+  const [isSyncingCerts, setIsSyncingCerts] = useState(false);
+  const [showManualIssueModal, setShowManualIssueModal] = useState(false);
+  const [manualStudentUid, setManualStudentUid] = useState(allUsers[0]?.uid || '');
+  const [manualEventId, setManualEventId] = useState(events[0]?.eventId || '');
+  const [activePreviewCert, setActivePreviewCert] = useState<IssuedCertificate | null>(null);
+  const [activePeersEvent, setActivePeersEvent] = useState<DepartmentEvent | null>(null);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [verifyInitialId, setVerifyInitialId] = useState('');
+  const [copiedCertId, setCopiedCertId] = useState<string | null>(null);
+
+  // Batch Generator specific states
+  const [batchEventStatusFilter, setBatchEventStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [batchEventSearch, setBatchEventSearch] = useState('');
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [selectedParticipantsMap, setSelectedParticipantsMap] = useState<Record<string, string[]>>({});
+  const [isGeneratingBatchEventId, setIsGeneratingBatchEventId] = useState<string | null>(null);
+  const [participantSearchMap, setParticipantSearchMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const unsub = subscribeToCertificates((certs) => {
+      setDbCertificates(certs);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleCopyCertId = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedCertId(id);
+    setTimeout(() => setCopiedCertId(null), 2000);
+  };
+
+  const handleSyncCertificates = async () => {
+    setIsSyncingCerts(true);
+    try {
+      const res = await syncCertificatesForAttendees(events, registrations, allUsers);
+      setFeedbackMsg(`Synced batch certificates! ${res.newlyIssued} new credentials generated (${res.totalEligible} attended students).`);
+      setTimeout(() => setFeedbackMsg(''), 4000);
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr('Failed to sync certificates.');
+      setTimeout(() => setFeedbackErr(''), 3000);
+    } finally {
+      setIsSyncingCerts(false);
+    }
+  };
+
+  const handleGenerateBatchForEvent = async (eventId: string, specificStudentIds?: string[]) => {
+    setIsGeneratingBatchEventId(eventId);
+    try {
+      const res = await generateBatchCertificatesForEvent(eventId, {
+        specificStudentIds,
+        events,
+        registrations,
+        allUsers,
+        issuedBy: currentUser.name || 'Department Administration'
+      });
+      setFeedbackMsg(`Batch generated! ${res.newlyIssued} new certificates generated (${res.alreadyIssued} already existed). Students can now view them!`);
+      setTimeout(() => setFeedbackMsg(''), 4000);
+      setSelectedParticipantsMap(prev => ({ ...prev, [eventId]: [] }));
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr('Failed to generate batch certificates.');
+      setTimeout(() => setFeedbackErr(''), 3000);
+    } finally {
+      setIsGeneratingBatchEventId(null);
+    }
+  };
+
+  const handleRevokeBatchForEvent = async (eventId: string, specificStudentIds?: string[]) => {
+    const ev = events.find(e => e.eventId === eventId);
+    const countNote = specificStudentIds && specificStudentIds.length > 0 
+      ? `selected ${specificStudentIds.length} certificate(s)` 
+      : `ALL certificates for "${ev?.title || eventId}"`;
+      
+    if (!window.confirm(`Are you sure you want to LOCK & REVOKE ${countNote}? Students will no longer be able to view them until re-generated.`)) {
+      return;
+    }
+    
+    try {
+      const res = await revokeBatchCertificatesForEvent(eventId, specificStudentIds);
+      setFeedbackMsg(`Locked & revoked ${res.revokedCount} certificates for this event.`);
+      setTimeout(() => setFeedbackMsg(''), 4000);
+      setSelectedParticipantsMap(prev => ({ ...prev, [eventId]: [] }));
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr('Failed to revoke certificates.');
+      setTimeout(() => setFeedbackErr(''), 3000);
+    }
+  };
+
+  const handleToggleParticipantSelect = (eventId: string, studentId: string) => {
+    setSelectedParticipantsMap(prev => {
+      const currentList = prev[eventId] || [];
+      if (currentList.includes(studentId)) {
+        return { ...prev, [eventId]: currentList.filter(id => id !== studentId) };
+      } else {
+        return { ...prev, [eventId]: [...currentList, studentId] };
+      }
+    });
+  };
+
+  const handleSelectAllParticipants = (eventId: string, studentIds: string[]) => {
+    setSelectedParticipantsMap(prev => {
+      const currentList = prev[eventId] || [];
+      const allSelected = studentIds.length > 0 && studentIds.every(id => currentList.includes(id));
+      if (allSelected) {
+        return { ...prev, [eventId]: [] };
+      } else {
+        return { ...prev, [eventId]: studentIds };
+      }
+    });
+  };
+
+  const handleIssueSingleCert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetStudent = allUsers.find(u => u.uid === manualStudentUid);
+    const targetEvent = events.find(e => e.eventId === manualEventId);
+    if (!targetStudent || !targetEvent) {
+      setFeedbackErr('Please select both a student and an event.');
+      setTimeout(() => setFeedbackErr(''), 3000);
+      return;
+    }
+
+    const certId = generateCertificateId(targetStudent.rollNumber, targetEvent.eventId);
+    try {
+      await issueCertificate({
+        certificateId: certId,
+        eventId: targetEvent.eventId,
+        eventTitle: targetEvent.title,
+        eventDate: targetEvent.date,
+        eventVenue: targetEvent.venue,
+        studentId: targetStudent.uid,
+        studentName: targetStudent.name,
+        rollNumber: targetStudent.rollNumber || 'N/A',
+        department: targetStudent.department || 'CSE (AI & ML)',
+        year: targetStudent.year || 'III Year',
+        section: targetStudent.section || 'A',
+        issueDate: targetEvent.date || new Date().toISOString().split('T')[0],
+        status: 'Issued',
+        issuedBy: currentUser.name || 'Admin',
+        qrVerificationData: `https://notx-connect.edu/verify?id=${certId}`
+      });
+      setShowManualIssueModal(false);
+      setFeedbackMsg(`Certificate issued successfully! ID: ${certId}`);
+      setTimeout(() => setFeedbackMsg(''), 4000);
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr('Failed to issue certificate.');
+      setTimeout(() => setFeedbackErr(''), 3000);
+    }
+  };
+
+  const handleDeleteCert = async (certId: string) => {
+    if (!window.confirm(`Are you sure you want to revoke and delete certificate ${certId}?`)) return;
+    try {
+      await deleteCertificate(certId);
+      setFeedbackMsg(`Certificate ${certId} removed successfully.`);
+      setTimeout(() => setFeedbackMsg(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr('Failed to delete certificate.');
+      setTimeout(() => setFeedbackErr(''), 3000);
+    }
+  };
+
+  // Set default tab if attendance is allowed
+
+  // Filters
+  const associates = allUsers.filter(u => u.role === 'associate' || (u.role === 'president' && u.uid !== 'admin_master'));
+  const coordinators = allUsers.filter(u => u.role === 'coordinator');
+
+  // Filter events that coordinator can manage
+  const manageableEvents = events.filter(ev => {
+    if (isAdmin) return true;
+    if (isAssociate) return true;
+    if (isCoordinator) {
+      return currentUser.assignedEvents?.includes(ev.eventId);
+    }
+    return false;
+  });
+
+  // Ensure selected event is always one of the manageable ones
+  useEffect(() => {
+    if (manageableEvents.length > 0 && !manageableEvents.some(e => e.eventId === selectedEventId)) {
+      setSelectedEventId(manageableEvents[0].eventId);
+    }
+  }, [selectedEventId, manageableEvents]);
+
+  // Selected event object and its registrations
+  const activeEvent = events.find(e => e.eventId === selectedEventId);
+  const activeRegistrations = registrations.filter(r => r.eventId === selectedEventId);
+
+  // Search filtered registries
+  const filteredRegistrations = activeRegistrations.filter(r => 
+    r.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.rollNumber.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Toggle Associate power (Admin only)
+  const handleTogglePower = async (uid: string, powerKey: keyof AssociatePowers) => {
+    if (!isAdmin) return;
+    const userProfile = allUsers.find(u => u.uid === uid);
+    if (!userProfile) return;
+
+    const currentPowers = userProfile.powers || {};
+    const updatedPowers = {
+      ...currentPowers,
+      [powerKey]: !currentPowers[powerKey]
+    };
+
+    try {
+      await updateUserProfile(uid, { powers: updatedPowers });
+      refreshData();
+    } catch (err) {
+      console.error("Failed to update power: ", err);
+    }
+  };
+
+  // Toggle Event assignment for Coordinators
+  const handleToggleEventAssignment = async (coordId: string, eventId: string) => {
+    if (!isAdmin) return;
+    const coord = coordinators.find(u => u.uid === coordId);
+    if (!coord) return;
+
+    const currentAssignments = coord.assignedEvents || [];
+    const updatedAssignments = currentAssignments.includes(eventId)
+      ? currentAssignments.filter(id => id !== eventId)
+      : [...currentAssignments, eventId];
+
+    try {
+      await updateUserProfile(coordId, { assignedEvents: updatedAssignments });
+      refreshData();
+    } catch (err) {
+      console.error("Failed to update coordinator assignments: ", err);
+    }
+  };
+
+  // Create Associate Profile (Admin only)
+
+  
+  const handleBulkDeleteStudents = async () => {
+    if (!isAdmin || selectedStudentIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedStudentIds.length} selected students?`)) return;
+    
+    setFeedbackMsg('');
+    setFeedbackErr('');
+    try {
+      // Deleting users one by one (could be optimized, but works)
+      for (const uid of selectedStudentIds) {
+        await deleteUserProfile(uid);
+      }
+      setSelectedStudentIds([]);
+      setFeedbackMsg(`Successfully deleted ${selectedStudentIds.length} students.`);
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr("Failed to delete some students.");
+    }
+  };
+
+  const handleDeleteUser = async (uid: string) => {
+    const targetUser = allUsers.find(u => u.uid === uid);
+    if (targetUser?.role === 'admin' && !isTopAdmin) {
+      setFeedbackErr("Permission denied. Only top admin can delete admins.");
+      return;
+    }
+    try {
+      await deleteUserProfile(uid);
+      setConfirmDeleteId(null);
+      setFeedbackMsg("User deleted successfully.");
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr("Failed to delete user.");
+    }
+  };
+
+  
+  
+  const exportAttendanceCSV = (activeEvent: DepartmentEvent) => {
+    if (!activeEvent || !allUsers) return;
+    const eventRegs = registrations.filter(r => r.eventId === activeEvent.eventId);
+    if (eventRegs.length === 0) {
+      alert("No registrations found for this event.");
+      return;
+    }
+    
+    let csv = "Roll Number,Name,Phone,Section,Team Name,Applied At,Attendance Status\n";
+    
+    eventRegs.forEach(reg => {
+      const profile = allUsers.find(u => u.uid === reg.studentId);
+      if (!profile) return;
+      const roll = profile.rollNumber || "Unknown";
+      const name = profile.name || "Unknown";
+      const phone = profile.phone || "N/A";
+      const section = profile.section || "N/A";
+      const team = reg.teamName ? `"${reg.teamName}"` : "N/A";
+      const appliedAt = reg.appliedAt ? new Date(reg.appliedAt).toLocaleString() : "Unknown";
+      const status = reg.status === 'Attended' ? "Present" : "Absent";
+      
+      csv += `${roll},${name},${phone},${section},${team},${appliedAt},${status}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Attendance_${activeEvent.title.replace(/\s+/g, '_')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+
+  
+  const handleToggleAttendance = async (regId: string, present: boolean) => {
+    try {
+      await updateRegistrationStatus(regId, present ? 'Attended' : 'Registered');
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr("Failed to update attendance.");
+    }
+  };
+
+  const handleDemoteUser = async (uid: string) => {
+    const targetUser = allUsers.find(u => u.uid === uid);
+    if (targetUser?.role === 'admin' && !isTopAdmin) {
+      setFeedbackErr("Permission denied. Only top admin can demote admins.");
+      return;
+    }
+    try {
+      await updateUserProfile(uid, { role: "student", powers: {}, assignedEvents: [], position: "", responsibilities: "" });
+      setConfirmDemoteId(null);
+      setFeedbackMsg("User demoted successfully.");
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr("Failed to demote user.");
+    }
+  };
+
+  const handleCreateAssociate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) return;
+
+    const student = allUsers.find(u => u.rollNumber?.toUpperCase() === assocSearchRoll.trim().toUpperCase());
+    if (!student) {
+      setFeedbackErr("Student with this roll number not found in the database.");
+      return;
+    }
+
+    try {
+      await updateUserProfile(student.uid, {
+        role: 'associate',
+        position: assocPosition,
+        powers: assocPowers,
+        responsibilities: `Coordinating activities as ${assocPosition}.`
+      });
+      setShowCreateAssociate(false);
+      setAssocSearchRoll('');
+      refreshData();
+    } catch (err) {
+      console.error("Failed to assign associate role: ", err);
+    }
+  };
+
+  // Create Coordinator Profile (Admin only)
+  const handleCreateCoordinator = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) return;
+
+    const student = allUsers.find(u => u.rollNumber?.toUpperCase() === coordSearchRoll.trim().toUpperCase());
+    if (!student) {
+      setFeedbackErr("Student with this roll number not found in the database.");
+      return;
+    }
+
+    try {
+      await updateUserProfile(student.uid, {
+        role: 'coordinator',
+        position: 'Student Event Coordinator',
+        assignedEvents: coordAssignedEvents,
+        responsibilities: `Managing assigned technical and cultural events.`
+      });
+      setShowCreateCoordinator(false);
+      setCoordSearchRoll('');
+      setCoordAssignedEvents([]);
+      refreshData();
+    } catch (err) {
+      console.error("Failed to assign coordinator role: ", err);
+    }
+  };
+
+  // Update attendance of registered student
+  const handleUpdateStatus = async (regId: string, status: 'Registered' | 'Attended' | 'Absent') => {
+    try {
+      await updateRegistrationStatus(regId, status);
+      refreshData();
+    } catch (err) {
+      console.error("Failed to update registration: ", err);
+    }
+  };
+
+  const handleBulkAddStudents = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) return;
+    setFeedbackMsg('');
+    setFeedbackErr('');
+
+    let rollsToCreate: string[] = [];
+
+    if (bulkMode === 'series') {
+      if (!seriesPrefix || !seriesStart || !seriesEnd) {
+        setFeedbackErr('Please fill in prefix, start index, and end index.');
+        return;
+      }
+      const startNum = parseInt(seriesStart, 36);
+      const endNum = parseInt(seriesEnd, 36);
+      if (isNaN(startNum) || isNaN(endNum) || startNum > endNum) {
+        setFeedbackErr('Invalid start/end indices.');
+        return;
+      }
+      const padLen = Math.max(seriesStart.length, seriesEnd.length);
+      for (let i = startNum; i <= endNum; i++) {
+        rollsToCreate.push(`${seriesPrefix}${i.toString(36).padStart(padLen, '0')}`.toUpperCase());
+      }
+    } else {
+      if (!bulkText.trim()) {
+        setFeedbackErr('Please paste roll numbers in the text area.');
+        return;
+      }
+      rollsToCreate = bulkText
+        .split(/[\n,]+/)
+        .map(s => s.trim().toUpperCase())
+        .filter(s => s.length > 0);
+    }
+
+    if (rollsToCreate.length === 0) {
+      setFeedbackErr('No roll numbers generated.');
+      return;
+    }
+
+    try {
+      let skippedCount = 0;
+      const profilesToCreate: UserProfile[] = [];
+
+      for (const roll of rollsToCreate) {
+        const exists = allUsers.some(u => u.rollNumber?.toLowerCase() === roll.toLowerCase());
+        if (exists) {
+          skippedCount++;
+          continue;
+        }
+
+        let pwd = '';
+        if (passwordOption === 'roll') {
+          pwd = roll;
+        } else if (passwordOption === 'preset') {
+          pwd = presetPassword || 'Welcome@123';
+        } else {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          for (let c = 0; c < 6; c++) {
+            pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+        }
+
+        const newProfile: UserProfile = {
+          uid: `user_student_${roll.toLowerCase()}`,
+          name: `Student (${roll})`,
+          email: `${roll.toLowerCase()}@aits.edu`,
+          role: 'student',
+          phone: '',
+          rollNumber: roll,
+          branch: 'CSE (AI & ML)',
+          year: '3rd Year',
+          section: 'A',
+          skills: '',
+          password: pwd,
+          profile_pic: "",
+          isFirstLogin: true,
+          created_at: new Date().toISOString()
+        };
+
+        profilesToCreate.push(newProfile);
+      }
+
+      if (profilesToCreate.length > 0) {
+        await createMultipleUserProfiles(profilesToCreate);
+      }
+
+      const successCount = profilesToCreate.length;
+      setFeedbackMsg(`Successfully created ${successCount} new students. ${skippedCount > 0 ? `Skipped ${skippedCount} existing students.` : ''}`);
+      setSeriesPrefix('');
+      setSeriesStart('');
+      setSeriesEnd('');
+      setBulkText('');
+      refreshData();
+    } catch (err) {
+      console.error("Bulk add failed: ", err);
+      setFeedbackErr('Failed to complete bulk import.');
+    }
+  };
+
+  const handleResetPassword = async (uid: string, roll: string) => {
+    if (!isAdmin) return;
+    setFeedbackMsg('');
+    setFeedbackErr('');
+    const newTempPwd = `${roll.toUpperCase()}_RESET`;
+    try {
+      await updateUserProfile(uid, { password: newTempPwd, isFirstLogin: true });
+      setFeedbackMsg(`Successfully reset password for student ${roll} to: ${newTempPwd}`);
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      setFeedbackErr(`Failed to reset password for student ${roll}.`);
+    }
+  };
+
+  // Audio & haptic chime for QR check-ins
+  const playFeedbackChime = (type: 'success' | 'already' | 'error') => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+        navigator.vibrate?.([60, 40, 60]);
+      } else if (type === 'already') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+        navigator.vibrate?.([60]);
+      } else {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        osc.frequency.setValueAtTime(146.83, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+        navigator.vibrate?.([150]);
+      }
+    } catch (e) {
+      // AudioContext policy
+    }
+  };
+
+  // QR Check-in scanner processor
+  const handleQRCheckIn = async (rollToScan: string) => {
+    if (!rollToScan || !rollToScan.trim()) return;
+
+    // Smart decode: handles raw roll numbers, ticket numbers, JSON payloads, or URL query parameters
+    let parsed = rollToScan.trim();
+    if (parsed.startsWith('{') && parsed.endsWith('}')) {
+      try {
+        const obj = JSON.parse(parsed);
+        parsed = obj.rollNumber || obj.roll || obj.registrationId || obj.uid || parsed;
+      } catch (e) {}
+    } else if (parsed.startsWith('http://') || parsed.startsWith('https://')) {
+      try {
+        const url = new URL(parsed);
+        parsed = url.searchParams.get('data') || url.searchParams.get('roll') || url.searchParams.get('reg') || parsed;
+      } catch (e) {}
+    }
+
+    const cleanInput = parsed.trim().toUpperCase();
+    setScannedRollInput('');
+    setScanResultMsg('');
+    setSpotRegisterStudent(null);
+
+    if (!selectedEventId) {
+      setScanResultMsg("Please select an active event first.");
+      setScanResultType('error');
+      playFeedbackChime('error');
+      return;
+    }
+
+    // 1. Check if already in active registrations
+    const reg = activeRegistrations.find(r => 
+      r.rollNumber?.trim().toUpperCase() === cleanInput ||
+      r.registrationId?.trim().toUpperCase() === cleanInput ||
+      r.studentId?.toUpperCase() === cleanInput
+    );
+
+    if (reg) {
+      if (reg.status === 'Attended') {
+        setScanResultMsg(`Already Checked-in: ${reg.studentName} (${reg.rollNumber || cleanInput}) is already marked as Present.`);
+        setScanResultType('info');
+        playFeedbackChime('already');
+        return;
+      }
+
+      try {
+        await updateRegistrationStatus(reg.registrationId, 'Attended');
+        setScanResultMsg(`Check-in Successful! ${reg.studentName} (${reg.rollNumber || cleanInput}) marked as Present.`);
+        setScanResultType('success');
+        playFeedbackChime('success');
+        refreshData();
+      } catch (err) {
+        console.error(err);
+        setScanResultMsg("Database error during check-in.");
+        setScanResultType('error');
+        playFeedbackChime('error');
+      }
+    } else {
+      // 2. Check if student profile exists in memory or Firestore
+      let studentProfile = allUsers.find(u => 
+        u.rollNumber?.trim().toUpperCase() === cleanInput ||
+        u.uid === parsed ||
+        u.email?.trim().toUpperCase() === cleanInput
+      );
+
+      if (!studentProfile) {
+        try {
+          studentProfile = (await findUserForLogin(cleanInput)) || undefined;
+        } catch (e) {
+          console.warn("Live user lookup error:", e);
+        }
+      }
+
+      if (studentProfile) {
+        // Auto spot-register
+        try {
+          const newRegId = `reg_${Date.now()}`;
+          const newReg = {
+            registrationId: newRegId,
+            eventId: selectedEventId,
+            studentId: studentProfile.uid,
+            studentName: studentProfile.name,
+            rollNumber: studentProfile.rollNumber || '',
+            phone: studentProfile.phone || '',
+            year: studentProfile.year || '3rd Year',
+            status: 'Attended' as const,
+            appliedAt: new Date().toISOString()
+          };
+          await createRegistration(newReg);
+          setScanResultMsg(`Spot Auto-Registration: ${studentProfile.name} (${studentProfile.rollNumber}) registered & marked Present!`);
+          setScanResultType('success');
+          playFeedbackChime('success');
+          refreshData();
+        } catch (err) {
+          console.error(err);
+          setScanResultMsg("Database error during spot-registration.");
+          setScanResultType('error');
+          playFeedbackChime('error');
+        }
+      } else {
+        setScanResultMsg(`No student or registration found matching "${cleanInput}".`);
+        setScanResultType('error');
+        playFeedbackChime('error');
+      }
+    }
+  };
+
+  // Spot registration function
+  const handleSpotRegister = async () => {
+    if (!spotRegisterStudent || !selectedEventId || !activeEvent) return;
+    try {
+      const newRegId = `reg_${Date.now()}`;
+      const newReg: EventRegistration = {
+        registrationId: newRegId,
+        eventId: selectedEventId,
+        studentId: spotRegisterStudent.uid,
+        studentName: spotRegisterStudent.name,
+        rollNumber: spotRegisterStudent.rollNumber || '',
+        phone: spotRegisterStudent.phone || '',
+        year: spotRegisterStudent.year || '3rd Year',
+        status: 'Attended' as const,
+        appliedAt: new Date().toISOString()
+      };
+
+      await createRegistration(newReg);
+      setScanResultMsg(`Spot Registration & Check-in Successful! ${spotRegisterStudent.name} (${spotRegisterStudent.rollNumber}) has been added and checked in.`);
+      setScanResultType('success');
+      setSpotRegisterStudent(null);
+      refreshData();
+    } catch (err) {
+      console.error("Spot register failed: ", err);
+      setScanResultMsg("Failed to complete spot registration.");
+      setScanResultType('error');
+    }
+  };
+
+  // CSV Export feature
+  const exportToCSV = () => {
+    if (!activeEvent) return;
+    
+    const headers = [
+      "Student Name",
+      "Roll Number",
+      "Year",
+      "Section",
+      "Email Address",
+      "Phone Number",
+      "Registration Type",
+      "Team Name",
+      "Team Members Details",
+      "Attendance Status",
+      "Applied At"
+    ];
+
+    const rows = activeRegistrations.map(reg => {
+      const profile = allUsers.find(
+        u => u.uid === reg.studentId || 
+        (u.rollNumber && u.rollNumber.toLowerCase() === reg.rollNumber.toLowerCase())
+      );
+
+      const email = profile?.email || `${reg.rollNumber.toLowerCase()}@aits.edu`;
+      const section = profile?.section || 'A';
+      const phone = profile?.phone || reg.phone || 'N/A';
+      const year = profile?.year || reg.year || '3rd Year';
+      const teamMembersInfo = reg.teamMembers?.map(m => `${m.name} (${m.rollNumber}) [${m.status || 'Pending'}]`).join(" | ") || "";
+
+      return [
+        `"${(profile?.name || reg.studentName).replace(/"/g, '""')}"`,
+        `"${reg.rollNumber.toUpperCase()}"`,
+        `"${year}"`,
+        `"${section}"`,
+        `"${email}"`,
+        `"${phone}"`,
+        `"${reg.isTeam ? 'Team' : 'Individual'}"`,
+        `"${(reg.teamName || '').replace(/"/g, '""')}"`,
+        `"${teamMembersInfo.replace(/"/g, '""')}"`,
+        `"${reg.status}"`,
+        `"${reg.appliedAt || ''}"`
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(e => e.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Registrations_${activeEvent.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+    return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-sm">
+      <div className="bg-surface w-full max-w-5xl h-[95dvh] sm:h-[90dvh] rounded-3xl border border-divider shadow-2xl flex flex-col overflow-hidden relative">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center p-3.5 sm:p-4 border-b border-divider bg-background gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <BrandLogo branding={branding} size="sm" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-nowrap">
+                <h2 className="text-xs sm:text-sm font-bold text-content uppercase tracking-wider truncate">
+                  {branding.appName || 'NOTX'} Admin Console
+                </h2>
+                {branding.subtitle && (
+                  <span className="text-[8.5px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.2 rounded-md hidden xs:inline-block">
+                    {branding.subtitle}
+                  </span>
+                )}
+              </div>
+              <p className="text-[9.5px] sm:text-[10px] text-secondary font-mono truncate">Elevated Privileges Active</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {currentUser.role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => setIsEditBrandingModalOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-[11px] sm:text-xs font-semibold cursor-pointer transition-all active:scale-95"
+                title="Change brand name (NOTX) and logo dynamically"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Change Name & Logo</span>
+                <span className="sm:hidden">Name & Logo</span>
+              </button>
+            )}
+            <button 
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-surface hover:bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider/60 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex px-4 pt-3 gap-1 overflow-x-auto border-b border-divider scrollbar-hide">
+          {canManageRoles && (
+            <>
+              <button 
+                onClick={() => setActiveTab('associates')}
+                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+                  activeTab === 'associates' 
+                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                Associates
+              </button>
+              <button 
+                onClick={() => setActiveTab('coordinators')}
+                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+                  activeTab === 'coordinators' 
+                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                Coordinators
+              </button>
+              <button 
+                onClick={() => setActiveTab('students')}
+                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+                  activeTab === 'students' 
+                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                Students DB
+              </button>
+              <button 
+                onClick={() => setActiveTab('certificates')}
+                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'certificates' 
+                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>Certificates</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${isCertificatesEnabled ? 'bg-emerald-400 shadow-sm' : 'bg-amber-400'}`} />
+              </button>
+              <button 
+                onClick={() => setActiveTab('settings')}
+                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'settings' 
+                    ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Settings
+              </button>
+            </>
+          )}
+          
+          {canViewAttendanceTab && (
+            <button 
+              onClick={() => setActiveTab('attendance')}
+              className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all cursor-pointer ${
+                activeTab === 'attendance' 
+                  ? 'bg-surface text-indigo-400 border-t border-x border-divider border-b-transparent' 
+                  : 'text-secondary hover:text-primary'
+              }`}
+            >
+              Attendance & Registry
+            </button>
+          )}
+        </div>
+
+        {/* Core Tabs Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* GLOBAL FEEDBACK NOTIFICATION ALERTS */}
+          {feedbackMsg && (
+            <div className="text-xs font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-3 flex justify-between items-center">
+              <span>{feedbackMsg}</span>
+              <button onClick={() => setFeedbackMsg('')} className="text-indigo-500 hover:text-indigo-400 font-bold">&times;</button>
+            </div>
+          )}
+          {feedbackErr && (
+            <div className="text-xs font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-3 flex justify-between items-center">
+              <span>{feedbackErr}</span>
+              <button onClick={() => setFeedbackErr('')} className="text-rose-500 hover:text-rose-400 font-bold">&times;</button>
+            </div>
+          )}
+
+          
+          {/* ==================== 1. ASSOCIATES MANAGEMENT TAB ==================== */}
+          {activeTab === 'associates' && canManageRoles && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xs font-bold text-content uppercase tracking-wider">Department Associates</h3>
+                  <p className="text-[10px] text-secondary">President, Vice President, Secretary, Media Leads, etc.</p>
+                </div>
+                <button
+                  onClick={() => setShowCreateAssociate(!showCreateAssociate)}
+                  className="flex items-center gap-1.5 text-xs font-bold uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm shadow-indigo-600/20"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  New Associate
+                </button>
+              </div>
+
+              {/* CREATE ASSOCIATE INLINE FORM */}
+              {showCreateAssociate && (
+                <form onSubmit={handleCreateAssociate} className="bg-surface p-4 rounded-3xl border border-divider space-y-3.5 shadow-xl">
+                  <div className="flex justify-between items-center border-b border-divider pb-2 mb-1">
+                    <span className="text-xs font-bold text-indigo-400 uppercase flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" /> Assign Executive Role
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowCreateAssociate(false)}
+                      className="text-secondary hover:text-content text-xs cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Student Roll Number</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={assocSearchRoll} 
+                      onChange={e => setAssocSearchRoll(e.target.value)}
+                      onFocus={() => setAssocRollFocused(true)}
+                      onBlur={() => setTimeout(() => setAssocRollFocused(false), 200)}
+                      placeholder="e.g. 23HM1A3301"
+                      className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono focus:border-indigo-500/50"
+                    />
+                    {assocRollFocused && assocSearchRoll.length > 0 && (
+                      <div className="absolute top-[100%] mt-1 left-0 right-0 bg-background border border-divider rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto overflow-x-hidden">
+                        {allUsers
+                          .filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(assocSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(assocSearchRoll.toLowerCase())))
+                          .map(u => (
+                            <div 
+                              key={u.uid} 
+                              className="px-3 py-2 hover:bg-surface-accent cursor-pointer border-b border-divider/50 last:border-0"
+                              onClick={() => {
+                                setAssocSearchRoll(u.rollNumber || '');
+                                setAssocRollFocused(false);
+                              }}
+                            >
+                              <div className="text-xs text-content font-bold truncate">{u.name}</div>
+                              <div className="text-[10px] text-secondary font-mono truncate">{u.rollNumber}</div>
+                            </div>
+                          ))}
+                        {allUsers.filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(assocSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(assocSearchRoll.toLowerCase()))).length === 0 && (
+                          <div className="px-3 py-2 text-[10px] text-tertiary italic">No matching students found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Position / Title</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={assocPosition} 
+                      onChange={e => setAssocPosition(e.target.value)}
+                      placeholder="e.g. President, Vice President"
+                      className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase mb-2">Initial Capabilities (Can be modified later)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={assocPowers.canManageEvents}
+                          onChange={e => setAssocPowers({...assocPowers, canManageEvents: e.target.checked})}
+                          className="accent-indigo-500"
+                        />
+                        <span className="text-[11px] text-secondary">Manage Events</span>
+                      </label>
+                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={assocPowers.canManageAnnouncements}
+                          onChange={e => setAssocPowers({...assocPowers, canManageAnnouncements: e.target.checked})}
+                          className="accent-indigo-500"
+                        />
+                        <span className="text-[11px] text-secondary">Announcements</span>
+                      </label>
+                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={assocPowers.canViewRegistrations}
+                          onChange={e => setAssocPowers({...assocPowers, canViewRegistrations: e.target.checked})}
+                          className="accent-indigo-500"
+                        />
+                        <span className="text-[11px] text-secondary">View Applicants</span>
+                      </label>
+                      <label className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={assocPowers.canManageGallery}
+                          onChange={e => setAssocPowers({...assocPowers, canManageGallery: e.target.checked})}
+                          className="accent-indigo-500"
+                        />
+                        <span className="text-[11px] text-secondary">Manage Gallery</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                  >
+                    Grant Associate Privileges
+                  </button>
+                </form>
+              )}
+
+              {/* ASSOCIATES LIST WITH REALTIME POWER TOGGLES */}
+              <div className="space-y-3">
+                {associates.map((assoc) => (
+                  <div key={assoc.uid} className="bg-surface rounded-3xl p-4 border border-divider space-y-3.5 shadow-md">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-3">
+                        <img 
+                          src={assoc.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${assoc.rollNumber || assoc.uid}`} 
+                          alt={assoc.name} 
+                          className="w-11 h-11 rounded-2xl object-cover border border-divider bg-background"
+                        />
+                        <div>
+                          <h4 className="text-xs font-bold text-content">{assoc.name}</h4>
+                          <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full font-mono uppercase mt-1 inline-block">
+                            {assoc.position}
+                          </span>
+                          <div className="flex items-center gap-3 text-[10px] text-secondary mt-1 font-mono">
+                            <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-tertiary" /> {assoc.email}</span>
+                            {assoc.googleEmail && <span className="flex items-center gap-1 text-indigo-400"><Mail className="w-3 h-3 text-indigo-500" /> {assoc.googleEmail}</span>}
+                            {assoc.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-tertiary" /> {assoc.phone}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* CRUD Buttons */}
+                      <div className="flex flex-col gap-2 items-end">
+                        <div className="flex gap-2">
+                          {isTopAdmin && assoc.role === 'president' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await updateUserProfile(assoc.uid, { role: 'associate', position: 'Associate', responsibilities: '' });
+                                  refreshData();
+                                } catch(e) { console.error(e); }
+                              }}
+                              className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 text-[10px] font-bold uppercase px-2 py-1 rounded-xl transition-all cursor-pointer"
+                            >
+                              Revoke Pres
+                            </button>
+                          )}
+                          
+                          {confirmDemoteId === assoc.uid ? (
+                            <button onClick={() => handleDemoteUser(assoc.uid)} className="text-[10px] bg-rose-500 hover:bg-rose-600 text-content px-2 py-1 rounded-xl transition-all font-bold uppercase cursor-pointer">Sure?</button>
+                          ) : (
+                            <button onClick={() => setConfirmDemoteId(assoc.uid)} className="text-[10px] bg-surface-accent hover:bg-divider text-secondary px-2 py-1 rounded-xl transition-all border border-divider font-bold uppercase cursor-pointer">Revoke Role</button>
+                          )}
+                          <HoldButton
+                            size="sm"
+                            holdTime={1600}
+                            radius={8}
+                            backgroundColor="rgba(244, 63, 94, 0.1)"
+                            fillColor="#e11d48"
+                            textColor="#fda4af"
+                            fillTextColor="#ffffff"
+                            doneLabel="Deleted"
+                            onHold={() => handleDeleteUser(assoc.uid)}
+                            className="border border-rose-500/20 text-[10px] font-bold uppercase !h-6 !px-2"
+                          >
+                            Hold to Delete
+                          </HoldButton>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Real-time Permission Matrix */}
+                    <div className="bg-background p-3 rounded-2xl border border-divider/80">
+                      <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Live Privilege Matrix (Click to toggle)</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => handleTogglePower(assoc.uid, 'canManageEvents')}
+                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                            assoc.powers?.canManageEvents 
+                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
+                              : 'bg-surface border-divider text-secondary'
+                          }`}
+                        >
+                          <span className="text-[11px] font-semibold">Events Manager</span>
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canManageEvents ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => handleTogglePower(assoc.uid, 'canManageAnnouncements')}
+                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                            assoc.powers?.canManageAnnouncements 
+                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
+                              : 'bg-surface border-divider text-secondary'
+                          }`}
+                        >
+                          <span className="text-[11px] font-semibold">Announcements</span>
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canManageAnnouncements ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => handleTogglePower(assoc.uid, 'canViewRegistrations')}
+                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                            assoc.powers?.canViewRegistrations 
+                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
+                              : 'bg-surface border-divider text-secondary'
+                          }`}
+                        >
+                          <span className="text-[11px] font-semibold">View Applicants</span>
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canViewRegistrations ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => handleTogglePower(assoc.uid, 'canManageGallery')}
+                          className={`flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                            assoc.powers?.canManageGallery 
+                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' 
+                              : 'bg-surface border-divider text-secondary'
+                          }`}
+                        >
+                          <span className="text-[11px] font-semibold">Manage Gallery</span>
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center ${assoc.powers?.canManageGallery ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-transparent'}`}>
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {associates.length === 0 && (
+                  <div className="text-center py-6 text-xs text-tertiary">
+                    No associates have been assigned yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ==================== 2. EVENT COORDINATORS TAB ==================== */}
+          {activeTab === 'coordinators' && canManageRoles && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xs font-bold text-content uppercase tracking-wider">Student Coordinators</h3>
+                  <p className="text-[10px] text-secondary">Assigned specific technical and cultural events to manage.</p>
+                </div>
+                <button
+                  onClick={() => setShowCreateCoordinator(!showCreateCoordinator)}
+                  className="flex items-center gap-1.5 text-xs font-bold uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm shadow-indigo-600/20"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  New Coordinator
+                </button>
+              </div>
+
+              {/* CREATE COORDINATOR INLINE FORM */}
+              {showCreateCoordinator && (
+                <form onSubmit={handleCreateCoordinator} className="bg-surface p-4 rounded-3xl border border-divider space-y-3.5 shadow-xl">
+                  <div className="flex justify-between items-center border-b border-divider pb-2 mb-1">
+                    <span className="text-xs font-bold text-indigo-400 uppercase flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" /> Assign Event Coordinator
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowCreateCoordinator(false)}
+                      className="text-secondary hover:text-content text-xs cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Student Roll Number</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={coordSearchRoll} 
+                      onChange={e => setCoordSearchRoll(e.target.value)}
+                      onFocus={() => setCoordRollFocused(true)}
+                      onBlur={() => setTimeout(() => setCoordRollFocused(false), 200)}
+                      placeholder="e.g. 23HM1A3315"
+                      className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono focus:border-indigo-500/50"
+                    />
+                    {coordRollFocused && coordSearchRoll.length > 0 && (
+                      <div className="absolute top-[100%] mt-1 left-0 right-0 bg-background border border-divider rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto overflow-x-hidden">
+                        {allUsers
+                          .filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(coordSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(coordSearchRoll.toLowerCase())))
+                          .map(u => (
+                            <div 
+                              key={u.uid} 
+                              className="px-3 py-2 hover:bg-surface-accent cursor-pointer border-b border-divider/50 last:border-0"
+                              onClick={() => {
+                                setCoordSearchRoll(u.rollNumber || '');
+                                setCoordRollFocused(false);
+                              }}
+                            >
+                              <div className="text-xs text-content font-bold truncate">{u.name}</div>
+                              <div className="text-[10px] text-secondary font-mono truncate">{u.rollNumber}</div>
+                            </div>
+                          ))}
+                        {allUsers.filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(coordSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(coordSearchRoll.toLowerCase()))).length === 0 && (
+                          <div className="px-3 py-2 text-[10px] text-tertiary italic">No matching students found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase mb-2">Assign Events (Optional)</label>
+                    <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
+                      {events.length === 0 ? (
+                        <p className="text-[10px] text-tertiary italic">No events exist. You can assign events later.</p>
+                      ) : (
+                        events.map(ev => (
+                          <label key={ev.eventId} className="flex items-center gap-2 bg-background p-2 rounded-xl border border-divider cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={coordAssignedEvents.includes(ev.eventId)}
+                              onChange={(e) => {
+                                if (e.target.checked) setCoordAssignedEvents([...coordAssignedEvents, ev.eventId]);
+                                else setCoordAssignedEvents(coordAssignedEvents.filter(id => id !== ev.eventId));
+                              }}
+                              className="accent-indigo-500"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[11px] text-secondary block truncate">{ev.title}</span>
+                              <span className="text-[9px] text-tertiary block truncate">{ev.category} • {ev.date}</span>
+                            </div>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                  >
+                    Assign Coordinator Role
+                  </button>
+                </form>
+              )}
+
+              {/* COORDINATORS LIST */}
+              <div className="space-y-3">
+                {coordinators.map((coord) => (
+                  <div key={coord.uid} className="bg-surface rounded-3xl p-4 border border-divider space-y-3.5 shadow-md">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 text-indigo-400">
+                          <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-content">{coord.name}</h4>
+                          <div className="flex gap-2 mt-0.5 items-center">
+                            <span className="font-mono text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                              Roll: {coord.rollNumber}
+                            </span>
+                            <span className="text-[10px] text-secondary">{coord.year} • Sec {coord.section}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 items-end">
+                        <button
+                          onClick={() => setActiveEditingCoordId(activeEditingCoordId === coord.uid ? null : coord.uid)}
+                          className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer w-full text-center"
+                        >
+                          {activeEditingCoordId === coord.uid ? 'Close' : 'Manage Events'}
+                        </button>
+                        <div className="flex gap-1 w-full mt-1">
+                          {confirmDemoteId === coord.uid ? (
+                            <button onClick={() => handleDemoteUser(coord.uid)} className="flex-1 text-[9px] bg-rose-500 hover:bg-rose-600 text-content px-2 py-1 rounded-lg transition-all font-bold uppercase cursor-pointer">Sure?</button>
+                          ) : (
+                            <button onClick={() => setConfirmDemoteId(coord.uid)} className="flex-1 text-[9px] bg-surface-accent hover:bg-divider text-secondary px-2 py-1 rounded-lg transition-all border border-divider font-bold uppercase cursor-pointer">Revoke</button>
+                          )}
+                          <HoldButton
+                            size="sm"
+                            holdTime={1600}
+                            radius={8}
+                            backgroundColor="rgba(244, 63, 94, 0.1)"
+                            fillColor="#e11d48"
+                            textColor="#fda4af"
+                            fillTextColor="#ffffff"
+                            doneLabel="Deleted"
+                            onHold={() => handleDeleteUser(coord.uid)}
+                            className="flex-1 border border-rose-500/20 text-[9px] font-bold uppercase !h-6 !px-2"
+                          >
+                            Hold to Delete
+                          </HoldButton>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expandable Event Assignment Editor */}
+                    {activeEditingCoordId === coord.uid && (
+                      <div className="bg-background p-3 rounded-2xl border border-divider/80 space-y-2">
+                        <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Assigned Events</div>
+                        {events.length === 0 ? (
+                          <p className="text-[10px] text-tertiary italic">No events exist in the database.</p>
+                        ) : (
+                          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                            {events.map(ev => {
+                              const isAssigned = coord.assignedEvents?.includes(ev.eventId);
+                              return (
+                                <label key={ev.eventId} className={`flex justify-between items-center p-2 rounded-xl border cursor-pointer transition-all ${
+                                  isAssigned ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-surface border-divider hover:border-divider'
+                                }`}>
+                                  <div className="min-w-0 flex-1 flex items-center gap-2">
+                                    <input 
+                                      type="checkbox"
+                                      checked={isAssigned || false}
+                                      onChange={() => handleToggleEventAssignment(coord.uid, ev.eventId)}
+                                      className="accent-indigo-500"
+                                    />
+                                    <div className="truncate">
+                                      <span className={`text-[11px] block truncate ${isAssigned ? 'text-indigo-300 font-bold' : 'text-secondary'}`}>{ev.title}</span>
+                                      <span className="text-[9px] text-tertiary block truncate">{ev.category} • {ev.date}</span>
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {coordinators.length === 0 && (
+                  <div className="text-center py-6 text-xs text-tertiary">
+                    No coordinators have been assigned yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          
+          {activeTab === 'attendance' && canViewAttendanceTab && (() => {
+            const activeEvent = events.find(e => e.eventId === selectedEventId);
+            
+            // Check if today is the event date (using local date comparison)
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            let isEventToday = false;
+            if (activeEvent && activeEvent.date) {
+              try {
+                const d = new Date(activeEvent.date);
+                if (!isNaN(d.getTime())) {
+                  const evStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  isEventToday = (evStr === todayStr);
+                }
+              } catch (e) {
+                isEventToday = false;
+              }
+            }
+
+            return (
+            <div className="space-y-4">
+              
+              {/* Event Selector */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">Select Event to Manage</label>
+                  {selectedEventId && activeEvent && (
+                    <button 
+                      onClick={() => exportAttendanceCSV(activeEvent)}
+                      className="text-[10px] flex items-center gap-1 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded-lg hover:bg-indigo-600/30 transition-colors uppercase font-bold"
+                    >
+                      <Download className="w-3 h-3" />
+                      Export CSV
+                    </button>
+                  )}
+                </div>
+                <select 
+                  value={selectedEventId} 
+                  onChange={(e) => {
+                    setSelectedEventId(e.target.value);
+                    setScanResultMsg('');
+                  }}
+                  className="bg-surface border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none"
+                >
+                  {events.length === 0 && <option value="">No events available</option>}
+                  {events.map(ev => (
+                    <option key={ev.eventId} value={ev.eventId}>{ev.title} ({ev.date})</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedEventId && activeEvent && (
+                <>
+                  {/* Event Date Status Banner */}
+                  {!isEventToday ? (
+                    <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs p-3 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div>
+                          <span className="font-bold">Scheduled Date:</span> {activeEvent.date}
+                          <span className="text-secondary text-[11px] ml-2">(Today: {todayStr})</span>
+                        </div>
+                      </div>
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md self-start sm:self-auto">
+                        Admin Check-in Active
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-2.5 rounded-2xl flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="font-bold">Event Day Active ({activeEvent.date})</span>
+                    </div>
+                  )}
+
+                  {/* QR SCANNER CARD (Always available for admin check-in) */}
+                  <div className="bg-surface border border-divider p-4 rounded-3xl space-y-3.5 shadow-xl">
+                    <div className="flex justify-between items-center border-b border-divider pb-2">
+                      <span className="text-xs font-bold text-content uppercase flex items-center gap-1.5">
+                        <QrCode className="w-3.5 h-3.5 text-indigo-400" />
+                        Quick Check-in Scanner
+                      </span>
+                      <button 
+                        onClick={() => setShowQRScanner(!showQRScanner)}
+                        className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          showQRScanner 
+                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' 
+                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
+                        }`}
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        {showQRScanner ? 'Close Scanner' : 'Open Camera'}
+                      </button>
+                    </div>
+
+                    {showQRScanner && (
+                      <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <p className="text-[10px] text-secondary">
+                          Point the camera at student QR pass or upload a QR image to verify attendance instantly.
+                        </p>
+                        
+                        <QRCameraScanner 
+                          onScan={(text) => {
+                            handleQRCheckIn(text);
+                          }}
+                          onError={(err) => {
+                            if (err && err.message) {
+                              setScanResultMsg(err.message);
+                              setScanResultType('error');
+                            }
+                          }}
+                        />
+
+                        <form onSubmit={(e) => { e.preventDefault(); handleQRCheckIn(scannedRollInput); }} className="flex gap-2 pt-1">
+                          <input 
+                            type="text" 
+                            placeholder="Or type Roll Number manually..." 
+                            value={scannedRollInput}
+                            onChange={(e) => setScannedRollInput(e.target.value)}
+                            className="flex-1 bg-background border border-divider text-xs text-content rounded-xl py-2 px-3 outline-none font-mono"
+                          />
+                          <button 
+                            type="submit" 
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase px-3.5 rounded-xl transition-all cursor-pointer"
+                          >
+                            Mark
+                          </button>
+                        </form>
+                      </div>
+                    )}
+
+                    {/* Scan Result Feedback Banner */}
+                    {scanResultMsg && (
+                      <div className={`p-3 rounded-2xl border flex items-center justify-between gap-2.5 transition-all animate-in fade-in zoom-in-95 ${
+                        scanResultType === 'success' 
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+                          : scanResultType === 'info'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                      }`}>
+                        <div className="flex items-center gap-2 text-xs font-medium">
+                          {scanResultType === 'success' && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
+                          {scanResultType === 'info' && <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />}
+                          {scanResultType === 'error' && <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
+                          <span>{scanResultMsg}</span>
+                        </div>
+                        <button
+                          onClick={() => setScanResultMsg('')}
+                          className="text-content/50 hover:text-content p-1 rounded-lg hover:bg-surface-accent transition-colors cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* REGISTRATIONS LIST */}
+                  <div className="bg-surface border border-divider p-4 rounded-3xl space-y-3 shadow-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-divider pb-2 gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-content uppercase">
+                          Registered Students ({activeRegistrations?.length || 0})
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          {activeRegistrations?.filter(r => r.status === 'Attended').length || 0} Present
+                        </span>
+                      </div>
+
+                      {activeEvent && (
+                        <button 
+                          type="button"
+                          onClick={() => handleGenerateBatchForEvent(activeEvent.eventId)}
+                          disabled={!activeRegistrations?.some(r => r.status === 'Attended')}
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-[10px] font-bold uppercase transition-all cursor-pointer shadow-xs active:scale-95"
+                          title="Generate batch certificates for all attended students of this event"
+                        >
+                          <Zap className="w-3 h-3 text-amber-300" />
+                          <span>Generate Batch Certificates</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-divider">
+                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase">Roll No.</th>
+                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase">Name</th>
+                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase">Type</th>
+                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase text-center">Attendance</th>
+                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase text-center">Certificate</th>
+                            <th className="py-2 text-[10px] font-bold text-tertiary uppercase text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-800/50">
+                          {(() => {
+                            const currentRegs = activeRegistrations;
+                            if (currentRegs.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={6} className="py-6 text-center text-[10px] text-tertiary italic">
+                                    No registrations yet.
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return currentRegs.map(reg => {
+                              const profile = allUsers.find(u => u.uid === reg.studentId);
+                              if (!profile) return null;
+                              const existingCert = dbCertificates.find(c => 
+                                c.eventId === activeEvent?.eventId && 
+                                (c.studentId === reg.studentId || (profile.rollNumber && c.rollNumber.toUpperCase() === profile.rollNumber.toUpperCase()))
+                              );
+                              const isCertIssued = Boolean(existingCert && existingCert.status !== 'Revoked');
+
+                              return (
+                                <tr key={reg.registrationId} className="hover:bg-surface/50 transition-colors">
+                                  <td className="py-2 text-[11px] text-indigo-300 font-mono font-bold">
+                                    {profile.rollNumber || 'N/A'}
+                                  </td>
+                                  <td className="py-2 text-[11px] text-content">
+                                    {profile.name || 'Unknown User'}
+                                    {reg.teamName && (
+                                      <span className="block text-[9px] text-tertiary mt-0.5">Team: {reg.teamName}</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2">
+                                    <span className="bg-surface-accent text-secondary px-2 py-0.5 rounded-md text-[9px] font-bold uppercase">
+                                      {(reg.isTeam ? 'Team' : 'Solo')}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 text-center">
+                                    {reg.status === 'Attended' ? (
+                                      <span className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-1 rounded-md text-[9px] font-bold uppercase">
+                                        <CheckCircle className="w-3 h-3" />
+                                        Present
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 bg-surface-accent/50 text-tertiary px-2 py-1 rounded-md text-[9px] font-bold uppercase">
+                                        Absent
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 text-center">
+                                    {isCertIssued && existingCert ? (
+                                      <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold">
+                                        <ShieldCheck className="w-2.5 h-2.5" />
+                                        <span>Issued</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold">
+                                        <Lock className="w-2.5 h-2.5" />
+                                        <span>Locked</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 text-right">
+                                    {reg.status === 'Attended' ? (
+                                      <button 
+                                        onClick={() => handleToggleAttendance(reg.registrationId, false)}
+                                        className="text-[9px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-2 py-1 rounded-lg transition-all font-bold uppercase cursor-pointer"
+                                      >
+                                        Revoke
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        onClick={() => handleToggleAttendance(reg.registrationId, true)}
+                                        className="text-[9px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-2 py-1 rounded-lg transition-all font-bold uppercase cursor-pointer"
+                                      >
+                                        Mark Present
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+          })()}
+          {/* ==================== 4. STUDENTS DB & BULK IMPORT ==================== */}
+          {activeTab === 'students' && canManageRoles && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xs font-bold text-content uppercase tracking-wider">Students Database</h3>
+                  <p className="text-[10px] text-secondary">Bulk import roll numbers, manage student accounts.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBulkAdd(!showBulkAdd)}
+                  className="flex items-center gap-1.5 text-xs font-bold uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm shadow-indigo-600/20"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  {showBulkAdd ? "Close Importer" : "Bulk Add"}
+                </button>
+              </div>
+
+              {/* BULK CREATOR INTERFACE */}
+              {showBulkAdd && (
+                <div className="bg-surface border border-divider p-4 rounded-3xl space-y-3.5 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-divider pb-2">
+                    <span className="text-xs font-bold text-content uppercase">Bulk Importer Tool</span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBulkMode('series')}
+                        className={`text-xs font-bold px-3 py-1 rounded-xl transition-all cursor-pointer ${
+                          bulkMode === 'series' ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-secondary hover:text-content'
+                        }`}
+                      >
+                        Roll Series
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBulkMode('column')}
+                        className={`text-xs font-bold px-3 py-1 rounded-xl transition-all cursor-pointer ${
+                          bulkMode === 'column' ? 'bg-indigo-600 text-white' : 'bg-surface-accent text-secondary hover:text-content'
+                        }`}
+                      >
+                        Paste Column
+                      </button>
+                    </div>
+                  </div>
+
+                  {bulkMode === 'series' ? (
+                    <div className="space-y-3">
+                      <p className="text-[10px] text-secondary leading-relaxed">
+                        Generate roll numbers in a continuous series (e.g. 23HM1A3301 to 23HM1A3361).
+                      </p>
+                      <div className="grid grid-cols-3 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Prefix</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. 23HM1A33"
+                            value={seriesPrefix}
+                            onChange={(e) => setSeriesPrefix(e.target.value)}
+                            className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Start Index</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. 01"
+                            value={seriesStart}
+                            onChange={(e) => setSeriesStart(e.target.value)}
+                            className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-secondary uppercase mb-1">End Index</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. 61"
+                            value={seriesEnd}
+                            onChange={(e) => setSeriesEnd(e.target.value)}
+                            className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold text-secondary uppercase">Pasted Roll Numbers</label>
+                      <textarea
+                        placeholder="Paste roll numbers from Excel/Sheet here (separated by newlines or commas)&#10;e.g.&#10;23HM1A3301&#10;23HM1A3305&#10;23HM1A3312"
+                        value={bulkText}
+                        onChange={(e) => setBulkText(e.target.value)}
+                        className="w-full bg-background border border-divider text-xs text-content rounded-2xl p-3 h-28 outline-none resize-none font-mono leading-relaxed"
+                      />
+                    </div>
+                  )}
+
+                  <div className="border-t border-divider pt-3 space-y-2.5">
+                    <span className="block text-[10px] font-bold text-secondary uppercase">Temporary Password Strategy</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPasswordOption('roll')}
+                        className={`text-xs font-bold p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                          passwordOption === 'roll'
+                            ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300'
+                            : 'border-divider bg-background text-secondary'
+                        }`}
+                      >
+                        <span>Same as Roll</span>
+                        <span className="text-[9px] text-tertiary font-normal">Pass = Roll</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPasswordOption('preset')}
+                        className={`text-xs font-bold p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                          passwordOption === 'preset'
+                            ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300'
+                            : 'border-divider bg-background text-secondary'
+                        }`}
+                      >
+                        <span>Preset Code</span>
+                        <span className="text-[9px] text-tertiary font-normal">Welcome@123</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPasswordOption('random')}
+                        className={`text-xs font-bold p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                          passwordOption === 'random'
+                            ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300'
+                            : 'border-divider bg-background text-secondary'
+                        }`}
+                      >
+                        <span>Random Alpha</span>
+                        <span className="text-[9px] text-tertiary font-normal">e.g. K7L9Z4</span>
+                      </button>
+                    </div>
+
+                    {passwordOption === 'preset' && (
+                      <div className="mt-2 text-xs">
+                        <label className="block text-[10px] font-bold text-secondary uppercase mb-1">Custom Preset Code</label>
+                        <input
+                          type="text"
+                          value={presetPassword}
+                          onChange={(e) => setPresetPassword(e.target.value)}
+                          className="w-full bg-background border border-divider text-xs text-content rounded-xl py-2 px-2.5 outline-none font-mono"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleBulkAddStudents}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-2.5 shadow-md shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Generate & Save Student Profiles
+                  </button>
+                </div>
+              )}
+
+              {/* STUDENT LIST WITH GROUPING AND SEARCH */}
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center bg-surface border border-divider rounded-xl px-3 py-2">
+                  <div className="flex items-center gap-2 w-full">
+                    <Search className="w-4 h-4 text-tertiary flex-shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search students by roll number or name..."
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      className="bg-transparent border-none text-xs text-content placeholder:text-secondary outline-none w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center px-1">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="selectAll"
+                      className="accent-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                      checked={
+                        allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                          u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                          u.name.toLowerCase().includes(studentSearch.toLowerCase())
+                        ).length > 0 && 
+                        selectedStudentIds.length === allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                          u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                          u.name.toLowerCase().includes(studentSearch.toLowerCase())
+                        ).length
+                      }
+                      onChange={(e) => {
+                        const filtered = allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                          u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                          u.name.toLowerCase().includes(studentSearch.toLowerCase())
+                        );
+                        if (e.target.checked) {
+                          setSelectedStudentIds(filtered.map(s => s.uid));
+                        } else {
+                          setSelectedStudentIds([]);
+                        }
+                      }}
+                    />
+                    <label htmlFor="selectAll" className="text-[10px] text-secondary font-bold uppercase cursor-pointer">
+                      Select All Visible
+                    </label>
+                  </div>
+                  
+                  {selectedStudentIds.length > 0 && (
+                    <HoldButton 
+                      size="sm"
+                      holdTime={2000}
+                      radius={8}
+                      backgroundColor="rgba(244, 63, 94, 0.15)"
+                      fillColor="#e11d48"
+                      textColor="#fda4af"
+                      fillTextColor="#ffffff"
+                      doneLabel="Deleted Selected"
+                      onHold={handleBulkDeleteStudents}
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
+                      className="border border-rose-500/20 text-[10px] font-bold uppercase !h-8 !px-3 cursor-pointer"
+                    >
+                      Hold to Delete ({selectedStudentIds.length})
+                    </HoldButton>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+                {(() => {
+                  const filteredStudents = allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                    u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                    u.name.toLowerCase().includes(studentSearch.toLowerCase())
+                  );
+
+                  if (filteredStudents.length === 0) {
+                    return (
+                      <div className="text-center py-6 text-xs text-tertiary">
+                        No students found. Use the bulk importer above to populate the database!
+                      </div>
+                    );
+                  }
+
+                  const groupedStudents = filteredStudents.reduce((acc, student) => {
+                    const key = `${student.year || 'Unknown Year'} - ${student.branch || 'Unknown Branch'} (Sec ${student.section || 'A'})`;
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(student);
+                    return acc;
+                  }, {} as Record<string, typeof filteredStudents>);
+
+                  return Object.entries(groupedStudents).map(([groupKey, studentsInGroup]) => (
+                    <div key={groupKey} className="bg-surface border border-divider rounded-2xl p-4 shadow-sm">
+                      <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-3 border-b border-divider/80 pb-2">{groupKey} - {studentsInGroup.length} Students</div>
+                      <div className="space-y-2">
+                        {studentsInGroup.map((student) => {
+                          const isExpanded = expandedStudentId === student.uid;
+                          return (
+                          <div 
+                            key={student.uid} 
+                            onClick={() => setExpandedStudentId(isExpanded ? null : student.uid)}
+                            className="bg-background border border-divider/80 rounded-2xl p-3 flex flex-col gap-3 cursor-pointer hover:border-indigo-500/30 transition-all"
+                          >
+                            <div className="flex justify-between items-center w-full">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-center mr-1" onClick={(e) => e.stopPropagation()}>
+                                  <input 
+                                    type="checkbox"
+                                    className="accent-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                                    checked={selectedStudentIds.includes(student.uid)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedStudentIds(prev => [...prev, student.uid]);
+                                      } else {
+                                        setSelectedStudentIds(prev => prev.filter(id => id !== student.uid));
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <span className="font-mono text-[10px] font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 flex-shrink-0">
+                                  {student.rollNumber || 'NO ROLL'}
+                                </span>
+                                <h5 className="text-xs font-bold text-content truncate">{student.name}</h5>
+                              </div>
+                              <span className="text-tertiary text-xs font-mono">{isExpanded ? '[-]' : '[+]'}</span>
+                            </div>
+                            
+                            {isExpanded && (
+                              <div className="pt-2 border-t border-divider/80 flex justify-between gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px] text-secondary flex-1">
+                                  <span className="truncate">Email: <strong className="text-secondary font-mono">{student.email}</strong></span>
+                                  {student.googleEmail && (<span className="truncate">Google: <strong className="text-indigo-400 font-mono">{student.googleEmail}</strong></span>)}
+                                  <span>Phone: <strong className="text-secondary">{student.phone || 'N/A'}</strong></span>
+                                  <span>Password: <strong className="text-indigo-400 font-mono bg-indigo-500/10 px-1 py-0.2 rounded border border-indigo-500/20">••••••••</strong></span>
+                                  <span>Role: <strong className="text-indigo-400 uppercase">{student.role}</strong></span>
+                                </div>
+                                
+                                <div className="flex flex-col gap-1.5 flex-shrink-0 w-24">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); student.rollNumber && handleResetPassword(student.uid, student.rollNumber); }}
+                                    className="bg-surface-accent hover:bg-divider text-secondary border border-divider text-[9px] font-bold uppercase py-1.5 px-3 rounded-xl transition-all cursor-pointer w-full"
+                                  >
+                                    Reset Pass
+                                  </button>
+                                  <div onClick={(e) => e.stopPropagation()}>
+                                    <HoldButton
+                                      size="sm"
+                                      holdTime={1600}
+                                      radius={10}
+                                      backgroundColor="rgba(244, 63, 94, 0.1)"
+                                      fillColor="#e11d48"
+                                      textColor="#fda4af"
+                                      fillTextColor="#ffffff"
+                                      doneLabel="Deleted"
+                                      onHold={() => handleDeleteUser(student.uid)}
+                                      className="border border-rose-500/20 text-[10px] font-bold uppercase !h-7 w-full !px-1"
+                                      style={{ fontSize: '10px' }}
+                                    >
+                                      Hold to Delete
+                                    </HoldButton>
+                                  </div>
+                                  
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );})}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'certificates' && canManageRoles && (
+            <div className="flex flex-col h-full overflow-hidden">
+              {/* Header with Sub-tabs and actions */}
+              <div className="px-5 py-3.5 border-b border-divider/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-surface">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-content font-display flex items-center gap-2">
+                      <Award className="w-4 h-4 text-indigo-400" />
+                      <span>E-Certificate Management & Database</span>
+                    </h3>
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                      isCertificatesEnabled 
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    }`}>
+                      {isCertificatesEnabled ? 'ACTIVE' : 'PAUSED'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-secondary mt-0.5">
+                    Search institutional certificates, verify credentials, and customize digital templates
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setVerifyInitialId('');
+                      setIsVerifyModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold border border-divider transition-all cursor-pointer shadow-xs active:scale-95"
+                    title="Quickly verify any Certificate ID"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Verify ID</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowManualIssueModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold border border-divider transition-all cursor-pointer shadow-xs active:scale-95"
+                    title="Issue certificate directly to a student"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Issue Custom</span>
+                  </button>
+
+                  <button
+                    onClick={handleSyncCertificates}
+                    disabled={isSyncingCerts}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95"
+                    title="Generate and sync unique Certificate IDs for all attended students"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCerts ? 'animate-spin' : ''}`} />
+                    <span>{isSyncingCerts ? 'Syncing...' : 'Sync All Attended'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-Navigation Switcher */}
+              <div className="px-5 pt-3 border-b border-divider/60 bg-surface/50 flex items-center justify-between shrink-0">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCertSubTab('batch')}
+                    className={`pb-2.5 px-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                      certSubTab === 'batch'
+                        ? 'border-indigo-500 text-indigo-400'
+                        : 'border-transparent text-secondary hover:text-content'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Batch Generator & Rosters</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-indigo-500/15 text-indigo-300">
+                      {events.length} Events
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setCertSubTab('db')}
+                    className={`pb-2.5 px-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                      certSubTab === 'db'
+                        ? 'border-indigo-500 text-indigo-400'
+                        : 'border-transparent text-secondary hover:text-content'
+                    }`}
+                  >
+                    <Database className="w-3.5 h-3.5" />
+                    <span>Certificates Database</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-indigo-500/15 text-indigo-300">
+                      {dbCertificates.length}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setCertSubTab('template')}
+                    className={`pb-2.5 px-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                      certSubTab === 'template'
+                        ? 'border-indigo-500 text-indigo-400'
+                        : 'border-transparent text-secondary hover:text-content'
+                    }`}
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Template & Styling</span>
+                  </button>
+                </div>
+
+                {/* Quick toggle feature on/off */}
+                <div className="pb-2.5 flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-secondary hidden sm:inline">Feature:</span>
+                  <button
+                    onClick={() => handleToggleCertificates()}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight cursor-pointer border transition-all active:scale-95 flex items-center gap-1.5 ${
+                      isCertificatesEnabled
+                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25 hover:bg-emerald-500/20'
+                        : 'bg-neutral-800 text-neutral-300 border-neutral-700 hover:bg-neutral-700'
+                    }`}
+                  >
+                    <div className={`w-1.5 h-1.5 rounded-full ${isCertificatesEnabled ? 'bg-emerald-400' : 'bg-neutral-500'}`} />
+                    <span>{isCertificatesEnabled ? 'Feature On' : 'Feature Off'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-Tab 0: BATCH CERTIFICATE GENERATOR & PARTICIPANT ROSTERS */}
+              {certSubTab === 'batch' && (
+                <div className="p-5 overflow-y-auto space-y-5 flex-grow">
+                  {/* Summary Metric Cards */}
+                  {(() => {
+                    const allAttendedRegs = registrations.filter(r => r.status === 'Attended');
+                    const pendingTotal = allAttendedRegs.filter(r => {
+                      return !dbCertificates.some(c => 
+                        c.eventId === r.eventId && 
+                        (c.studentId === r.studentId || (r.rollNumber && c.rollNumber.toUpperCase() === r.rollNumber.toUpperCase()))
+                      );
+                    }).length;
+                    const releasedTotal = allAttendedRegs.length - pendingTotal;
+
+                    return (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Total Events</span>
+                          <div className="text-xl font-black text-content font-display">
+                            {events.length}
+                          </div>
+                          <span className="text-[10px] text-tertiary">Department event catalogue</span>
+                        </div>
+
+                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Attended Students</span>
+                          <div className="text-xl font-black text-indigo-400 font-display">
+                            {allAttendedRegs.length}
+                          </div>
+                          <span className="text-[10px] text-tertiary">Eligible for certificates</span>
+                        </div>
+
+                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Generated & Released</span>
+                          <div className="text-xl font-black text-emerald-400 font-display">
+                            {releasedTotal}
+                          </div>
+                          <span className="text-[10px] text-tertiary">Unlocked in student profiles</span>
+                        </div>
+
+                        <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                          <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Locked / Pending Release</span>
+                          <div className="text-xl font-black text-amber-400 font-display">
+                            {pendingTotal}
+                          </div>
+                          <span className="text-[10px] text-tertiary">Awaiting admin batch generation</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Batch Authority Banner */}
+                  <div className="bg-gradient-to-r from-indigo-950/40 via-surface to-surface border border-indigo-500/25 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-indigo-400" />
+                        <h4 className="text-xs font-bold text-content font-display uppercase tracking-wide">
+                          Administrative Batch Authority
+                        </h4>
+                      </div>
+                      <p className="text-[11px] text-secondary max-w-xl leading-relaxed">
+                        Student certificates stay strictly <strong>locked</strong> until you verify attendance and click Generate Batch. You can generate batch certificates for all events at once or inspect individual event participant rosters below.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={handleSyncCertificates}
+                        disabled={isSyncingCerts}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/30 active:scale-95"
+                      >
+                        <Zap className={`w-3.5 h-3.5 ${isSyncingCerts ? 'animate-spin' : ''}`} />
+                        <span>{isSyncingCerts ? 'Generating All...' : 'Generate Batch for All Events'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filter & Search Bar for Events */}
+                  <div className="bg-surface border border-divider/80 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={() => setBatchEventStatusFilter('all')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          batchEventStatusFilter === 'all'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-surface-accent text-secondary hover:text-content'
+                        }`}
+                      >
+                        All Events ({events.length})
+                      </button>
+
+                      <button
+                        onClick={() => setBatchEventStatusFilter('pending')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          batchEventStatusFilter === 'pending'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                            : 'bg-surface-accent text-secondary hover:text-content'
+                        }`}
+                      >
+                        <Lock className="w-3 h-3 text-amber-400" />
+                        <span>Has Pending / Locked</span>
+                      </button>
+
+                      <button
+                        onClick={() => setBatchEventStatusFilter('completed')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          batchEventStatusFilter === 'completed'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-surface-accent text-secondary hover:text-content'
+                        }`}
+                      >
+                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                        <span>Completed Batch</span>
+                      </button>
+                    </div>
+
+                    <div className="relative w-full sm:w-72">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                      <input
+                        type="text"
+                        placeholder="Search event title or venue..."
+                        value={batchEventSearch}
+                        onChange={(e) => setBatchEventSearch(e.target.value)}
+                        className="w-full bg-surface-accent border border-divider rounded-xl pl-9 pr-3 py-1.5 text-xs text-content placeholder:text-secondary focus:outline-none focus:border-indigo-500/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Event List with Batch Controls and Expandable Participant Rosters */}
+                  <div className="space-y-3.5">
+                    {(() => {
+                      const filteredEvents = events.filter(ev => {
+                        const eventRegs = registrations.filter(r => r.eventId === ev.eventId);
+                        const eventAttended = eventRegs.filter(r => r.status === 'Attended');
+                        const eventCerts = dbCertificates.filter(c => c.eventId === ev.eventId);
+                        const pendingCount = eventAttended.filter(r => {
+                          return !eventCerts.some(c => 
+                            c.studentId === r.studentId || 
+                            (r.rollNumber && c.rollNumber.toUpperCase() === r.rollNumber.toUpperCase())
+                          );
+                        }).length;
+
+                        if (batchEventStatusFilter === 'pending' && pendingCount === 0) return false;
+                        if (batchEventStatusFilter === 'completed' && (eventAttended.length === 0 || pendingCount > 0)) return false;
+
+                        if (batchEventSearch) {
+                          const q = batchEventSearch.toLowerCase();
+                          return ev.title.toLowerCase().includes(q) || (ev.venue || '').toLowerCase().includes(q) || (ev.category || '').toLowerCase().includes(q);
+                        }
+                        return true;
+                      });
+
+                      if (filteredEvents.length === 0) {
+                        return (
+                          <div className="bg-surface border border-divider/80 rounded-2xl p-8 text-center text-secondary text-xs">
+                            No events matched your filter criteria.
+                          </div>
+                        );
+                      }
+
+                      return filteredEvents.map(ev => {
+                        const eventRegs = registrations.filter(r => r.eventId === ev.eventId);
+                        const eventAttended = eventRegs.filter(r => r.status === 'Attended');
+                        const eventCerts = dbCertificates.filter(c => c.eventId === ev.eventId);
+                        const pendingCount = eventAttended.filter(r => {
+                          return !eventCerts.some(c => 
+                            c.studentId === r.studentId || 
+                            (r.rollNumber && c.rollNumber.toUpperCase() === r.rollNumber.toUpperCase())
+                          );
+                        }).length;
+                        const generatedCount = eventAttended.length - pendingCount;
+                        const isExpanded = expandedEventId === ev.eventId;
+                        const isGeneratingThis = isGeneratingBatchEventId === ev.eventId;
+
+                        const selectedInThis = selectedParticipantsMap[ev.eventId] || [];
+                        const participantQuery = (participantSearchMap[ev.eventId] || '').toLowerCase();
+
+                        const displayedRegs = eventRegs.filter(r => {
+                          if (!participantQuery) return true;
+                          const student = allUsers.find(u => u.uid === r.studentId);
+                          return (r.studentName || student?.name || '').toLowerCase().includes(participantQuery) ||
+                                 (r.rollNumber || student?.rollNumber || '').toLowerCase().includes(participantQuery);
+                        });
+
+                        return (
+                          <div 
+                            key={ev.eventId} 
+                            className="bg-surface border border-divider/80 rounded-2xl overflow-hidden shadow-xs transition-all"
+                          >
+                            {/* Event Header Card */}
+                            <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface hover:bg-surface-accent/30 transition-colors">
+                              <div className="min-w-0 space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="text-sm font-bold text-content font-display truncate">
+                                    {ev.title}
+                                  </h4>
+                                  <span className="text-[9px] font-mono text-tertiary bg-surface-accent px-2 py-0.5 rounded-md border border-divider">
+                                    {ev.category || 'Event'}
+                                  </span>
+
+                                  {/* Status Badge */}
+                                  {eventAttended.length === 0 ? (
+                                    <span className="text-[9px] font-mono font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded-md border border-neutral-700">
+                                      ⚪ 0 Attendees Marked
+                                    </span>
+                                  ) : pendingCount === 0 ? (
+                                    <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/25 flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3" />
+                                      <span>All Batch Generated ({generatedCount}/{eventAttended.length})</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25 flex items-center gap-1">
+                                      <Lock className="w-3 h-3" />
+                                      <span>🔒 {pendingCount} Locked (Pending Generation)</span>
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-secondary">
+                                  <span>Date: <strong>{ev.date}</strong></span>
+                                  <span>Venue: {ev.venue || 'Campus Auditorium'}</span>
+                                  <span>Registered: <strong className="text-content">{eventRegs.length}</strong></span>
+                                  <span>Attended: <strong className="text-emerald-400">{eventAttended.length}</strong></span>
+                                  <span>Certificates: <strong className="text-indigo-400">{eventCerts.length}</strong></span>
+                                </div>
+                              </div>
+
+                              {/* Action Buttons for this Event */}
+                              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                <button
+                                  onClick={() => handleGenerateBatchForEvent(ev.eventId)}
+                                  disabled={isGeneratingThis || eventAttended.length === 0 || pendingCount === 0}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-95"
+                                  title={pendingCount === 0 ? "All attended students already have certificates generated" : `Generate certificates for all ${pendingCount} attended students`}
+                                >
+                                  <Zap className={`w-3.5 h-3.5 ${isGeneratingThis ? 'animate-spin' : ''}`} />
+                                  <span>{isGeneratingThis ? 'Generating...' : `Generate Batch (${pendingCount})`}</span>
+                                </button>
+
+                                {eventCerts.length > 0 && (
+                                  <button
+                                    onClick={() => handleRevokeBatchForEvent(ev.eventId)}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-xs font-semibold transition-all cursor-pointer active:scale-95"
+                                    title="Lock and revoke all certificates for this event"
+                                  >
+                                    <Lock className="w-3 h-3" />
+                                    <span>Lock / Revoke Batch</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => setExpandedEventId(isExpanded ? null : ev.eventId)}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer active:scale-95 ${
+                                    isExpanded 
+                                      ? 'bg-neutral-800 text-white border-neutral-700' 
+                                      : 'bg-surface-accent hover:bg-divider text-content border-divider'
+                                  }`}
+                                >
+                                  <Users className="w-3.5 h-3.5 text-indigo-400" />
+                                  <span>{isExpanded ? 'Hide Roster' : 'View Participants Roster'}</span>
+                                  <span className="font-mono text-[10px] text-tertiary">({eventRegs.length})</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Expandable Participant Roster Drawer */}
+                            {isExpanded && (
+                              <div className="border-t border-divider/70 bg-background/50 p-4 space-y-3">
+                                {/* Participant Controls Bar */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                      onClick={() => {
+                                        const allStudentIds = displayedRegs.map(r => r.studentId);
+                                        handleSelectAllParticipants(ev.eventId, allStudentIds);
+                                      }}
+                                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-divider hover:bg-surface-accent text-secondary hover:text-content text-[11px] font-semibold cursor-pointer"
+                                    >
+                                      {selectedInThis.length === displayedRegs.length && displayedRegs.length > 0 ? (
+                                        <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
+                                      ) : (
+                                        <Square className="w-3.5 h-3.5 text-secondary" />
+                                      )}
+                                      <span>Select All ({displayedRegs.length})</span>
+                                    </button>
+
+                                    {selectedInThis.length > 0 && (
+                                      <>
+                                        <button
+                                          onClick={() => handleGenerateBatchForEvent(ev.eventId, selectedInThis)}
+                                          disabled={isGeneratingThis}
+                                          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold uppercase transition-all cursor-pointer shadow-xs"
+                                        >
+                                          <Zap className="w-3 h-3" />
+                                          <span>Generate Selected ({selectedInThis.length})</span>
+                                        </button>
+
+                                        <button
+                                          onClick={() => handleRevokeBatchForEvent(ev.eventId, selectedInThis)}
+                                          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-[11px] font-bold uppercase transition-all cursor-pointer"
+                                        >
+                                          <Lock className="w-3 h-3" />
+                                          <span>Lock Selected ({selectedInThis.length})</span>
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  <div className="relative w-full sm:w-60">
+                                    <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary" />
+                                    <input
+                                      type="text"
+                                      placeholder="Filter participant name / roll..."
+                                      value={participantSearchMap[ev.eventId] || ''}
+                                      onChange={(e) => setParticipantSearchMap(prev => ({ ...prev, [ev.eventId]: e.target.value }))}
+                                      className="w-full bg-surface border border-divider rounded-lg pl-8 pr-2.5 py-1 text-[11px] text-content placeholder:text-secondary focus:outline-none focus:border-indigo-500/50"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Participants Table */}
+                                <div className="bg-surface border border-divider/80 rounded-xl overflow-hidden shadow-xs">
+                                  <table className="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                      <tr className="border-b border-divider/60 bg-surface/80 text-[10px] font-bold text-tertiary uppercase">
+                                        <th className="py-2 px-3 w-8"></th>
+                                        <th className="py-2 px-3">Student</th>
+                                        <th className="py-2 px-3">Roll Number</th>
+                                        <th className="py-2 px-3">Attendance</th>
+                                        <th className="py-2 px-3">Certificate Status</th>
+                                        <th className="py-2 px-3 text-right">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-divider/40">
+                                      {displayedRegs.length === 0 ? (
+                                        <tr>
+                                          <td colSpan={6} className="py-6 text-center text-[11px] text-secondary italic">
+                                            No participants found.
+                                          </td>
+                                        </tr>
+                                      ) : (
+                                        displayedRegs.map(reg => {
+                                          const student = allUsers.find(u => u.uid === reg.studentId || (reg.rollNumber && u.rollNumber?.toUpperCase() === reg.rollNumber.toUpperCase()));
+                                          const isSelected = selectedInThis.includes(reg.studentId);
+                                          const existingCert = dbCertificates.find(c => 
+                                            c.eventId === ev.eventId && 
+                                            (c.studentId === reg.studentId || (reg.rollNumber && c.rollNumber.toUpperCase() === reg.rollNumber.toUpperCase()))
+                                          );
+                                          const isCertIssued = Boolean(existingCert && existingCert.status !== 'Revoked');
+
+                                          return (
+                                            <tr key={reg.registrationId} className="hover:bg-surface-accent/40 transition-colors">
+                                              <td className="py-2.5 px-3">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleToggleParticipantSelect(ev.eventId, reg.studentId)}
+                                                  className="cursor-pointer text-secondary hover:text-indigo-400"
+                                                >
+                                                  {isSelected ? (
+                                                    <CheckSquare className="w-4 h-4 text-indigo-400" />
+                                                  ) : (
+                                                    <Square className="w-4 h-4 text-secondary/60" />
+                                                  )}
+                                                </button>
+                                              </td>
+
+                                              <td className="py-2.5 px-3">
+                                                <div className="flex items-center gap-2">
+                                                  <div className="w-7 h-7 rounded-lg bg-surface-accent border border-divider overflow-hidden shrink-0">
+                                                    <img
+                                                      src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(reg.studentName || reg.rollNumber || 'User')}`}
+                                                      alt=""
+                                                      className="w-full h-full object-cover"
+                                                    />
+                                                  </div>
+                                                  <div className="min-w-0">
+                                                    <div className="font-bold text-content truncate text-xs">
+                                                      {reg.studentName || student?.name || 'Student Participant'}
+                                                    </div>
+                                                    <div className="text-[9.5px] text-secondary truncate">
+                                                      {student?.department || 'CSE (AI & ML)'} • {student?.year || reg.year || 'III Year'}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </td>
+
+                                              <td className="py-2.5 px-3 font-mono text-[11px] font-bold text-indigo-300">
+                                                {reg.rollNumber || student?.rollNumber || 'N/A'}
+                                              </td>
+
+                                              <td className="py-2.5 px-3">
+                                                <div className="flex items-center gap-1.5">
+                                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${
+                                                    reg.status === 'Attended'
+                                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                                                      : reg.status === 'Absent'
+                                                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/25'
+                                                      : 'bg-neutral-800 text-neutral-400 border-neutral-700'
+                                                  }`}>
+                                                    {reg.status}
+                                                  </span>
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                      const next = reg.status === 'Attended' ? 'Absent' : 'Attended';
+                                                      await updateRegistrationStatus(reg.registrationId, next);
+                                                      refreshData();
+                                                    }}
+                                                    className="text-[9px] text-tertiary hover:text-content underline cursor-pointer"
+                                                  >
+                                                    Toggle
+                                                  </button>
+                                                </div>
+                                              </td>
+
+                                              <td className="py-2.5 px-3">
+                                                {isCertIssued && existingCert ? (
+                                                  <div className="space-y-0.5">
+                                                    <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                                      <ShieldCheck className="w-2.5 h-2.5" />
+                                                      <span>Generated</span>
+                                                    </span>
+                                                    <div className="flex items-center gap-1 text-[8.5px] font-mono text-tertiary">
+                                                      <span>ID: {existingCert.certificateId}</span>
+                                                      <button
+                                                        type="button"
+                                                        onClick={(e) => handleCopyCertId(existingCert.certificateId, e)}
+                                                        className="text-secondary hover:text-content cursor-pointer"
+                                                      >
+                                                        <Copy className="w-2.5 h-2.5" />
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                                    <Lock className="w-2.5 h-2.5" />
+                                                    <span>Locked</span>
+                                                  </span>
+                                                )}
+                                              </td>
+
+                                              <td className="py-2.5 px-3 text-right">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                  {isCertIssued && existingCert ? (
+                                                    <>
+                                                      <button
+                                                        onClick={() => setActivePreviewCert(existingCert)}
+                                                        className="p-1 rounded-lg bg-surface-accent hover:bg-divider text-content transition-colors cursor-pointer"
+                                                        title="Preview Certificate"
+                                                      >
+                                                        <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                                      </button>
+                                                      <button
+                                                        onClick={() => handleRevokeBatchForEvent(ev.eventId, [reg.studentId])}
+                                                        className="p-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                                                        title="Lock / Revoke this certificate"
+                                                      >
+                                                        <Lock className="w-3.5 h-3.5" />
+                                                      </button>
+                                                    </>
+                                                  ) : (
+                                                    <button
+                                                      onClick={() => handleGenerateBatchForEvent(ev.eventId, [reg.studentId])}
+                                                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase transition-all cursor-pointer shadow-xs active:scale-95"
+                                                      title="Generate certificate for this student now"
+                                                    >
+                                                      <Zap className="w-2.5 h-2.5" />
+                                                      <span>Generate</span>
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          );
+                                        })
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-Tab 1: CERTIFICATES DATABASE */}
+              {certSubTab === 'db' && (
+                <div className="p-5 overflow-y-auto space-y-5 flex-grow">
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Total In Database</span>
+                      <div className="text-xl font-black text-indigo-400 font-display">
+                        {dbCertificates.length}
+                      </div>
+                      <span className="text-[10px] text-tertiary">Verified credentials issued</span>
+                    </div>
+
+                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Attended Registrations</span>
+                      <div className="text-xl font-black text-emerald-400 font-display">
+                        {registrations.filter(r => r.status === 'Attended').length}
+                      </div>
+                      <span className="text-[10px] text-tertiary">Students eligible for certs</span>
+                    </div>
+
+                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Events Covered</span>
+                      <div className="text-xl font-black text-content font-display">
+                        {new Set(dbCertificates.map(c => c.eventId)).size}
+                      </div>
+                      <span className="text-[10px] text-tertiary">Out of {events.length} total events</span>
+                    </div>
+
+                    <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 space-y-1">
+                      <span className="text-[9.5px] font-mono font-bold text-secondary uppercase">Issuance Status</span>
+                      <div className={`text-sm font-bold font-display ${isCertificatesEnabled ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {isCertificatesEnabled ? 'Active (Live)' : 'Paused (Hidden)'}
+                      </div>
+                      <span className="text-[10px] text-tertiary">Visible in student profiles</span>
+                    </div>
+                  </div>
+
+                  {/* Filters: Event Select & Text Search */}
+                  <div className="bg-surface border border-divider/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-center gap-3">
+                    <div className="relative w-full sm:w-64">
+                      <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                      <select
+                        value={certEventFilter}
+                        onChange={(e) => setCertEventFilter(e.target.value)}
+                        className="w-full bg-surface-accent border border-divider rounded-xl pl-9 pr-8 py-2 text-xs text-content focus:outline-none focus:border-indigo-500/50 appearance-none transition-colors"
+                      >
+                        <option value="all">All Events ({dbCertificates.length})</option>
+                        {events.map(ev => {
+                          const count = dbCertificates.filter(c => c.eventId === ev.eventId).length;
+                          return (
+                            <option key={ev.eventId} value={ev.eventId}>
+                              {ev.title} ({count})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="relative flex-grow w-full">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                      <input
+                        type="text"
+                        placeholder="Search by Certificate ID, Student Name, Roll Number, or Dept..."
+                        value={certSearch}
+                        onChange={(e) => setCertSearch(e.target.value)}
+                        className="w-full bg-surface-accent border border-divider rounded-xl pl-9 pr-8 py-2 text-xs text-content placeholder:text-secondary focus:outline-none focus:border-indigo-500/50 transition-colors"
+                      />
+                      {certSearch && (
+                        <button
+                          onClick={() => setCertSearch('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-secondary hover:text-content"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Filtered Certificates Table / List */}
+                  {(() => {
+                    const filtered = dbCertificates.filter(cert => {
+                      const matchesEvent = certEventFilter === 'all' || cert.eventId === certEventFilter;
+                      const q = certSearch.toLowerCase().trim();
+                      const matchesSearch = !q || 
+                        (cert.certificateId || '').toLowerCase().includes(q) ||
+                        (cert.studentName || '').toLowerCase().includes(q) ||
+                        (cert.rollNumber || '').toLowerCase().includes(q) ||
+                        (cert.eventTitle || '').toLowerCase().includes(q);
+                      return matchesEvent && matchesSearch;
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="bg-surface border border-divider/80 rounded-2xl p-10 text-center space-y-3">
+                          <Award className="w-10 h-10 text-secondary mx-auto opacity-40 mb-1" />
+                          <h4 className="text-sm font-bold text-content">No Certificates in Database</h4>
+                          <p className="text-xs text-secondary max-w-md mx-auto">
+                            {dbCertificates.length === 0 
+                              ? "No certificates have been issued yet. Click 'Sync All Attended' to automatically generate official Certificate IDs for all students marked as Attended, or click 'Issue Custom'."
+                              : "No certificates matched your current event filter or search query."}
+                          </p>
+                          {dbCertificates.length === 0 && (
+                            <button
+                              onClick={handleSyncCertificates}
+                              disabled={isSyncingCerts}
+                              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 inline-flex items-center gap-2"
+                            >
+                              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCerts ? 'animate-spin' : ''}`} />
+                              <span>Sync All Attended Students Now</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-surface border border-divider/80 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="px-4 py-3 border-b border-divider/60 flex items-center justify-between bg-surface/50 text-[11px] text-secondary">
+                          <span>Showing <strong className="text-content">{filtered.length}</strong> certificates</span>
+                          <span>Click "Who Else Got This" to view fellow recipients</span>
+                        </div>
+
+                        <div className="divide-y divide-divider/60">
+                          {filtered.map(cert => {
+                            const matchedEvent = events.find(e => e.eventId === cert.eventId);
+                            const peerCount = dbCertificates.filter(c => c.eventId === cert.eventId).length;
+
+                            return (
+                              <div 
+                                key={cert.certificateId} 
+                                className="p-3.5 hover:bg-surface-accent/60 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
+                              >
+                                {/* Left Info: Student + Cert ID */}
+                                <div className="flex items-start gap-3 min-w-0">
+                                  <div className="w-9 h-9 rounded-xl bg-surface-accent border border-divider p-0.5 shrink-0 overflow-hidden mt-0.5">
+                                    <img
+                                      src={`https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(cert.studentName || cert.rollNumber)}`}
+                                      alt={cert.studentName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+
+                                  <div className="min-w-0 space-y-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="font-bold text-content font-display text-xs sm:text-sm truncate">
+                                        {cert.studentName}
+                                      </span>
+                                      <span className="font-mono text-[10px] text-indigo-300 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                        {cert.rollNumber}
+                                      </span>
+                                      <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                        {cert.status || 'Verified'}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10.5px] text-secondary">
+                                      <span className="text-content font-medium truncate max-w-xs">{cert.eventTitle}</span>
+                                      <span>• Date: {cert.eventDate || cert.issueDate}</span>
+                                      {cert.department && <span>• {cert.department}</span>}
+                                    </div>
+
+                                    {/* Certificate ID Monospace Pill with Copy */}
+                                    <div className="flex items-center gap-2 pt-0.5">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleCopyCertId(cert.certificateId, e)}
+                                        title="Copy Certificate ID"
+                                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-neutral-900 border border-neutral-700 hover:border-indigo-500/50 text-neutral-200 cursor-pointer transition-all active:scale-95"
+                                      >
+                                        <ShieldCheck className="w-2.5 h-2.5 text-indigo-400" />
+                                        <span>ID: {cert.certificateId}</span>
+                                        {copiedCertId === cert.certificateId ? (
+                                          <span className="text-emerald-400 text-[8px] font-bold">Copied!</span>
+                                        ) : (
+                                          <Copy className="w-2 h-2 text-secondary" />
+                                        )}
+                                      </button>
+
+                                      <span className="text-[9px] text-tertiary">
+                                        Issued: {cert.issueDate || cert.issuedAt?.split('T')[0]}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right Actions */}
+                                <div className="flex flex-wrap items-center gap-1.5 shrink-0 self-end md:self-center">
+                                  {/* Who Else Got This (Peers) */}
+                                  <button
+                                    onClick={() => {
+                                      if (matchedEvent) {
+                                        setActivePeersEvent(matchedEvent);
+                                      } else {
+                                        setActivePeersEvent({
+                                          eventId: cert.eventId,
+                                          title: cert.eventTitle,
+                                          date: cert.eventDate,
+                                          venue: cert.eventVenue || 'Campus Auditorium'
+                                        } as DepartmentEvent);
+                                      }
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-[11px] font-semibold border border-divider transition-all cursor-pointer active:scale-95"
+                                    title="See all recipients who earned this certificate"
+                                  >
+                                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span>Who Else Got This</span>
+                                    <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-[9px]">
+                                      {peerCount}
+                                    </span>
+                                  </button>
+
+                                  {/* Preview Certificate Lightbox */}
+                                  <button
+                                    onClick={() => setActivePreviewCert(cert)}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-[11px] font-semibold border border-divider transition-all cursor-pointer active:scale-95"
+                                    title="View full certificate"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span>Preview</span>
+                                  </button>
+
+                                  {/* Revoke / Delete */}
+                                  <HoldButton
+                                    size="sm"
+                                    holdTime={1600}
+                                    radius={12}
+                                    backgroundColor="rgba(244, 63, 94, 0.1)"
+                                    fillColor="#e11d48"
+                                    textColor="#fda4af"
+                                    fillTextColor="#ffffff"
+                                    doneLabel="Revoked"
+                                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                                    onHold={() => handleDeleteCert(cert.certificateId)}
+                                    className="border border-rose-500/25 text-[10px] font-bold !h-7 !px-2"
+                                  >
+                                    Hold to Revoke
+                                  </HoldButton>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Sub-Tab 2: TEMPLATE & STYLING */}
+              {certSubTab === 'template' && (
+                <div className="p-5 overflow-y-auto space-y-6 flex-grow">
+                  {/* Feature On / Off Control Banner */}
+                  <div className={`border rounded-2xl p-5 shadow-sm transition-all ${
+                    isCertificatesEnabled 
+                      ? 'bg-emerald-500/5 border-emerald-500/30' 
+                      : 'bg-amber-500/5 border-amber-500/30'
+                  }`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${
+                            isCertificatesEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                          }`} />
+                          <h4 className="text-sm font-bold text-content">
+                            Certificate Issuance Status: {isCertificatesEnabled ? 'ACTIVE' : 'PAUSED'}
+                          </h4>
+                        </div>
+                        <p className="text-xs text-secondary max-w-xl">
+                          {isCertificatesEnabled 
+                            ? 'Students who attended verified department events can view, generate, and print their digital credentials from their profile.' 
+                            : 'Certificate viewing is currently paused. Students will see a friendly notice on their profile that certificates are temporarily paused.'}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => handleToggleCertificates()}
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-95 shrink-0 ${
+                          isCertificatesEnabled 
+                            ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30' 
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${isCertificatesEnabled ? 'bg-rose-400' : 'bg-white'}`} />
+                        <span>{isCertificatesEnabled ? 'Turn Feature Off' : 'Turn Feature On'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick Stats Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="bg-surface border border-divider/80 rounded-2xl p-4 space-y-1">
+                      <span className="text-[10px] font-mono font-bold text-secondary uppercase">Eligible Attendees</span>
+                      <div className="text-xl font-extrabold text-indigo-400 font-display">
+                        {registrations.filter(r => r.status === 'Attended').length}
+                      </div>
+                      <span className="text-[10px] text-tertiary">Students marked as Attended</span>
+                    </div>
+
+                    <div className="bg-surface border border-divider/80 rounded-2xl p-4 space-y-1">
+                      <span className="text-[10px] font-mono font-bold text-secondary uppercase">Active Theme</span>
+                      <div className="text-xl font-extrabold text-content font-display capitalize">
+                        {certificateTemplate.theme || 'Indigo'}
+                      </div>
+                      <span className="text-[10px] text-tertiary">{certificateTemplate.badgeStyle || 'Seal'} emblem style</span>
+                    </div>
+
+                    <div className="bg-surface border border-divider/80 rounded-2xl p-4 space-y-1">
+                      <span className="text-[10px] font-mono font-bold text-secondary uppercase">Certificate Title</span>
+                      <div className="text-sm font-bold text-content font-display truncate">
+                        {certificateTemplate.certificateTitle || 'Certificate of Participation'}
+                      </div>
+                      <span className="text-[10px] text-tertiary">{certificateTemplate.orgName || 'NOTX Association'}</span>
+                    </div>
+                  </div>
+
+                  {/* Live Template Showcase */}
+                  <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-divider/60 pb-3">
+                      <div>
+                        <h4 className="text-sm font-bold text-content font-display">Current Live Template</h4>
+                        <p className="text-xs text-secondary">This is the design students receive when opening their certificates</p>
+                      </div>
+
+                      <button
+                        onClick={() => setIsEditCertModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-semibold transition-all cursor-pointer border border-divider"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Edit Design</span>
+                      </button>
+                    </div>
+
+                    <div className="max-w-xl mx-auto py-2">
+                      <CertificateCard
+                        template={certificateTemplate}
+                        studentName="AARAV S. VERMA"
+                        rollNumber="22A91A0501"
+                        certificateId="CERT-AIML-0501-MLS-8F2B"
+                        issueDate="15 Nov 2026"
+                        event={{
+                          title: events[0]?.title || "Machine Learning Symposium 2026",
+                          date: events[0]?.date || "15 Nov 2026",
+                          venue: events[0]?.venue || "Campus Auditorium"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'settings' && canManageRoles && (
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="px-5 py-4 border-b border-divider/60 flex items-center justify-between shrink-0">
+                <h3 className="text-sm font-bold text-content font-display">System Settings</h3>
+              </div>
+              <div className="p-5 overflow-y-auto space-y-6">
+                
+                {/* Brand Name & Logo Customizer */}
+                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
+                        <SlidersHorizontal className="w-3 h-3" />
+                        PORTAL IDENTITY & LOGO
+                      </div>
+                      <h4 className="text-sm font-bold text-content mb-1">Brand Name & Logo Customizer</h4>
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Change the application brand name (currently <strong>"{branding.appName || 'NOTX'}"</strong>), department subtitle badge, and the adjacent logo across the entire platform.
+                      </p>
+                    </div>
+
+                    {currentUser.role === 'admin' ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditBrandingModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit Name & Logo</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-lg shrink-0">
+                        Admin Restricted
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Live brand preview bar */}
+                  <div className="bg-surface-accent/40 rounded-xl p-3.5 border border-divider/60 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2.5">
+                      <BrandLogo branding={branding} size="md" />
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-nowrap">
+                          <span className="font-display font-bold text-sm text-content">{branding.appName || 'NOTX'}</span>
+                          {branding.subtitle && (
+                            <span className="text-[9px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.2 rounded-md">
+                              {branding.subtitle}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10.5px] text-secondary font-mono mt-0.5">
+                          {branding.logoType === 'custom' ? 'Custom Crest / Image Logo' : `Tech Icon: ${branding.logoIcon || 'Cpu'} (${branding.accentColor || 'indigo'})`}
+                          {branding.tagline ? ` • Suffix: ${branding.tagline}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="text-[9.5px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                      Live Dynamic Synced
+                    </span>
+                  </div>
+                </div>
+
+                {/* Chat Feature Toggle */}
+                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-content mb-1">Global Chat System</h4>
+                      <p className="text-xs text-secondary">Enable or disable the peer-to-peer messaging page for all users.</p>
+                    </div>
+                    
+                    <button
+                      onClick={handleToggleChat}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                        isChatEnabled ? 'bg-indigo-500' : 'bg-divider'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          isChatEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* E-Certificate Feature Toggle & Template Designer */}
+                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
+                        <Award className="w-3 h-3" />
+                        EVENT CREDENTIALS
+                      </div>
+                      <h4 className="text-sm font-bold text-content mb-1">E-Certificates Feature</h4>
+                      <p className="text-xs text-secondary">Turn certificate viewing on/off and edit the official certificate template.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => setIsEditCertModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border border-divider shadow-xs active:scale-95"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Edit Template</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleCertificates()}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                          isCertificatesEnabled ? 'bg-emerald-500' : 'bg-divider'
+                        }`}
+                        title="Toggle certificate feature on or off"
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            isCertificatesEnabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-surface-accent/40 rounded-xl p-3.5 border border-divider/60 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-content">{certificateTemplate.certificateTitle || "Certificate of Participation"}</span>
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                        isCertificatesEnabled 
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                          : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                      }`}>
+                        {isCertificatesEnabled ? 'Feature Enabled' : 'Feature Paused'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-secondary">
+                      Issuing organization: <strong className="text-content">{certificateTemplate.orgName}</strong> ({certificateTemplate.departmentName})
+                    </p>
+                  </div>
+                </div>
+
+                {/* Dynamic Support Box Configuration */}
+                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
+                        <ShieldCheck className="w-3 h-3" />
+                        PROFILE & SUPPORT DESK
+                      </div>
+                      <h4 className="text-sm font-bold text-content mb-1">Support Box Details</h4>
+                      <p className="text-xs text-secondary">Configure the official department help contacts shown on the profile page and query desk.</p>
+                    </div>
+
+                    <button
+                      onClick={() => setIsEditSupportModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Support Box</span>
+                    </button>
+                  </div>
+
+                  {/* Summary preview */}
+                  <div className="bg-surface-accent/40 rounded-xl p-3.5 border border-divider/60 space-y-2 text-xs">
+                    <div className="flex items-center justify-between border-b border-divider/50 pb-2">
+                      <span className="font-bold text-content">{supportInfo.title || "Help & Support Desk"}</span>
+                      <span className="text-[10px] font-mono text-indigo-400">{supportInfo.badge || "OFFICIAL CHANNELS"}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <div className="flex items-center gap-2 text-secondary">
+                        <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span className="text-content font-mono truncate">{supportInfo.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-secondary">
+                        <Phone className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span className="text-content font-mono truncate">{supportInfo.phone}</span>
+                      </div>
+                    </div>
+
+                    {supportInfo.location && (
+                      <div className="text-[10px] text-secondary flex items-center gap-1.5 pt-1">
+                        <span className="font-semibold text-content">Location:</span> {supportInfo.location}
+                        {supportInfo.timing ? ` (${supportInfo.timing})` : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Overall Data Export & System Backup */}
+                <div className="bg-surface border border-divider/80 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-1.5">
+                        <FolderArchive className="w-3 h-3" />
+                        DATABASE BACKUP & ARCHIVAL
+                      </div>
+                      <h4 className="text-sm font-bold text-content mb-1">Overall Data Export & System Backup</h4>
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Export all application data into a consolidated JSON backup or download individual CSV tables for students and attendance before any academic term transitions.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetModalInitialTab('export');
+                        setIsResetModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Data Export Hub</span>
+                    </button>
+                  </div>
+
+                  {/* Quick stats snapshot */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
+                      <div className="text-sm font-mono font-bold text-content">{allUsers.length}</div>
+                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Enrolled Users</div>
+                    </div>
+                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
+                      <div className="text-sm font-mono font-bold text-indigo-400">{events.length}</div>
+                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Department Events</div>
+                    </div>
+                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
+                      <div className="text-sm font-mono font-bold text-emerald-400">{registrations.length}</div>
+                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Registrations</div>
+                    </div>
+                    <div className="bg-surface-accent/40 rounded-xl p-3 border border-divider/60 text-center">
+                      <div className="text-sm font-mono font-bold text-amber-400">{dbCertificates.length}</div>
+                      <div className="text-[9.5px] text-secondary font-medium uppercase mt-0.5">Issued Credentials</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reset Association & Start New Academic Year (DANGER ZONE) */}
+                <div className="bg-rose-500/5 border border-rose-500/30 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 mb-1.5">
+                        <AlertTriangle className="w-3 h-3" />
+                        DANGER ZONE • ASSOCIATION LIFECYCLE
+                      </div>
+                      <h4 className="text-sm font-bold text-content mb-1">Reset Association • Start New Academic Year</h4>
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Permanently wipe all past student accounts, events, registrations, certificates, event winners, photo albums, and chat logs across the entire database to begin a completely clean new association term.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetModalInitialTab('reset');
+                        setIsResetModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-rose-600/30 active:scale-95 shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Start New Association</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-surface rounded-xl p-3.5 border border-rose-500/20 text-xs flex items-center justify-between gap-3 flex-wrap">
+                    <div className="text-[11px] text-secondary flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Root Admin account (<strong>{currentUser.email}</strong>) is preserved automatically so you never lose access.</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20">
+                      Requires Typed Verification
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* Edit Support Box Modal */}
+      <EditSupportBoxModal
+        isOpen={isEditSupportModalOpen}
+        onClose={() => setIsEditSupportModalOpen(false)}
+        currentInfo={supportInfo}
+        onSaved={(updated) => {
+          setSupportInfo(updated);
+          setFeedbackMsg("Support Box information updated successfully!");
+          setTimeout(() => setFeedbackMsg(''), 3000);
+        }}
+      />
+
+      {/* Edit Certificate Template & Feature Hub Modal */}
+      <CertificateTemplateModal
+        isOpen={isEditCertModalOpen}
+        onClose={() => setIsEditCertModalOpen(false)}
+        currentTemplate={certificateTemplate}
+        onSave={handleSaveCertificateTemplate}
+        isCertificatesEnabled={isCertificatesEnabled}
+        onToggleEnabled={handleToggleCertificates}
+      />
+
+      {/* Certificate Recipients (Who Else Got This) Modal */}
+      {activePeersEvent && (
+        <CertificateRecipientsModal
+          isOpen={!!activePeersEvent}
+          onClose={() => setActivePeersEvent(null)}
+          eventTitle={activePeersEvent.title}
+          eventDate={activePeersEvent.date}
+          eventVenue={activePeersEvent.venue}
+          certificates={dbCertificates.filter(c => c.eventId === activePeersEvent.eventId)}
+          template={certificateTemplate}
+        />
+      )}
+
+      {/* Certificate Verification Modal */}
+      <CertificateVerificationModal
+        isOpen={isVerifyModalOpen}
+        onClose={() => setIsVerifyModalOpen(false)}
+        initialId={verifyInitialId}
+        template={certificateTemplate}
+      />
+
+      {/* Manual Issue Certificate Modal */}
+      {showManualIssueModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 select-none animate-fadeIn">
+          <div className="bg-background rounded-3xl border border-divider w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-divider pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 border border-indigo-500/25">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-content font-display">Issue Custom Certificate</h4>
+                  <p className="text-[10px] text-secondary">Assign a credential to a student for any event</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowManualIssueModal(false)}
+                className="w-7 h-7 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleIssueSingleCert} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-[10px] font-mono font-bold text-secondary uppercase mb-1">
+                  Select Student
+                </label>
+                <select
+                  value={manualStudentUid}
+                  onChange={(e) => setManualStudentUid(e.target.value)}
+                  className="w-full bg-surface-accent border border-divider rounded-xl px-3 py-2 text-content focus:outline-none focus:border-indigo-500/50"
+                  required
+                >
+                  <option value="">-- Choose Student --</option>
+                  {allUsers.map(u => (
+                    <option key={u.uid} value={u.uid}>
+                      {u.name} ({u.rollNumber || 'No Roll'}) - {u.department || 'AIML'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono font-bold text-secondary uppercase mb-1">
+                  Select Event
+                </label>
+                <select
+                  value={manualEventId}
+                  onChange={(e) => setManualEventId(e.target.value)}
+                  className="w-full bg-surface-accent border border-divider rounded-xl px-3 py-2 text-content focus:outline-none focus:border-indigo-500/50"
+                  required
+                >
+                  <option value="">-- Choose Event --</option>
+                  {events.map(ev => (
+                    <option key={ev.eventId} value={ev.eventId}>
+                      {ev.title} ({ev.date})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-3 rounded-xl bg-surface-accent/60 border border-divider space-y-1">
+                <span className="text-[9px] font-mono text-secondary uppercase block">Auto-Generated ID Format</span>
+                <div className="font-mono text-xs font-bold text-emerald-400">
+                  CERT-AIML-[ROLL]-[EVT]-[HASH]
+                </div>
+                <p className="text-[10px] text-tertiary">A unique tamper-evident verification ID will be generated upon issuance.</p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-divider">
+                <button
+                  type="button"
+                  onClick={() => setShowManualIssueModal(false)}
+                  className="px-4 py-2 rounded-xl bg-surface-accent hover:bg-divider text-content text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95"
+                >
+                  Issue Certificate Now
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Certificate Lightbox Preview */}
+      {activePreviewCert && (
+        <div className="fixed inset-0 bg-black/90 z-60 flex items-center justify-center p-3 animate-fadeIn">
+          <div className="bg-background rounded-3xl border border-divider max-w-xl w-full p-4 sm:p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-divider pb-2">
+              <div>
+                <h4 className="text-xs font-bold text-content font-display">Certificate Preview</h4>
+                <p className="text-[10px] text-secondary">ID: {activePreviewCert.certificateId}</p>
+              </div>
+              <button 
+                onClick={() => setActivePreviewCert(null)}
+                className="w-7 h-7 rounded-full bg-surface-accent flex items-center justify-center text-secondary hover:text-content border border-divider cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <CertificateCard
+              template={certificateTemplate}
+              studentName={activePreviewCert.studentName}
+              rollNumber={activePreviewCert.rollNumber}
+              event={{
+                title: activePreviewCert.eventTitle,
+                date: activePreviewCert.eventDate,
+                venue: activePreviewCert.eventVenue || 'Campus Auditorium'
+              }}
+              certificateId={activePreviewCert.certificateId}
+              issueDate={activePreviewCert.issueDate}
+              onViewPeers={() => {
+                const ev = events.find(e => e.eventId === activePreviewCert.eventId);
+                if (ev) setActivePeersEvent(ev);
+              }}
+              peersCount={dbCertificates.filter(c => c.eventId === activePreviewCert.eventId).length}
+            />
+
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-[10px] text-secondary font-mono">
+                Status: <strong className="text-emerald-400">{activePreviewCert.status}</strong>
+              </span>
+              <button
+                onClick={() => setActivePreviewCert(null)}
+                className="px-4 py-1.5 rounded-xl bg-surface-accent hover:bg-divider text-content font-bold text-xs border border-divider cursor-pointer"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Association & Overall Data Export Hub Modal */}
+      <ResetAssociationModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        currentUser={currentUser}
+        allUsers={allUsers}
+        events={events}
+        registrations={registrations}
+        initialTab={resetModalInitialTab}
+        onResetComplete={() => {
+          refreshData();
+          setFeedbackMsg("All prior association records have been wiped clean. Welcome to the fresh academic year!");
+          setTimeout(() => setFeedbackMsg(''), 7000);
+        }}
+      />
+      {/* Edit Branding & Logo Modal (Admin Only) */}
+      {currentUser.role === 'admin' && (
+        <EditBrandingModal
+          isOpen={isEditBrandingModalOpen}
+          onClose={() => setIsEditBrandingModalOpen(false)}
+          currentBranding={branding}
+          onSaved={(updated) => {
+            setBranding(updated);
+            setFeedbackMsg(`Brand updated to "${updated.appName}" with live dynamic logo!`);
+            setTimeout(() => setFeedbackMsg(''), 4000);
+          }}
+        />
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,1 @@
+sed -i '100i \  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);\n  const [confirmDemoteId, setConfirmDemoteId] = useState<string | null>(null);' src/components/AdminPanelView.tsx
