@@ -31,17 +31,29 @@ import {
 } from './firebase';
 
 // Views
-import LoginView from './components/LoginView';
-import FirstTimeSetupView from './components/FirstTimeSetupView';
 import DashboardView from './components/DashboardView';
-import EventsView from './components/EventsView';
-import GalleryView from './components/GalleryView';
-import AnnouncementsView from './components/AnnouncementsView';
-import ProfileView from './components/ProfileView';
-import AdminPanelView from './components/AdminPanelView';
-import MembersView from './components/MembersView';
-import ContactView from './components/ContactView';
-import MessagesView from './components/MessagesView';
+
+// Optimized Lazy-Loaded Views for Code-Splitting
+const LoginView = React.lazy(() => import('./components/LoginView'));
+const FirstTimeSetupView = React.lazy(() => import('./components/FirstTimeSetupView'));
+const EventsView = React.lazy(() => import('./components/EventsView'));
+const GalleryView = React.lazy(() => import('./components/GalleryView'));
+const AnnouncementsView = React.lazy(() => import('./components/AnnouncementsView'));
+const ProfileView = React.lazy(() => import('./components/ProfileView'));
+const AdminPanelView = React.lazy(() => import('./components/AdminPanelView'));
+const MembersView = React.lazy(() => import('./components/MembersView'));
+const ContactView = React.lazy(() => import('./components/ContactView'));
+const MessagesView = React.lazy(() => import('./components/MessagesView'));
+
+const ViewLoadingFallback = () => (
+  <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-[280px]">
+    <div className="w-10 h-10 rounded-2xl bg-surface-accent border border-divider/60 flex items-center justify-center shadow-lg">
+      <Loader2 className="w-5 h-5 text-rose-400 animate-spin" />
+    </div>
+    <span className="mt-3 text-xs font-semibold text-secondary animate-pulse">Loading view...</span>
+  </div>
+);
+
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { PWAUpdateToast } from './components/PWAUpdateToast';
 import FloatingDockNav from './components/FloatingDockNav';
@@ -216,10 +228,16 @@ export default function App() {
     initializeApp();
   }, []);
 
-  // Refresh data on tab navigation to ensure freshness
+  const lastRefreshTimeRef = React.useRef<number>(Date.now());
+
+  // Throttled refresh on tab navigation to prevent redundant Firestore queries
   useEffect(() => {
     if (currentUser && !isBooting) {
-      refreshAllData();
+      const now = Date.now();
+      if (now - lastRefreshTimeRef.current > 45000) {
+        lastRefreshTimeRef.current = now;
+        refreshAllData();
+      }
     }
   }, [activeTab]);
 
@@ -361,17 +379,21 @@ export default function App() {
     <>
       <PWAUpdateToast />
       {!currentUser ? (
-        <LoginView 
-          branding={currentBranding}
-          onLoginSuccess={handleLoginSuccess} 
-          allUsers={allUsers}
-          refreshUsers={refreshAllData}
-        />
+        <React.Suspense fallback={<ViewLoadingFallback />}>
+          <LoginView 
+            branding={currentBranding}
+            onLoginSuccess={handleLoginSuccess} 
+            allUsers={allUsers}
+            refreshUsers={refreshAllData}
+          />
+        </React.Suspense>
       ) : currentUser.isFirstLogin ? (
-        <FirstTimeSetupView 
-          user={currentUser} 
-          onComplete={(updatedUser) => setCurrentUser(updatedUser)} 
-        />
+        <React.Suspense fallback={<ViewLoadingFallback />}>
+          <FirstTimeSetupView 
+            user={currentUser} 
+            onComplete={(updatedUser) => setCurrentUser(updatedUser)} 
+          />
+        </React.Suspense>
       ) : (
         /* Authenticated Application shell */
         <div className="h-full w-full flex flex-col bg-background text-content overflow-hidden">
@@ -450,6 +472,7 @@ export default function App() {
           {/* Core View Display */}
           <div className="flex-1 flex flex-col min-h-0 relative w-full overflow-hidden">
             <div className="flex-1 flex flex-col min-h-0 w-full max-w-6xl mx-auto">
+            <React.Suspense fallback={<ViewLoadingFallback />}>
             {activeTab === 'home' && (
               <DashboardView 
                 user={currentUser}
@@ -543,6 +566,7 @@ export default function App() {
                 />
               </div>
             )}
+            </React.Suspense>
             </div>
           </div>
 
@@ -560,6 +584,7 @@ export default function App() {
           />
 
           {/* OVERLAY SLIDING SHEETS / DRAWER MODALS */}
+          <React.Suspense fallback={<ViewLoadingFallback />}>
           {showMembersModal && (
             <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6 transition-all">
               <div className="bg-background rounded-t-[28px] md:rounded-[28px] border-t md:border border-divider/80 max-h-[92dvh] md:max-h-[85vh] h-[92dvh] md:h-auto w-full md:max-w-3xl flex flex-col overflow-hidden shadow-2xl">
@@ -616,6 +641,7 @@ export default function App() {
               refreshData={refreshAllData}
             />
           )}
+          </React.Suspense>
 
         </div>
       )}

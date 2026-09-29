@@ -26,5 +26,16 @@ export const uploadToCloudinary = async (file: File, uploadPresetOverride?: stri
   }
 
   const data = await response.json();
-  return data.secure_url;
+  return getOptimizedImageUrl(data.secure_url);
+};
+
+/**
+ * Automatically optimizes Cloudinary image URLs for high performance (WebP/AVIF format and auto-compression).
+ */
+export const getOptimizedImageUrl = (url: string, width?: number): string => {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.includes('res.cloudinary.com') || url.includes('f_auto')) return url;
+  
+  const transformation = width ? `f_auto,q_auto,w_${width}` : 'f_auto,q_auto';
+  return url.replace('/upload/', `/upload/${transformation}/`);
 };
