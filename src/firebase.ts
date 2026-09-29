@@ -225,71 +225,53 @@ const INITIAL_ALBUMS: Album[] = [
 ];
 
 
-// Seeding engine
+// Seeding engine - Runs ONCE per database project instance
 export async function seedDatabaseIfEmpty() {
   try {
+    // Check if initial seeding has already taken place
+    const seedStatusRef = doc(db, 'appSettings', 'seed_status');
+    const seedSnap = await getDoc(seedStatusRef);
+
+    if (seedSnap.exists() && seedSnap.data()?.isSeeded) {
+      console.log("Database has already been seeded. Skipping auto-seeding to preserve admin deletions.");
+      return;
+    }
+
+    console.log("Seeding database with default department ecosystem data...");
+    
+    // Seed Users if empty
     const usersSnap = await getDocs(collection(db, 'users'));
     if (usersSnap.empty) {
-      console.log("Seeding database with default department ecosystem data...");
-      
-      // Seed Users
       for (const user of INITIAL_USERS) {
         await setDoc(doc(db, 'users', user.uid), user);
       }
+    }
 
-      // Seed Events
+    // Seed Events if empty
+    const eventsSnap = await getDocs(collection(db, 'events'));
+    if (eventsSnap.empty) {
       for (const event of INITIAL_EVENTS) {
         await setDoc(doc(db, 'events', event.eventId), event);
       }
+    }
 
-      // Seed Announcements
+    // Seed Announcements if empty
+    const announceSnap = await getDocs(collection(db, 'announcements'));
+    if (announceSnap.empty) {
       for (const announce of INITIAL_ANNOUNCEMENTS) {
         await setDoc(doc(db, 'announcements', announce.announcementId), announce);
       }
+    }
 
-      // Seed Gallery
+    // Seed Gallery if empty
+    const albumsSnap = await getDocs(collection(db, 'albums'));
+    if (albumsSnap.empty) {
       for (const gallery of INITIAL_ALBUMS) {
         await setDoc(doc(db, 'albums', gallery.albumId), gallery);
       }
-
-
-      console.log("Database seeded successfully!");
-    } else {
-      console.log("Database is already initialized with data.");
     }
 
-    // Always ensure the user syedsame2244@gmail.com is present and marked as Admin
-    const adminEmail = "syedsame2244@gmail.com";
-    const q = query(collection(db, 'users'), where('email', '==', adminEmail));
-    const adminSnap = await getDocs(q);
-    if (adminSnap.empty) {
-      console.log("Creating Admin account for syedsame2244@gmail.com...");
-      const newAdmin: UserProfile = {
-        uid: "user_admin_syed",
-        name: "Sameer Ahmed (Admin)",
-        email: adminEmail,
-        role: "admin",
-        phone: "+91 9999999999",
-        profile_pic: "",
-        rollNumber: "ADMIN001",
-        position: "Chief Admin (Student President)",
-        department: "CSE (AI & ML)",
-        responsibilities: "Administrator of NOTX Connect, HOD Executive coordinator, and technical/event approvals lead.",
-        created_at: new Date().toISOString()
-      };
-      await setDoc(doc(db, 'users', newAdmin.uid), newAdmin);
-    } else {
-      // If user exists but is not Admin, update them to Admin
-      adminSnap.forEach(async (docRef) => {
-        const u = docRef.data() as UserProfile;
-        if (u.role !== 'admin') {
-          console.log(`Updating role of ${adminEmail} to admin...`);
-          await updateDoc(doc(db, 'users', docRef.id), { role: 'admin' });
-        }
-      });
-    }
-
-    // Ensure sample certificates exist for demonstration of the database and peer features
+    // Seed Certificates if empty
     const certsSnap = await getDocs(collection(db, 'certificates'));
     if (certsSnap.empty) {
       const sampleCerts: IssuedCertificate[] = [
@@ -390,7 +372,7 @@ export async function seedDatabaseIfEmpty() {
       }
     }
 
-    // Seed Event Winners if collection is empty
+    // Seed Event Winners if empty
     const winnersSnap = await getDocs(collection(db, 'event_winners'));
     if (winnersSnap.empty) {
       const sampleWinners: EventWinner[] = [
@@ -457,6 +439,10 @@ export async function seedDatabaseIfEmpty() {
         await setDoc(doc(db, 'event_winners', w.winnerId), w);
       }
     }
+
+    // Mark database as seeded permanently so deletions are respected
+    await setDoc(seedStatusRef, { isSeeded: true, seededAt: new Date().toISOString() });
+    console.log("Database initial seeding complete!");
   } catch (error) {
     console.error("Error seeding database: ", error);
   }
