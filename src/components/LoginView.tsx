@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import React, { useState } from 'react';
-import { Cpu, Lock, Mail, Phone, User, Award, ShieldAlert, KeyRound, Sparkles } from 'lucide-react';
+import { Cpu, Lock, Mail, Phone, User, Award, ShieldAlert, KeyRound, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { UserProfile, UserRole, AppBranding, DEFAULT_BRANDING } from '../types';
 import BrandLogo from './BrandLogo';
 import { auth } from '../firebase';
@@ -23,6 +23,7 @@ export default function LoginView({
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailOrRoll, setEmailOrRoll] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Sign up fields
   const [name, setName] = useState('');
@@ -263,12 +264,24 @@ export default function LoginView({
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" />
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-surface-accent/60 border border-divider/80 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 text-sm text-content placeholder:text-secondary rounded-full py-3 pl-11 pr-4 outline-none transition-all shadow-inner"
+                className="w-full bg-surface-accent/60 border border-divider/80 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 text-sm text-content placeholder:text-secondary rounded-full py-3 pl-11 pr-11 outline-none transition-all shadow-inner"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary hover:text-content transition-colors focus:outline-none p-1 cursor-pointer"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4 text-rose-400" />
+                ) : (
+                  <Eye className="w-4 h-4 text-secondary hover:text-content" />
+                )}
+              </button>
             </div>
           </div>
 
