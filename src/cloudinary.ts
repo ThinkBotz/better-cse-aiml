@@ -2,8 +2,8 @@ export const uploadToCloudinary = async (file: File, uploadPresetOverride?: stri
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = uploadPresetOverride || import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-  if (!cloudName || !uploadPreset || uploadPreset.trim() === '') {
-    throw new Error('Cloudinary credentials are not configured in .env');
+  if (!cloudName || !uploadPreset || uploadPreset.trim() === '' || uploadPreset.includes('your_unsigned_upload_preset_here')) {
+    throw new Error('Please configure a valid Unsigned Upload Preset in .env (VITE_CLOUDINARY_UPLOAD_PRESET)');
   }
 
   const formData = new FormData();
@@ -16,10 +16,11 @@ export const uploadToCloudinary = async (file: File, uploadPresetOverride?: stri
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData = await response.json().catch(() => ({}));
     let errMsg = errorData.error?.message || 'Failed to upload image to Cloudinary';
-    if (errMsg.toLowerCase().includes('unsigned upload')) {
-      errMsg = 'The upload preset in .env must be set to "Unsigned" in Cloudinary settings.';
+    const lower = errMsg.toLowerCase();
+    if (lower.includes('unsigned') || lower.includes('unknown api key') || lower.includes('must supply api_key') || lower.includes('preset')) {
+      errMsg = 'Cloudinary error: Ensure "' + uploadPreset.trim() + '" exists as an "Unsigned" upload preset in your Cloudinary console for cloud "' + cloudName.trim() + '".';
     }
     throw new Error(errMsg);
   }
