@@ -1217,13 +1217,17 @@ export async function updateAppBranding(branding: Partial<AppBranding>): Promise
   try {
     const configDocRef = doc(db, 'appSettings', 'config');
     const existing = await getAppConfig();
+    const updatedBranding = cleanUndefined({
+      ...DEFAULT_BRANDING,
+      ...(existing.branding || {}),
+      ...branding,
+      updatedAt: new Date().toISOString()
+    });
+    try {
+      localStorage.setItem('notx_branding', JSON.stringify(updatedBranding));
+    } catch (e) {}
     await setDoc(configDocRef, { 
-      branding: cleanUndefined({
-        ...DEFAULT_BRANDING,
-        ...(existing.branding || {}),
-        ...branding,
-        updatedAt: new Date().toISOString()
-      }) 
+      branding: updatedBranding
     }, { merge: true });
   } catch (error) {
     console.error('Error updating app branding:', error);
@@ -1237,18 +1241,32 @@ export function subscribeToAppConfig(callback: (config: AppConfig) => void): () 
   return onSnapshot(configDocRef, (snap) => {
     if (snap.exists()) {
       const data = snap.data() as AppConfig;
-      if (!data.branding) data.branding = DEFAULT_BRANDING;
+      if (!data.branding) {
+        const cached = localStorage.getItem('notx_branding');
+        if (cached) {
+          try { data.branding = JSON.parse(cached); } catch (e) { data.branding = DEFAULT_BRANDING; }
+        } else {
+          data.branding = DEFAULT_BRANDING;
+        }
+      } else {
+        try { localStorage.setItem('notx_branding', JSON.stringify(data.branding)); } catch (e) {}
+      }
       if (!data.supportInfo) data.supportInfo = DEFAULT_SUPPORT_INFO;
       if (!data.certificateTemplate) data.certificateTemplate = DEFAULT_CERTIFICATE_TEMPLATE;
       if (data.isCertificatesEnabled === undefined) data.isCertificatesEnabled = true;
       callback(data);
     } else {
+      const cached = localStorage.getItem('notx_branding');
+      let fallbackBranding = DEFAULT_BRANDING;
+      if (cached) {
+        try { fallbackBranding = JSON.parse(cached); } catch (e) {}
+      }
       callback({
         isChatEnabled: true,
         isCertificatesEnabled: true,
         certificateTemplate: DEFAULT_CERTIFICATE_TEMPLATE,
         supportInfo: DEFAULT_SUPPORT_INFO,
-        branding: DEFAULT_BRANDING
+        branding: fallbackBranding
       });
     }
   }, (err) => {

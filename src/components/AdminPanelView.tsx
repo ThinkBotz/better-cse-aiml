@@ -199,7 +199,13 @@ export default function AdminPanelView({
   const [certificateTemplate, setCertificateTemplate] = useState<CertificateTemplate>(DEFAULT_CERTIFICATE_TEMPLATE);
   const [isEditCertModalOpen, setIsEditCertModalOpen] = useState(false);
   
-  const [branding, setBranding] = useState<AppBranding>(DEFAULT_BRANDING);
+  const [branding, setBranding] = useState<AppBranding>(() => {
+    const cached = localStorage.getItem('notx_branding');
+    if (cached) {
+      try { return JSON.parse(cached) as AppBranding; } catch (e) {}
+    }
+    return DEFAULT_BRANDING;
+  });
   const [isEditBrandingModalOpen, setIsEditBrandingModalOpen] = useState(false);
   
   useEffect(() => {
@@ -216,6 +222,7 @@ export default function AdminPanelView({
       }
       if (config.branding) {
         setBranding(config.branding);
+        try { localStorage.setItem('notx_branding', JSON.stringify(config.branding)); } catch (e) {}
       }
     });
     return () => unsub();

@@ -249,12 +249,6 @@ export default function DashboardView({
               </div>
             </div>
           </div>
-
-          {/* Department Emblem Symbol */}
-          <div className="hidden sm:flex flex-col items-center justify-center px-4 py-3 rounded-2xl bg-white/10 border border-white/15 shrink-0 gap-1 shadow-inner backdrop-blur-md">
-            <Cpu className="w-5 h-5 text-rose-300" />
-            <span className="text-[9px] font-sans font-extrabold text-rose-200 uppercase tracking-widest">AI & ML</span>
-          </div>
         </div>
       </div>
 
