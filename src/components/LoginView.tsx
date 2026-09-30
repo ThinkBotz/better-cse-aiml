@@ -25,6 +25,7 @@ import {
   DEFAULT_TENANT_ID
 } from '../firebase';
 import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { hashPassword, verifyPassword, recordUserActivity } from '../utils/auth';
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -58,9 +59,10 @@ export default function LoginView({
   useEffect(() => {
     const unsub = subscribeToTenants((list) => {
       setTenants(list);
-      // If selected tenant not in list and list not empty, default to first
-      if (list.length > 0 && !list.some(t => t.tenantId === selectedTenantId)) {
-        setSelectedTenantId(list[0].tenantId);
+      // If selected tenant not in active list, default to first active tenant
+      const activeTenants = list.filter(t => t.status === 'active');
+      if (activeTenants.length > 0 && !activeTenants.some(t => t.tenantId === selectedTenantId)) {
+        setSelectedTenantId(activeTenants[0].tenantId);
       }
     });
     return () => unsub();
@@ -87,6 +89,13 @@ export default function LoginView({
     setError('');
 
     try {
+      // Check if selected tenant is deactivated
+      if (selectedTenant && selectedTenant.status === 'inactive') {
+        setError(`The association "${selectedTenant.name}" has been deactivated. Please contact your administrator.`);
+        setLoading(false);
+        return;
+      }
+
       const cleanRoll = rollNumberInput.trim();
       const syntheticEmail = `${cleanRoll.toLowerCase()}.${selectedTenantId.toLowerCase()}@notx.com`;
 
@@ -142,20 +151,35 @@ export default function LoginView({
       }
 
       if (foundUser) {
-        // If password does not match
-        if (foundUser.password && foundUser.password !== password && !authUserSuccess) {
-          setError('Invalid password. Please check your credentials.');
-          setLoading(false);
-          return;
+        // If user already has a password, verify using secure hash comparison
+        if (foundUser.password && !authUserSuccess) {
+          const { isValid, needsRehash } = await verifyPassword(password, foundUser.password);
+          if (!isValid) {
+            setError('Invalid password. Please check your credentials.');
+            setLoading(false);
+            return;
+          }
+          // Automatically upgrade legacy plain text password to cryptographic SHA-256 hash
+          if (needsRehash) {
+            try {
+              const hashedPassword = await hashPassword(password);
+              await updateUserProfile(foundUser.uid, { password: hashedPassword });
+              foundUser.password = hashedPassword;
+            } catch (hashErr) {
+              console.warn('Silent rehash error:', hashErr);
+            }
+          }
         }
 
         // If password was empty (first time login for seeded profiles)
         if (!foundUser.password) {
-          await updateUserProfile(foundUser.uid, { password });
-          foundUser.password = password;
+          const hashedPassword = await hashPassword(password);
+          await updateUserProfile(foundUser.uid, { password: hashedPassword });
+          foundUser.password = hashedPassword;
           refreshUsers();
         }
 
+        recordUserActivity();
         onLoginSuccess(foundUser);
       } else {
         setError(`No user found with Roll Number "${cleanRoll}" in ${selectedTenant?.name || 'this department'}.`);
@@ -204,6 +228,7 @@ export default function LoginView({
           await createUserProfile(superAdmin);
           refreshUsers();
         }
+        recordUserActivity();
         onLoginSuccess(superAdmin);
         return;
       }
@@ -211,6 +236,10 @@ export default function LoginView({
       // 2. Check if this is an authorized Tenant Admin for any department
       const tenant = await findTenantByAdminEmail(googleEmail);
       if (tenant) {
+        if (tenant.status === 'inactive') {
+          setError(`The association "${tenant.name}" has been deactivated by Super Admin.`);
+          return;
+        }
         let tenantAdmin = allUsers.find(u => u.email.toLowerCase() === googleEmail && u.tenantId === tenant.tenantId);
         if (!tenantAdmin) {
           tenantAdmin = {
@@ -229,19 +258,28 @@ export default function LoginView({
           await createUserProfile(tenantAdmin);
           refreshUsers();
         }
+        recordUserActivity();
         onLoginSuccess(tenantAdmin);
         return;
       }
 
-      // 3. Check if user already manually linked their Google email in their profile
-      const linkedStudent = allUsers.find(u => u.googleEmail?.toLowerCase() === googleEmail);
+      // 3. Check if user already manually linked their Google email in their profile (tenant-scoped)
+      if (selectedTenant && selectedTenant.status === 'inactive') {
+        setError(`The association "${selectedTenant.name}" has been deactivated.`);
+        return;
+      }
+      const linkedStudent = allUsers.find(u => 
+        u.googleEmail?.toLowerCase() === googleEmail &&
+        (u.tenantId === selectedTenantId || (!u.tenantId && selectedTenantId === DEFAULT_TENANT_ID))
+      );
       if (linkedStudent) {
+        recordUserActivity();
         onLoginSuccess(linkedStudent);
         return;
       }
 
-      // 4. If no linked account exists for this student
-      setError(`No account is linked to this Google email (${googleEmail}). Students must sign in using their Roll Number first and connect Google in Profile Settings.`);
+      // 4. If no linked account exists for this student in the selected tenant
+      setError(`No account is linked to this Google email (${googleEmail}) in "${selectedTenant?.name || 'this department'}". Students must sign in using their Roll Number first and connect Google in Profile Settings.`);
     } catch (err: any) {
       console.error(err);
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
@@ -356,7 +394,7 @@ export default function LoginView({
                 onChange={(e) => handleTenantChange(e.target.value)}
                 className="nb-input !pl-10 !pr-10 font-bold text-xs rounded-md w-full cursor-pointer appearance-none bg-[var(--nb-surface)]"
               >
-                {tenants.map(t => (
+                {tenants.filter(t => t.status === 'active').map(t => (
                   <option key={t.tenantId} value={t.tenantId}>
                     {t.name} ({t.shortCode || t.tenantId})
                   </option>

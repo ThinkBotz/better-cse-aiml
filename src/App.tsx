@@ -31,6 +31,7 @@ import {
   DEFAULT_TENANT_ID,
   getTenant
 } from './firebase';
+import { isSessionExpired, recordUserActivity, clearUserSession } from './utils/auth';
 
 // Views
 import DashboardView from './components/DashboardView';
@@ -113,9 +114,14 @@ export default function App() {
   }, [theme]);
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    if (isSessionExpired()) {
+      clearUserSession();
+      return null;
+    }
     const storedUser = localStorage.getItem('notx_user');
     if (storedUser) {
       try {
+        recordUserActivity();
         return JSON.parse(storedUser) as UserProfile;
       } catch (e) {
         return null;
@@ -135,8 +141,39 @@ export default function App() {
     if (currentUser) {
       localStorage.setItem('notx_user', JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem('notx_user');
+      clearUserSession();
     }
+  }, [currentUser]);
+
+  // 24-Hour Session Inactivity Monitor & Auto-Logout
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let lastRecorded = Date.now();
+    const handleActivity = () => {
+      const now = Date.now();
+      // Throttle recording to once every 60 seconds
+      if (now - lastRecorded > 60000) {
+        lastRecorded = now;
+        recordUserActivity();
+      }
+    };
+
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach(evt => window.addEventListener(evt, handleActivity, { passive: true }));
+
+    // Check expiration every minute
+    const interval = setInterval(() => {
+      if (isSessionExpired()) {
+        handleLogout();
+        alert('Your session has expired due to 24 hours of inactivity. Please log in again.');
+      }
+    }, 60000);
+
+    return () => {
+      activityEvents.forEach(evt => window.removeEventListener(evt, handleActivity));
+      clearInterval(interval);
+    };
   }, [currentUser]);
 
   // Automatic database seeding on fresh project
@@ -219,9 +256,10 @@ export default function App() {
     root.style.setProperty('--nb-accent-fg', getCssAccentFg(currentBranding.accentColor));
   }, [currentBranding.accentColor]);
 
-  // Keep app config, branding, and support info synchronized in real-time across all devices
+  // Keep app config, branding, and support info synchronized in real-time across all devices (per-tenant)
   useEffect(() => {
-    const unsubscribeConfig = onSnapshot(doc(db, 'appSettings', 'config'), (docSnap) => {
+    // Use the tenant-scoped config subscription from firebase.ts
+    const unsubscribeConfig = onSnapshot(doc(db, 'appSettings', `config_${activeTenantId}`), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as AppConfig;
         if (!data.supportInfo) {
@@ -237,7 +275,7 @@ export default function App() {
     });
 
     return () => unsubscribeConfig();
-  }, []);
+  }, [activeTenantId]);
 
   // Dynamically update document title and favicon based on admin branding
   useEffect(() => {
@@ -287,19 +325,25 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // Keep users synchronized in real-time across all devices
+  // Keep users synchronized in real-time across all devices (tenant-scoped)
   useEffect(() => {
     const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const users: UserProfile[] = [];
+      const allRawUsers: UserProfile[] = [];
       snapshot.forEach((docSnap) => {
-        users.push(docSnap.data() as UserProfile);
+        allRawUsers.push(docSnap.data() as UserProfile);
       });
-      if (users.length > 0) {
-        setAllUsers(users);
+      // Filter to only users belonging to the active tenant (+ super admins)
+      const tenantUsers = allRawUsers.filter(u => 
+        u.tenantId === activeTenantId || 
+        (!u.tenantId && activeTenantId === DEFAULT_TENANT_ID) || 
+        u.isSuperAdmin
+      );
+      if (tenantUsers.length > 0) {
+        setAllUsers(tenantUsers);
       }
 
       if (currentUser) {
-        const freshUser = users.find(u => u.uid === currentUser.uid);
+        const freshUser = allRawUsers.find(u => u.uid === currentUser.uid);
         if (freshUser) {
           setCurrentUser(freshUser);
           localStorage.setItem('notx_user', JSON.stringify(freshUser));
@@ -310,7 +354,7 @@ export default function App() {
     });
 
     return () => unsubscribeUsers();
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, activeTenantId]);
 
   useEffect(() => {
     if (!currentUser?.rollNumber) return;
@@ -353,7 +397,7 @@ export default function App() {
         fetchAlbums(tId),
         fetchAnnouncements(tId),
         invitesPromise,
-        getAppConfig(),
+        getAppConfig(tId),
         getTenant(tId)
       ]);
       setAllUsers(u);
@@ -411,8 +455,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     setIsOverseeingTenant(false);
-    localStorage.removeItem('notx_user');
-    localStorage.removeItem('notx_active_tab');
+    clearUserSession();
     localStorage.removeItem('notx_is_overseeing');
     setActiveTab('home');
   };
@@ -524,11 +567,15 @@ export default function App() {
                     <h1 className="nb-headline text-base sm:text-lg text-[var(--nb-content)] truncate">
                       {currentBranding.appName || 'NOTX'}
                     </h1>
-                    {currentBranding.subtitle && (
+                    {activeTenant ? (
+                      <span className="nb-pill-cyan text-[9.5px] font-mono font-bold inline-flex items-center gap-1 shadow-[1.5px_1.5px_0_var(--nb-ink)]" title={`Department: ${activeTenant.name}`}>
+                        {activeTenant.shortCode || activeTenant.name}
+                      </span>
+                    ) : currentBranding.subtitle ? (
                       <span className="nb-pill-yellow text-[9.5px] font-mono font-bold hidden sm:inline-flex shadow-[1.5px_1.5px_0_var(--nb-ink)]">
                         {currentBranding.subtitle}
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <p className="nb-label text-[10px] mt-0.5 truncate" style={{ color: 'var(--nb-tertiary)' }}>
                     {currentBranding.tagline ? `${currentBranding.tagline} Portal` : 'Association Ecosystem'}
@@ -542,7 +589,7 @@ export default function App() {
 
                 {/* Refresh */}
                 <button
-                  onClick={refreshAllData}
+                  onClick={() => refreshAllData()}
                   disabled={isDataLoading}
                   className="nb-btn-icon disabled:opacity-40"
                   aria-label="Refresh Data"
@@ -614,6 +661,7 @@ export default function App() {
                 selectedEvent={selectedEvent}
                 setSelectedEvent={setSelectedEvent}
                 isLoading={isDataLoading}
+                activeTenantId={activeTenantId}
               />
             )}
 
@@ -622,6 +670,7 @@ export default function App() {
                 user={currentUser}
                 albums={albums}
                 refreshData={refreshAllData}
+                activeTenantId={activeTenantId}
               />
             )}
 
@@ -630,6 +679,7 @@ export default function App() {
                 user={currentUser}
                 announcements={announcements}
                 refreshAnnouncements={refreshAllData}
+                activeTenantId={activeTenantId}
               />
             )}
 
@@ -677,6 +727,8 @@ export default function App() {
                   onOpenSupportBox={() => setShowContactModal(true)}
                   onOpenMembers={() => setShowMembersModal(true)}
                   onSupportInfoUpdated={(info) => setAppConfig(prev => prev ? ({ ...prev, supportInfo: info }) : null)}
+                  activeTenantId={activeTenantId}
+                  activeTenant={activeTenant}
                 />
               </div>
             )}
@@ -758,6 +810,8 @@ export default function App() {
               registrations={registrations}
               onClose={() => setShowAdminModal(false)}
               refreshData={refreshAllData}
+              activeTenantId={activeTenantId}
+              activeTenant={activeTenant}
             />
           )}
           </React.Suspense>

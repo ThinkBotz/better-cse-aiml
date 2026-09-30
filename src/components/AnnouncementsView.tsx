@@ -6,18 +6,20 @@ import { UserProfile, Announcement } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Bold, Italic, List, ListOrdered, Link, Heading1, Heading2, Quote, Code } from 'lucide-react';
-import { createAnnouncement, deleteAnnouncement } from '../firebase';
+import { createAnnouncement, deleteAnnouncement, DEFAULT_TENANT_ID } from '../firebase';
 
 interface AnnouncementsViewProps {
   user: UserProfile;
   announcements: Announcement[];
   refreshAnnouncements: () => void;
+  activeTenantId?: string;
 }
 
 export default function AnnouncementsView({ 
   user, 
   announcements, 
-  refreshAnnouncements
+  refreshAnnouncements,
+  activeTenantId
 }: AnnouncementsViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -73,6 +75,7 @@ export default function AnnouncementsView({
       const announceId = `announce_${Date.now()}`;
       const newNotice: Announcement = {
         announcementId: announceId,
+        tenantId: activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
         title,
         content,
         category,

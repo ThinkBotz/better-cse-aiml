@@ -148,6 +148,18 @@ export async function createTenant(tenant: Tenant): Promise<void> {
       created_at: new Date().toISOString()
     };
     await setDoc(doc(db, 'users', adminUid), cleanUndefined(adminUser));
+
+    // Initialize tenant-scoped app configuration with initial branding & settings
+    const configDocId = `config_${cleanId}`;
+    const initialConfig: AppConfig = {
+      isChatEnabled: true,
+      isCertificatesEnabled: true,
+      certificateTemplate: DEFAULT_CERTIFICATE_TEMPLATE,
+      supportInfo: finalTenant.supportInfo || DEFAULT_SUPPORT_INFO,
+      branding: finalTenant.branding || DEFAULT_BRANDING,
+      tenantId: cleanId
+    };
+    await setDoc(doc(db, 'appSettings', configDocId), cleanUndefined(initialConfig));
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
     throw error;
@@ -1305,36 +1317,41 @@ export async function updateTypingStatus(
 }
 
 
-export async function getAppConfig(): Promise<AppConfig> {
-  const path = `appSettings/config`;
+// Per-tenant config doc ID helper
+function getConfigDocId(tenantId?: string): string {
+  const tid = (tenantId || getActiveTenantId()).trim().toLowerCase();
+  return `config_${tid}`;
+}
+
+export async function getAppConfig(tenantId?: string): Promise<AppConfig> {
+  const docId = getConfigDocId(tenantId);
+  const path = `appSettings/${docId}`;
   try {
-    const configDocRef = doc(db, 'appSettings', 'config');
+    const configDocRef = doc(db, 'appSettings', docId);
     const configSnap = await getDoc(configDocRef);
     if (!configSnap.exists()) {
+      // Fallback: try the old global 'config' doc for backwards compatibility
+      const globalRef = doc(db, 'appSettings', 'config');
+      const globalSnap = await getDoc(globalRef);
+      if (globalSnap.exists()) {
+        const globalData = globalSnap.data() as AppConfig;
+        // Migrate: copy the global config into the tenant-specific doc
+        globalData.tenantId = (tenantId || getActiveTenantId()).trim().toLowerCase();
+        await setDoc(configDocRef, cleanUndefined(globalData));
+        return normalizeAppConfig(globalData);
+      }
       const defaultConfig: AppConfig = { 
         isChatEnabled: true,
         isCertificatesEnabled: true,
         certificateTemplate: DEFAULT_CERTIFICATE_TEMPLATE,
         supportInfo: DEFAULT_SUPPORT_INFO,
-        branding: DEFAULT_BRANDING
+        branding: DEFAULT_BRANDING,
+        tenantId: (tenantId || getActiveTenantId()).trim().toLowerCase()
       };
-      await setDoc(configDocRef, defaultConfig);
+      await setDoc(configDocRef, cleanUndefined(defaultConfig));
       return defaultConfig;
     }
-    const data = configSnap.data() as AppConfig;
-    if (!data.supportInfo) {
-      data.supportInfo = DEFAULT_SUPPORT_INFO;
-    }
-    if (data.isCertificatesEnabled === undefined) {
-      data.isCertificatesEnabled = true;
-    }
-    if (!data.certificateTemplate) {
-      data.certificateTemplate = DEFAULT_CERTIFICATE_TEMPLATE;
-    }
-    if (!data.branding) {
-      data.branding = DEFAULT_BRANDING;
-    }
-    return data;
+    return normalizeAppConfig(configSnap.data() as AppConfig);
   } catch (error) {
     console.error('Error getting app config:', error);
     return { 
@@ -1347,20 +1364,29 @@ export async function getAppConfig(): Promise<AppConfig> {
   }
 }
 
-export async function updateAppConfig(isChatEnabled: boolean): Promise<void> {
-  const path = `appSettings/config`;
+function normalizeAppConfig(data: AppConfig): AppConfig {
+  if (!data.supportInfo) data.supportInfo = DEFAULT_SUPPORT_INFO;
+  if (data.isCertificatesEnabled === undefined) data.isCertificatesEnabled = true;
+  if (!data.certificateTemplate) data.certificateTemplate = DEFAULT_CERTIFICATE_TEMPLATE;
+  if (!data.branding) data.branding = DEFAULT_BRANDING;
+  return data;
+}
+
+export async function updateAppConfig(isChatEnabled: boolean, tenantId?: string): Promise<void> {
+  const docId = getConfigDocId(tenantId);
   try {
-    const configDocRef = doc(db, 'appSettings', 'config');
+    const configDocRef = doc(db, 'appSettings', docId);
     await setDoc(configDocRef, { isChatEnabled }, { merge: true });
   } catch (error) {
     console.error('Error updating app config:', error);
   }
 }
 
-export async function toggleCertificatesEnabled(isCertificatesEnabled: boolean): Promise<void> {
-  const path = `appSettings/config`;
+export async function toggleCertificatesEnabled(isCertificatesEnabled: boolean, tenantId?: string): Promise<void> {
+  const docId = getConfigDocId(tenantId);
+  const path = `appSettings/${docId}`;
   try {
-    const configDocRef = doc(db, 'appSettings', 'config');
+    const configDocRef = doc(db, 'appSettings', docId);
     await setDoc(configDocRef, { isCertificatesEnabled }, { merge: true });
   } catch (error) {
     console.error('Error toggling certificates enabled:', error);
@@ -1369,10 +1395,11 @@ export async function toggleCertificatesEnabled(isCertificatesEnabled: boolean):
   }
 }
 
-export async function updateCertificateTemplate(template: Partial<CertificateTemplate>): Promise<void> {
-  const path = `appSettings/config`;
+export async function updateCertificateTemplate(template: Partial<CertificateTemplate>, tenantId?: string): Promise<void> {
+  const docId = getConfigDocId(tenantId);
+  const path = `appSettings/${docId}`;
   try {
-    const configDocRef = doc(db, 'appSettings', 'config');
+    const configDocRef = doc(db, 'appSettings', docId);
     await setDoc(configDocRef, { 
       certificateTemplate: cleanUndefined({
         ...DEFAULT_CERTIFICATE_TEMPLATE,
@@ -1387,10 +1414,11 @@ export async function updateCertificateTemplate(template: Partial<CertificateTem
   }
 }
 
-export async function updateSupportInfo(supportInfo: Partial<SupportInfo>): Promise<void> {
-  const path = `appSettings/config`;
+export async function updateSupportInfo(supportInfo: Partial<SupportInfo>, tenantId?: string): Promise<void> {
+  const docId = getConfigDocId(tenantId);
+  const path = `appSettings/${docId}`;
   try {
-    const configDocRef = doc(db, 'appSettings', 'config');
+    const configDocRef = doc(db, 'appSettings', docId);
     await setDoc(configDocRef, { 
       supportInfo: cleanUndefined({
         ...DEFAULT_SUPPORT_INFO,
@@ -1405,11 +1433,12 @@ export async function updateSupportInfo(supportInfo: Partial<SupportInfo>): Prom
   }
 }
 
-export async function updateAppBranding(branding: Partial<AppBranding>): Promise<void> {
-  const path = `appSettings/config`;
+export async function updateAppBranding(branding: Partial<AppBranding>, tenantId?: string): Promise<void> {
+  const docId = getConfigDocId(tenantId);
+  const path = `appSettings/${docId}`;
   try {
-    const configDocRef = doc(db, 'appSettings', 'config');
-    const existing = await getAppConfig();
+    const configDocRef = doc(db, 'appSettings', docId);
+    const existing = await getAppConfig(tenantId);
     const updatedBranding = cleanUndefined({
       ...DEFAULT_BRANDING,
       ...(existing.branding || {}),
@@ -1429,8 +1458,9 @@ export async function updateAppBranding(branding: Partial<AppBranding>): Promise
   }
 }
 
-export function subscribeToAppConfig(callback: (config: AppConfig) => void): () => void {
-  const configDocRef = doc(db, 'appSettings', 'config');
+export function subscribeToAppConfig(callback: (config: AppConfig) => void, tenantId?: string): () => void {
+  const docId = getConfigDocId(tenantId);
+  const configDocRef = doc(db, 'appSettings', docId);
   return onSnapshot(configDocRef, (snap) => {
     if (snap.exists()) {
       const data = snap.data() as AppConfig;
@@ -1721,6 +1751,7 @@ export async function issueCertificate(certData: Omit<IssuedCertificate, 'issued
   const fullCert: IssuedCertificate = {
     ...certData,
     certificateId: certId,
+    tenantId: certData.tenantId || getActiveTenantId(),
     issuedAt: new Date().toISOString(),
     status: certData.status || 'Issued',
     issueDate: certData.issueDate || new Date().toISOString().split('T')[0],
@@ -1755,14 +1786,19 @@ export async function fetchCertificates(): Promise<IssuedCertificate[]> {
   }
 }
 
-export function subscribeToCertificates(callback: (certs: IssuedCertificate[]) => void): () => void {
+export function subscribeToCertificates(callback: (certs: IssuedCertificate[]) => void, tenantId?: string): () => void {
   const path = 'certificates';
+  const filterTid = (tenantId || getActiveTenantId()).trim().toLowerCase();
   return onSnapshot(
     collection(db, 'certificates'),
     (snapshot) => {
       const certs: IssuedCertificate[] = [];
       snapshot.forEach(docSnap => {
-        certs.push(docSnap.data() as IssuedCertificate);
+        const cert = docSnap.data() as IssuedCertificate;
+        // Tenant-scoped: only include certs belonging to this tenant
+        if (!filterTid || cert.tenantId === filterTid || (!cert.tenantId && filterTid === DEFAULT_TENANT_ID)) {
+          certs.push(cert);
+        }
       });
       certs.sort((a, b) => new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime());
       callback(certs);
@@ -2030,13 +2066,18 @@ export async function fetchEventWinners(): Promise<EventWinner[]> {
   }
 }
 
-export function subscribeToEventWinners(callback: (winners: EventWinner[]) => void): () => void {
+export function subscribeToEventWinners(callback: (winners: EventWinner[]) => void, tenantId?: string): () => void {
   const path = 'event_winners';
+  const filterTid = (tenantId || getActiveTenantId()).trim().toLowerCase();
   try {
     return onSnapshot(collection(db, 'event_winners'), (snapshot) => {
       const winners: EventWinner[] = [];
       snapshot.forEach((d) => {
-        winners.push(d.data() as EventWinner);
+        const w = d.data() as EventWinner;
+        // Tenant-scoped: only include winners belonging to this tenant
+        if (!filterTid || w.tenantId === filterTid || (!w.tenantId && filterTid === DEFAULT_TENANT_ID)) {
+          winners.push(w);
+        }
       });
       winners.sort((a, b) => new Date(b.addedAt || '').getTime() - new Date(a.addedAt || '').getTime());
       callback(winners);
@@ -2058,6 +2099,7 @@ export async function addEventWinner(winnerData: Omit<EventWinner, 'winnerId' | 
     const finalWinner: EventWinner = {
       ...winnerData,
       winnerId,
+      tenantId: winnerData.tenantId || getActiveTenantId(),
       addedAt: winnerData.addedAt || new Date().toISOString()
     };
     await setDoc(doc(db, 'event_winners', winnerId), cleanUndefined(finalWinner));

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, Album } from '../types';
-import { addAlbum, deleteAlbum, updateAlbum } from '../firebase';
+import { addAlbum, deleteAlbum, updateAlbum, DEFAULT_TENANT_ID } from '../firebase';
 import { 
   Image as ImageIcon, 
   X, 
@@ -22,9 +22,10 @@ interface GalleryViewProps {
   user: UserProfile;
   albums: Album[];
   refreshData: () => void;
+  activeTenantId?: string;
 }
 
-export default function GalleryView({ user, albums, refreshData }: GalleryViewProps) {
+export default function GalleryView({ user, albums, refreshData, activeTenantId }: GalleryViewProps) {
   const isAdminOrCoordinator = Boolean(
     user.role === 'admin' || 
     user.role === 'coordinator' || 
@@ -123,6 +124,7 @@ export default function GalleryView({ user, albums, refreshData }: GalleryViewPr
       const albumId = `album_${Date.now()}`;
       const newAlbum: Album = {
         albumId,
+        tenantId: activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
         title: title.trim(),
         description: description.trim(),
         thumbnailUrl: images[0],

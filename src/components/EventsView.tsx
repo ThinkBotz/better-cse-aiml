@@ -6,7 +6,7 @@ import HoldButton from './HoldButton';
 import EventTicketModal from './EventTicketModal';
 import { fireConfetti } from '../utils/confetti';
 import { UserProfile, DepartmentEvent, EventRegistration, IssuedCertificate, AppBranding, DEFAULT_BRANDING } from '../types';
-import { createEvent, createRegistration, updateRegistrationStatus, updateRegistrationTeamMembers, deleteRegistration, deleteCertificate, deleteEvent, updateEvent, subscribeToCertificates, generateBatchCertificatesForEvent } from '../firebase';
+import { createEvent, createRegistration, updateRegistrationStatus, updateRegistrationTeamMembers, deleteRegistration, deleteCertificate, deleteEvent, updateEvent, subscribeToCertificates, generateBatchCertificatesForEvent, DEFAULT_TENANT_ID } from '../firebase';
 
 interface EventsViewProps {
   user: UserProfile;
@@ -20,6 +20,7 @@ interface EventsViewProps {
   isLoading?: boolean;
   onMessageCoordinator?: (roll: string) => void;
   branding?: AppBranding;
+  activeTenantId?: string;
 }
 
 // Helper: Convert "10:00 AM" or "10:00" to 24h "10:00" or "14:00" for input[type="time"]
@@ -130,7 +131,8 @@ export default function EventsView({
   setSelectedEvent,
   isLoading = false,
   onMessageCoordinator,
-  branding = DEFAULT_BRANDING
+  branding = DEFAULT_BRANDING,
+  activeTenantId
 }: EventsViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [eventImageIdx, setEventImageIdx] = useState(0);
@@ -420,6 +422,7 @@ export default function EventsView({
         const eventId = `event_${Date.now()}`;
         const newEvent: DepartmentEvent = {
           eventId,
+          tenantId: activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
           title: eventTitle,
           category: eventCategory,
           description: eventDescription,
@@ -483,6 +486,7 @@ export default function EventsView({
         rollNumber: user.rollNumber || 'N/A',
         phone: user.phone || 'N/A',
         year: user.year || '3rd Year',
+        tenantId: selectedEvent.tenantId || activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
         isTeam: !!selectedEvent.isTeamBased,
       };
 

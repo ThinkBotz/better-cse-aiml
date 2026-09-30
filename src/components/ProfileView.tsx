@@ -6,7 +6,7 @@ import {
   PhoneCall, Edit3, ShieldCheck, Users, Smartphone, RefreshCw, Copy, ExternalLink
 } from 'lucide-react';
 import { checkForAppUpdates } from '../pwaUpdateManager';
-import { UserProfile, EventRegistration, DepartmentEvent, SupportInfo, DEFAULT_SUPPORT_INFO, CertificateTemplate, DEFAULT_CERTIFICATE_TEMPLATE, IssuedCertificate, AppBranding, DEFAULT_BRANDING } from '../types';
+import { UserProfile, EventRegistration, DepartmentEvent, SupportInfo, DEFAULT_SUPPORT_INFO, CertificateTemplate, DEFAULT_CERTIFICATE_TEMPLATE, IssuedCertificate, AppBranding, DEFAULT_BRANDING, Tenant } from '../types';
 import CertificateCard from './CertificateCard';
 import { 
   updateUserProfile,
@@ -21,6 +21,7 @@ import EditSupportBoxModal from './EditSupportBoxModal';
 import CertificateRecipientsModal from './CertificateRecipientsModal';
 import CertificateVerificationModal from './CertificateVerificationModal';
 import EventTicketModal from './EventTicketModal';
+import { hashPassword } from '../utils/auth';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -39,6 +40,8 @@ interface ProfileViewProps {
   isCertificatesEnabled?: boolean;
   certificateTemplate?: CertificateTemplate;
   branding?: AppBranding;
+  activeTenantId?: string;
+  activeTenant?: Tenant | null;
 }
 
 export default function ProfileView({ 
@@ -57,7 +60,9 @@ export default function ProfileView({
   onSupportInfoUpdated,
   isCertificatesEnabled = true,
   certificateTemplate,
-  branding = DEFAULT_BRANDING
+  branding = DEFAULT_BRANDING,
+  activeTenantId,
+  activeTenant
 }: ProfileViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditSupportModalOpen, setIsEditSupportModalOpen] = useState(false);
@@ -73,7 +78,7 @@ export default function ProfileView({
   const [email, setEmail] = useState(user.email || '');
   const [year, setYear] = useState(user.year || '3rd Year');
   const [section, setSection] = useState(user.section || 'A');
-  const [password, setPassword] = useState(user.password || '');
+  const [newPassword, setNewPassword] = useState('');
   const [phone, setPhone] = useState(user.phone || '');
   const [skills, setSkills] = useState(user.skills || '');
   const [linkedin, setLinkedin] = useState(user.linkedin || '');
@@ -131,11 +136,10 @@ export default function ProfileView({
       const googleEmail = result.user.email;
       
       await updateUserProfile(user.uid, { googleEmail });
+      setUser({ ...user, googleEmail: googleEmail || undefined });
+      refreshUsers();
       
       alert("Successfully connected Google Account: " + googleEmail);
-      if (onLogout) {
-        // You might want to refresh the user profile in parent, or just show it directly
-      }
     } catch (err: any) {
       if (err.code === 'auth/credential-already-in-use') {
         alert("This Google account is already linked to another user.");
@@ -179,16 +183,25 @@ export default function ProfileView({
         phone,
         year,
         section,
-        password,
         skills,
         linkedin,
         profile_pic: profilePic,
         ...(user.role !== 'student' ? { responsibilities } : {})
       };
+
+      if (newPassword.trim()) {
+        if (newPassword.trim().length < 6) {
+          alert('New password must be at least 6 characters long.');
+          return;
+        }
+        updates.password = await hashPassword(newPassword.trim());
+      }
+
       await updateUserProfile(user.uid, updates);
       
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
+      setNewPassword('');
       setIsEditing(false);
       refreshUsers();
     } catch (err) {
@@ -432,14 +445,14 @@ export default function ProfileView({
           <div className="flex-1">
             <div className="nb-label text-[9px] text-[var(--nb-secondary)]">ACCESS PASSWORD</div>
             {!isEditing ? (
-              <div className="text-[var(--nb-secondary)] mt-0.5 font-mono text-xs select-all">{user.password || '••••••••'}</div>
+              <div className="text-[var(--nb-secondary)] mt-0.5 font-mono text-xs">•••••••• (Secured)</div>
             ) : (
               <input 
-                type="text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 className="nb-input py-1 text-xs mt-1 w-full font-mono"
-                placeholder="Enter new password"
+                placeholder="Leave blank to keep current, or enter new (min 6 chars)"
               />
             )}
           </div>
@@ -560,7 +573,7 @@ export default function ProfileView({
           >
             <div>
               <span className="font-mono text-[9px] font-bold uppercase tracking-wider block opacity-80">
-                CSE (AI &amp; ML) DEPARTMENT
+                {activeTenant?.name?.toUpperCase() || (branding?.subtitle ? `${branding.subtitle.toUpperCase()} DEPARTMENT` : 'DEPARTMENT ASSOCIATION')}
               </span>
               <span className="font-display text-base tracking-wider leading-none">
                 OFFICIAL STUDENT PASS

@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ShieldAlert, 
-  Users, 
-  Key, 
-  Calendar, 
-  CheckCircle, 
-  XCircle, 
-  UserPlus, 
-  PlusCircle, 
-  Check, 
-  Settings, 
-  Search, 
-  Mail, 
-  Phone, 
-  UserCheck, 
+import {
+  ShieldAlert,
+  Users,
+  Key,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  UserPlus,
+  PlusCircle,
+  Check,
+  Settings,
+  Search,
+  Mail,
+  Phone,
+  UserCheck,
   Sparkles,
   Award,
   ArrowRight,
@@ -41,30 +41,33 @@ import {
   Square,
   SlidersHorizontal,
   FolderArchive,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+
 } from 'lucide-react';
-import { 
-  UserProfile, 
-  DepartmentEvent, 
-  EventRegistration, 
-  AssociatePowers, 
-  SupportInfo, 
+import {
+  UserProfile,
+  DepartmentEvent,
+  EventRegistration,
+  AssociatePowers,
+  SupportInfo,
   DEFAULT_SUPPORT_INFO,
   CertificateTemplate,
   DEFAULT_CERTIFICATE_TEMPLATE,
-  IssuedCertificate
+  IssuedCertificate,
+  Tenant
 } from '../types';
-import { 
-  updateUserProfile, 
-  createUserProfile, 
-  createMultipleUserProfiles, 
-  deleteUserProfile, 
-  updateRegistrationStatus, 
-  createRegistration, 
-  clearAllDatabaseData, 
-  getAppConfig, 
-  updateAppConfig, 
-  updateSupportInfo, 
+import {
+  updateUserProfile,
+  createUserProfile,
+  createMultipleUserProfiles,
+  deleteUserProfile,
+  updateRegistrationStatus,
+  createRegistration,
+  clearAllDatabaseData,
+  getAppConfig,
+  updateAppConfig,
+  updateSupportInfo,
   findUserForLogin,
   toggleCertificatesEnabled,
   updateCertificateTemplate,
@@ -91,6 +94,7 @@ import EditBrandingModal from './EditBrandingModal';
 import BrandLogo from './BrandLogo';
 import HoldButton from './HoldButton';
 import { AppBranding, DEFAULT_BRANDING } from '../types';
+import { hashPassword } from '../utils/auth';
 
 // Helper: Check if today is strictly before the event date (local date comparison)
 function isBeforeEventDate(eventDateStr?: string): boolean {
@@ -98,11 +102,11 @@ function isBeforeEventDate(eventDateStr?: string): boolean {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const clean = eventDateStr.trim();
-  
+
   if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
     return todayStr < clean;
   }
-  
+
   try {
     const d = new Date(clean);
     if (!isNaN(d.getTime())) {
@@ -122,6 +126,8 @@ interface AdminPanelViewProps {
   registrations: EventRegistration[];
   onClose: () => void;
   refreshData: () => void;
+  activeTenantId?: string;
+  activeTenant?: Tenant | null;
 }
 
 type PanelTab = 'associates' | 'coordinators' | 'attendance' | 'students' | 'certificates' | 'settings';
@@ -132,8 +138,19 @@ export default function AdminPanelView({
   events,
   registrations,
   onClose,
-  refreshData
+  refreshData,
+  activeTenantId,
+  activeTenant
 }: AdminPanelViewProps) {
+  const activeTenantIdResolved = activeTenantId || currentUser.tenantId || DEFAULT_TENANT_ID;
+  const [copiedInviteLink, setCopiedInviteLink] = useState(false);
+
+  const handleCopyInviteLink = () => {
+    const inviteUrl = `${window.location.origin}${window.location.pathname}?tenant=${activeTenantIdResolved}`;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedInviteLink(true);
+    setTimeout(() => setCopiedInviteLink(false), 2500);
+  };
   const [activeTab, setActiveTab] = useState<PanelTab>(() => {
     const isAdmin = currentUser.role === 'admin' || currentUser.role === 'president';
     const isAssociate = currentUser.role === 'associate';
@@ -143,22 +160,22 @@ export default function AdminPanelView({
     return 'attendance';
   });
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Registration and attendance tracker states
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.eventId || '');
 
   // Bulk Students states
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [bulkMode, setBulkMode] = useState<'series' | 'column'>('series');
-  
+
   // Series fields
   const [seriesPrefix, setSeriesPrefix] = useState('');
   const [seriesStart, setSeriesStart] = useState('');
   const [seriesEnd, setSeriesEnd] = useState('');
-  
+
   // Column fields
   const [bulkText, setBulkText] = useState('');
-  
+
   // Password options
   const [passwordOption, setPasswordOption] = useState<'roll' | 'preset' | 'random'>('roll');
   const [presetPassword, setPresetPassword] = useState('Welcome@123');
@@ -166,7 +183,7 @@ export default function AdminPanelView({
   // Success/error feedback
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [feedbackErr, setFeedbackErr] = useState('');
-  
+
   // Student search
   const [studentSearch, setStudentSearch] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -212,27 +229,27 @@ export default function AdminPanelView({
 
   // Determine allowed tabs based on role and powers
   const canManageRoles = isAdmin;
-  const canViewAttendanceTab = isAdmin || 
-    (isAssociate && currentUser.powers?.canViewRegistrations) || 
+  const canViewAttendanceTab = isAdmin ||
+    (isAssociate && currentUser.powers?.canViewRegistrations) ||
     isCoordinator;
 
   const [isChatEnabled, setIsChatEnabled] = useState(true);
   const [supportInfo, setSupportInfo] = useState<SupportInfo>(DEFAULT_SUPPORT_INFO);
   const [isEditSupportModalOpen, setIsEditSupportModalOpen] = useState(false);
-  
+
   const [isCertificatesEnabled, setIsCertificatesEnabled] = useState(true);
   const [certificateTemplate, setCertificateTemplate] = useState<CertificateTemplate>(DEFAULT_CERTIFICATE_TEMPLATE);
   const [isEditCertModalOpen, setIsEditCertModalOpen] = useState(false);
-  
+
   const [branding, setBranding] = useState<AppBranding>(() => {
     const cached = localStorage.getItem('notx_branding');
     if (cached) {
-      try { return JSON.parse(cached) as AppBranding; } catch (e) {}
+      try { return JSON.parse(cached) as AppBranding; } catch (e) { }
     }
     return DEFAULT_BRANDING;
   });
   const [isEditBrandingModalOpen, setIsEditBrandingModalOpen] = useState(false);
-  
+
   useEffect(() => {
     const unsub = subscribeToAppConfig(config => {
       setIsChatEnabled(config.isChatEnabled);
@@ -247,12 +264,12 @@ export default function AdminPanelView({
       }
       if (config.branding) {
         setBranding(config.branding);
-        try { localStorage.setItem('notx_branding', JSON.stringify(config.branding)); } catch (e) {}
+        try { localStorage.setItem('notx_branding', JSON.stringify(config.branding)); } catch (e) { }
       }
     });
     return () => unsub();
   }, []);
-  
+
   const handleToggleChat = async () => {
     const newState = !isChatEnabled;
     setIsChatEnabled(newState);
@@ -363,14 +380,14 @@ export default function AdminPanelView({
 
   const handleRevokeBatchForEvent = async (eventId: string, specificStudentIds?: string[]) => {
     const ev = events.find(e => e.eventId === eventId);
-    const countNote = specificStudentIds && specificStudentIds.length > 0 
-      ? `selected ${specificStudentIds.length} certificate(s)` 
+    const countNote = specificStudentIds && specificStudentIds.length > 0
+      ? `selected ${specificStudentIds.length} certificate(s)`
       : `ALL certificates for "${ev?.title || eventId}"`;
-      
+
     if (!window.confirm(`Are you sure you want to LOCK & REVOKE ${countNote}? Students will no longer be able to view them until re-generated.`)) {
       return;
     }
-    
+
     try {
       const res = await revokeBatchCertificatesForEvent(eventId, specificStudentIds);
       setFeedbackMsg(`Locked & revoked ${res.revokedCount} certificates for this event.`);
@@ -487,7 +504,7 @@ export default function AdminPanelView({
   const activeRegistrations = registrations.filter(r => r.eventId === selectedEventId);
 
   // Search filtered registries
-  const filteredRegistrations = activeRegistrations.filter(r => 
+  const filteredRegistrations = activeRegistrations.filter(r =>
     r.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.rollNumber.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -533,11 +550,11 @@ export default function AdminPanelView({
 
   // Create Associate Profile (Admin only)
 
-  
+
   const handleBulkDeleteStudents = async () => {
     if (!isAdmin || selectedStudentIds.length === 0) return;
     if (!window.confirm(`Are you sure you want to delete ${selectedStudentIds.length} selected students?`)) return;
-    
+
     setFeedbackMsg('');
     setFeedbackErr('');
     try {
@@ -571,8 +588,8 @@ export default function AdminPanelView({
     }
   };
 
-  
-  
+
+
   const exportAttendanceCSV = (activeEvent: DepartmentEvent) => {
     if (!activeEvent || !allUsers) return;
     const eventRegs = registrations.filter(r => r.eventId === activeEvent.eventId);
@@ -580,9 +597,9 @@ export default function AdminPanelView({
       alert("No registrations found for this event.");
       return;
     }
-    
+
     let csv = "Roll Number,Name,Phone,Section,Team Name,Applied At,Attendance Status\n";
-    
+
     eventRegs.forEach(reg => {
       const profile = allUsers.find(u => u.uid === reg.studentId);
       if (!profile) return;
@@ -593,10 +610,10 @@ export default function AdminPanelView({
       const team = reg.teamName ? `"${reg.teamName}"` : "N/A";
       const appliedAt = reg.appliedAt ? new Date(reg.appliedAt).toLocaleString() : "Unknown";
       const status = reg.status === 'Attended' ? "Present" : "Absent";
-      
+
       csv += `${roll},${name},${phone},${section},${team},${appliedAt},${status}\n`;
     });
-    
+
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -607,7 +624,7 @@ export default function AdminPanelView({
   };
 
 
-  
+
   const handleToggleAttendance = async (regId: string, present: boolean) => {
     const activeEv = events.find(e => e.eventId === selectedEventId);
     if (present && activeEv && isBeforeEventDate(activeEv.date)) {
@@ -751,7 +768,7 @@ export default function AdminPanelView({
     try {
       let skippedCount = 0;
       const profilesToCreate: UserProfile[] = [];
-      const activeTenant = currentUser.tenantId || DEFAULT_TENANT_ID;
+      const activeTenant = activeTenantIdResolved;
 
       for (const roll of rollsToCreate) {
         const exists = allUsers.some(u => u.rollNumber?.toLowerCase() === roll.toLowerCase() && (u.tenantId === activeTenant || !u.tenantId));
@@ -788,7 +805,7 @@ export default function AdminPanelView({
           year: '3rd Year',
           section: 'A',
           skills: '',
-          password: pwd,
+          password: await hashPassword(pwd),
           profile_pic: "",
           isFirstLogin: true,
           created_at: new Date().toISOString()
@@ -820,7 +837,8 @@ export default function AdminPanelView({
     setFeedbackErr('');
     const newTempPwd = `${roll.toUpperCase()}_RESET`;
     try {
-      await updateUserProfile(uid, { password: newTempPwd, isFirstLogin: true });
+      const hashedTempPwd = await hashPassword(newTempPwd);
+      await updateUserProfile(uid, { password: hashedTempPwd, isFirstLogin: true });
       setFeedbackMsg(`Successfully reset password for student ${roll} to: ${newTempPwd}`);
       refreshData();
     } catch (err) {
@@ -882,12 +900,12 @@ export default function AdminPanelView({
       try {
         const obj = JSON.parse(parsed);
         parsed = obj.rollNumber || obj.roll || obj.registrationId || obj.uid || parsed;
-      } catch (e) {}
+      } catch (e) { }
     } else if (parsed.startsWith('http://') || parsed.startsWith('https://')) {
       try {
         const url = new URL(parsed);
         parsed = url.searchParams.get('data') || url.searchParams.get('roll') || url.searchParams.get('reg') || parsed;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const cleanInput = parsed.trim().toUpperCase();
@@ -911,7 +929,7 @@ export default function AdminPanelView({
     }
 
     // 1. Check if already in active registrations
-    const reg = activeRegistrations.find(r => 
+    const reg = activeRegistrations.find(r =>
       r.rollNumber?.trim().toUpperCase() === cleanInput ||
       r.registrationId?.trim().toUpperCase() === cleanInput ||
       r.studentId?.toUpperCase() === cleanInput
@@ -939,7 +957,7 @@ export default function AdminPanelView({
       }
     } else {
       // 2. Check if student profile exists in memory or Firestore
-      let studentProfile = allUsers.find(u => 
+      let studentProfile = allUsers.find(u =>
         u.rollNumber?.trim().toUpperCase() === cleanInput ||
         u.uid === parsed ||
         u.email?.trim().toUpperCase() === cleanInput
@@ -1019,7 +1037,7 @@ export default function AdminPanelView({
   // CSV Export feature
   const exportToCSV = () => {
     if (!activeEvent) return;
-    
+
     const headers = [
       "Student Name",
       "Roll Number",
@@ -1036,8 +1054,8 @@ export default function AdminPanelView({
 
     const rows = activeRegistrations.map(reg => {
       const profile = allUsers.find(
-        u => u.uid === reg.studentId || 
-        (u.rollNumber && u.rollNumber.toLowerCase() === reg.rollNumber.toLowerCase())
+        u => u.uid === reg.studentId ||
+          (u.rollNumber && u.rollNumber.toLowerCase() === reg.rollNumber.toLowerCase())
       );
 
       const email = profile?.email || `${reg.rollNumber.toLowerCase()}@aits.edu`;
@@ -1076,14 +1094,14 @@ export default function AdminPanelView({
     document.body.removeChild(link);
   };
 
-    return (
+  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80">
-      <div 
+      <div
         className="bg-[var(--nb-surface)] text-[var(--nb-content)] w-full max-w-5xl h-[95dvh] sm:h-[90dvh] rounded-lg flex flex-col overflow-hidden relative"
         style={{ border: '2.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
       >
         {/* Header */}
-        <div 
+        <div
           className="flex justify-between items-center p-3.5 sm:p-4 bg-[var(--nb-surface-accent)] gap-3"
           style={{ borderBottom: '2px solid var(--nb-ink)' }}
         >
@@ -1105,6 +1123,28 @@ export default function AdminPanelView({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* Copy Tenant Student Invite Link */}
+            <button
+              type="button"
+              onClick={handleCopyInviteLink}
+              className="nb-btn-ghost px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 cursor-pointer text-emerald-600 dark:text-emerald-400"
+              style={{ border: '1.5px solid var(--nb-ink)' }}
+              title="Copy student invite link for this department"
+            >
+              {copiedInviteLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Invite Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Invite Link</span>
+                  <span className="sm:hidden">Invite</span>
+                </>
+              )}
+            </button>
+
             {currentUser.role === 'admin' && (
               <button
                 type="button"
@@ -1118,7 +1158,7 @@ export default function AdminPanelView({
                 <span className="sm:hidden">Name & Logo</span>
               </button>
             )}
-            <button 
+            <button
               onClick={onClose}
               className="w-8 h-8 rounded bg-[var(--nb-surface)] text-[var(--nb-content)] flex items-center justify-center cursor-pointer transition-transform active:scale-95"
               style={{ border: '1.5px solid var(--nb-ink)' }}
@@ -1129,76 +1169,70 @@ export default function AdminPanelView({
         </div>
 
         {/* Navigation Tabs */}
-        <div 
+        <div
           className="flex px-3 pt-2.5 pb-2 gap-2 overflow-x-auto bg-[var(--nb-surface)] scrollbar-none"
           style={{ borderBottom: '2px solid var(--nb-ink)' }}
         >
           {canManageRoles && (
             <>
-              <button 
+              <button
                 onClick={() => setActiveTab('associates')}
-                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                  activeTab === 'associates' 
-                    ? 'nb-pill-blue text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${activeTab === 'associates'
+                    ? 'nb-pill-blue text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]'
                     : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
-                }`}
+                  }`}
               >
                 Associates
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('coordinators')}
-                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                  activeTab === 'coordinators' 
-                    ? 'nb-pill-cyan text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${activeTab === 'coordinators'
+                    ? 'nb-pill-cyan text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]'
                     : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
-                }`}
+                  }`}
               >
                 Coordinators
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('students')}
-                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                  activeTab === 'students' 
-                    ? 'nb-pill-yellow text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${activeTab === 'students'
+                    ? 'nb-pill-yellow text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]'
                     : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
-                }`}
+                  }`}
               >
                 Students DB
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('certificates')}
-                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'certificates' 
-                    ? 'nb-pill-purple text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === 'certificates'
+                    ? 'nb-pill-purple text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]'
                     : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
-                }`}
+                  }`}
               >
                 <Award className={`w-3.5 h-3.5 ${activeTab === 'certificates' ? 'text-white' : 'text-[var(--nb-accent)]'}`} />
                 <span>Certificates</span>
                 <span className={`w-2 h-2 rounded-full ${isCertificatesEnabled ? 'bg-emerald-400' : 'bg-amber-400'}`} />
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('settings')}
-                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'settings' 
-                    ? 'nb-pill-coral text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+                className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === 'settings'
+                    ? 'nb-pill-coral text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]'
                     : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
-                }`}
+                  }`}
               >
                 <Settings className="w-3.5 h-3.5" />
                 Settings
               </button>
             </>
           )}
-          
+
           {canViewAttendanceTab && (
-            <button 
+            <button
               onClick={() => setActiveTab('attendance')}
-              className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                activeTab === 'attendance' 
-                  ? 'nb-pill-green text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]' 
+              className={`py-1.5 px-3 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${activeTab === 'attendance'
+                  ? 'nb-pill-green text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]'
                   : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-1.5 border-[var(--nb-divider)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
-              }`}
+                }`}
             >
               Attendance &amp; Registry
             </button>
@@ -1209,7 +1243,7 @@ export default function AdminPanelView({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* GLOBAL FEEDBACK NOTIFICATION ALERTS */}
           {feedbackMsg && (
-            <div 
+            <div
               className="text-xs font-bold text-[var(--nb-content)] bg-[var(--nb-surface-accent)] rounded p-3 flex justify-between items-center"
               style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
             >
@@ -1218,7 +1252,7 @@ export default function AdminPanelView({
             </div>
           )}
           {feedbackErr && (
-            <div 
+            <div
               className="text-xs font-bold text-rose-500 bg-rose-500/10 rounded p-3 flex justify-between items-center"
               style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
             >
@@ -1227,7 +1261,7 @@ export default function AdminPanelView({
             </div>
           )}
 
-          
+
           {/* ==================== 1. ASSOCIATES MANAGEMENT TAB ==================== */}
           {activeTab === 'associates' && canManageRoles && (
             <div className="space-y-4">
@@ -1247,8 +1281,8 @@ export default function AdminPanelView({
 
               {/* CREATE ASSOCIATE INLINE FORM */}
               {showCreateAssociate && (
-                <form 
-                  onSubmit={handleCreateAssociate} 
+                <form
+                  onSubmit={handleCreateAssociate}
                   className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
@@ -1256,8 +1290,8 @@ export default function AdminPanelView({
                     <span className="nb-label text-xs text-[var(--nb-accent)] flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" /> ASSIGN EXECUTIVE ROLE
                     </span>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowCreateAssociate(false)}
                       className="nb-btn-ghost px-2 py-0.5 text-xs cursor-pointer"
                       style={{ border: '1px solid var(--nb-ink)' }}
@@ -1268,10 +1302,10 @@ export default function AdminPanelView({
 
                   <div className="relative">
                     <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-1">STUDENT ROLL NUMBER</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={assocSearchRoll} 
+                    <input
+                      type="text"
+                      required
+                      value={assocSearchRoll}
                       onChange={e => setAssocSearchRoll(e.target.value)}
                       onFocus={() => setAssocRollFocused(true)}
                       onBlur={() => setTimeout(() => setAssocRollFocused(false), 200)}
@@ -1279,15 +1313,15 @@ export default function AdminPanelView({
                       className="nb-input py-1.5 text-xs w-full font-mono"
                     />
                     {assocRollFocused && assocSearchRoll.length > 0 && (
-                      <div 
+                      <div
                         className="absolute top-[100%] mt-1 left-0 right-0 bg-[var(--nb-surface)] rounded z-50 max-h-40 overflow-y-auto overflow-x-hidden"
                         style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                       >
                         {allUsers
                           .filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(assocSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(assocSearchRoll.toLowerCase())))
                           .map(u => (
-                            <div 
-                              key={u.uid} 
+                            <div
+                              key={u.uid}
                               className="px-3 py-2 hover:bg-[var(--nb-surface-accent)] cursor-pointer border-b border-[var(--nb-ink)]/20 last:border-0"
                               onClick={() => {
                                 setAssocSearchRoll(u.rollNumber || '');
@@ -1306,63 +1340,63 @@ export default function AdminPanelView({
                   </div>
                   <div>
                     <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-1">POSITION / TITLE</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={assocPosition} 
+                    <input
+                      type="text"
+                      required
+                      value={assocPosition}
                       onChange={e => setAssocPosition(e.target.value)}
                       placeholder="e.g. President, Vice President"
                       className="nb-input py-1.5 text-xs w-full"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-2">INITIAL CAPABILITIES</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <label 
+                      <label
                         className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={assocPowers.canManageEvents}
-                          onChange={e => setAssocPowers({...assocPowers, canManageEvents: e.target.checked})}
+                          onChange={e => setAssocPowers({ ...assocPowers, canManageEvents: e.target.checked })}
                           className="accent-[var(--nb-accent)]"
                         />
                         <span className="text-xs text-[var(--nb-content)]">Manage Events</span>
                       </label>
-                      <label 
+                      <label
                         className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={assocPowers.canManageAnnouncements}
-                          onChange={e => setAssocPowers({...assocPowers, canManageAnnouncements: e.target.checked})}
+                          onChange={e => setAssocPowers({ ...assocPowers, canManageAnnouncements: e.target.checked })}
                           className="accent-[var(--nb-accent)]"
                         />
                         <span className="text-xs text-[var(--nb-content)]">Announcements</span>
                       </label>
-                      <label 
+                      <label
                         className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={assocPowers.canViewRegistrations}
-                          onChange={e => setAssocPowers({...assocPowers, canViewRegistrations: e.target.checked})}
+                          onChange={e => setAssocPowers({ ...assocPowers, canViewRegistrations: e.target.checked })}
                           className="accent-[var(--nb-accent)]"
                         />
                         <span className="text-xs text-[var(--nb-content)]">View Applicants</span>
                       </label>
-                      <label 
+                      <label
                         className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={assocPowers.canManageGallery}
-                          onChange={e => setAssocPowers({...assocPowers, canManageGallery: e.target.checked})}
+                          onChange={e => setAssocPowers({ ...assocPowers, canManageGallery: e.target.checked })}
                           className="accent-[var(--nb-accent)]"
                         />
                         <span className="text-xs text-[var(--nb-content)]">Manage Gallery</span>
@@ -1370,8 +1404,8 @@ export default function AdminPanelView({
                     </div>
                   </div>
 
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="w-full nb-btn py-2.5 text-xs font-bold uppercase tracking-wider cursor-pointer"
                   >
                     Grant Associate Privileges
@@ -1382,16 +1416,16 @@ export default function AdminPanelView({
               {/* ASSOCIATES LIST WITH REALTIME POWER TOGGLES */}
               <div className="space-y-3">
                 {associates.map((assoc) => (
-                  <div 
-                    key={assoc.uid} 
+                  <div
+                    key={assoc.uid}
                     className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-3.5"
                     style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex gap-3">
-                        <img 
-                          src={assoc.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${assoc.rollNumber || assoc.uid}`} 
-                          alt={assoc.name} 
+                        <img
+                          src={assoc.profile_pic || `https://api.dicebear.com/9.x/notionists/svg?seed=${assoc.rollNumber || assoc.uid}`}
+                          alt={assoc.name}
                           className="w-11 h-11 rounded object-cover bg-[var(--nb-surface-accent)]"
                           style={{ border: '1.5px solid var(--nb-ink)' }}
                         />
@@ -1407,7 +1441,7 @@ export default function AdminPanelView({
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* CRUD Buttons */}
                       <div className="flex flex-col gap-2 items-end">
                         <div className="flex gap-2">
@@ -1417,7 +1451,7 @@ export default function AdminPanelView({
                                 try {
                                   await updateUserProfile(assoc.uid, { role: 'associate', position: 'Associate', responsibilities: '' });
                                   refreshData();
-                                } catch(e) { console.error(e); }
+                                } catch (e) { console.error(e); }
                               }}
                               className="nb-btn-ghost text-[10px] font-bold uppercase px-2 py-1 cursor-pointer"
                               style={{ border: '1px solid var(--nb-ink)' }}
@@ -1425,18 +1459,18 @@ export default function AdminPanelView({
                               Revoke Pres
                             </button>
                           )}
-                          
+
                           {confirmDemoteId === assoc.uid ? (
-                            <button 
-                              onClick={() => handleDemoteUser(assoc.uid)} 
+                            <button
+                              onClick={() => handleDemoteUser(assoc.uid)}
                               className="text-[10px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer"
                               style={{ border: '1px solid var(--nb-ink)' }}
                             >
                               Sure?
                             </button>
                           ) : (
-                            <button 
-                              onClick={() => setConfirmDemoteId(assoc.uid)} 
+                            <button
+                              onClick={() => setConfirmDemoteId(assoc.uid)}
                               className="nb-btn-ghost text-[10px] px-2 py-1 font-bold uppercase cursor-pointer"
                               style={{ border: '1px solid var(--nb-ink)' }}
                             >
@@ -1462,20 +1496,19 @@ export default function AdminPanelView({
                     </div>
 
                     {/* Real-time Permission Matrix */}
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface-accent)] p-3 rounded"
                       style={{ border: '1px solid var(--nb-ink)' }}
                     >
                       <div className="nb-label text-[9px] text-[var(--nb-secondary)] mb-2">LIVE PRIVILEGE MATRIX (CLICK TO TOGGLE)</div>
                       <div className="grid grid-cols-2 gap-2">
-                        <button 
+                        <button
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canManageEvents')}
-                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
-                            assoc.powers?.canManageEvents 
-                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${assoc.powers?.canManageEvents
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]'
                               : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
-                          }`}
+                            }`}
                           style={{ border: '1px solid var(--nb-ink)' }}
                         >
                           <span className="text-xs font-semibold">Events Manager</span>
@@ -1483,14 +1516,13 @@ export default function AdminPanelView({
                             <Check className="w-2.5 h-2.5" />
                           </div>
                         </button>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canManageAnnouncements')}
-                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
-                            assoc.powers?.canManageAnnouncements 
-                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${assoc.powers?.canManageAnnouncements
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]'
                               : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
-                          }`}
+                            }`}
                           style={{ border: '1px solid var(--nb-ink)' }}
                         >
                           <span className="text-xs font-semibold">Announcements</span>
@@ -1498,14 +1530,13 @@ export default function AdminPanelView({
                             <Check className="w-2.5 h-2.5" />
                           </div>
                         </button>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canViewRegistrations')}
-                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
-                            assoc.powers?.canViewRegistrations 
-                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${assoc.powers?.canViewRegistrations
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]'
                               : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
-                          }`}
+                            }`}
                           style={{ border: '1px solid var(--nb-ink)' }}
                         >
                           <span className="text-xs font-semibold">View Applicants</span>
@@ -1513,14 +1544,13 @@ export default function AdminPanelView({
                             <Check className="w-2.5 h-2.5" />
                           </div>
                         </button>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => handleTogglePower(assoc.uid, 'canManageGallery')}
-                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${
-                            assoc.powers?.canManageGallery 
-                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]' 
+                          className={`flex items-center justify-between p-2 rounded text-left transition-all cursor-pointer ${assoc.powers?.canManageGallery
+                              ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)]'
                               : 'bg-[var(--nb-surface)] text-[var(--nb-content)]'
-                          }`}
+                            }`}
                           style={{ border: '1px solid var(--nb-ink)' }}
                         >
                           <span className="text-xs font-semibold">Manage Gallery</span>
@@ -1560,8 +1590,8 @@ export default function AdminPanelView({
 
               {/* CREATE COORDINATOR INLINE FORM */}
               {showCreateCoordinator && (
-                <form 
-                  onSubmit={handleCreateCoordinator} 
+                <form
+                  onSubmit={handleCreateCoordinator}
                   className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
@@ -1569,8 +1599,8 @@ export default function AdminPanelView({
                     <span className="nb-label text-xs text-[var(--nb-accent)] flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" /> ASSIGN EVENT COORDINATOR
                     </span>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowCreateCoordinator(false)}
                       className="nb-btn-ghost px-2 py-0.5 text-xs cursor-pointer"
                       style={{ border: '1px solid var(--nb-ink)' }}
@@ -1581,10 +1611,10 @@ export default function AdminPanelView({
 
                   <div className="relative">
                     <label className="nb-label text-[9px] text-[var(--nb-secondary)] block mb-1">STUDENT ROLL NUMBER</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={coordSearchRoll} 
+                    <input
+                      type="text"
+                      required
+                      value={coordSearchRoll}
                       onChange={e => setCoordSearchRoll(e.target.value)}
                       onFocus={() => setCoordRollFocused(true)}
                       onBlur={() => setTimeout(() => setCoordRollFocused(false), 200)}
@@ -1592,15 +1622,15 @@ export default function AdminPanelView({
                       className="nb-input py-1.5 text-xs w-full font-mono"
                     />
                     {coordRollFocused && coordSearchRoll.length > 0 && (
-                      <div 
+                      <div
                         className="absolute top-[100%] mt-1 left-0 right-0 bg-[var(--nb-surface)] rounded z-50 max-h-40 overflow-y-auto overflow-x-hidden"
                         style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                       >
                         {allUsers
                           .filter(u => u.uid !== 'admin_master' && (u.rollNumber?.toLowerCase().includes(coordSearchRoll.toLowerCase()) || u.name.toLowerCase().includes(coordSearchRoll.toLowerCase())))
                           .map(u => (
-                            <div 
-                              key={u.uid} 
+                            <div
+                              key={u.uid}
                               className="px-3 py-2 hover:bg-[var(--nb-surface-accent)] cursor-pointer border-b border-[var(--nb-ink)]/20 last:border-0"
                               onClick={() => {
                                 setCoordSearchRoll(u.rollNumber || '');
@@ -1625,13 +1655,13 @@ export default function AdminPanelView({
                         <p className="text-xs text-[var(--nb-secondary)] italic">No events exist. You can assign events later.</p>
                       ) : (
                         events.map(ev => (
-                          <label 
-                            key={ev.eventId} 
+                          <label
+                            key={ev.eventId}
                             className="flex items-center gap-2 bg-[var(--nb-surface-accent)] p-2 rounded cursor-pointer"
                             style={{ border: '1px solid var(--nb-ink)' }}
                           >
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={coordAssignedEvents.includes(ev.eventId)}
                               onChange={(e) => {
                                 if (e.target.checked) setCoordAssignedEvents([...coordAssignedEvents, ev.eventId]);
@@ -1649,8 +1679,8 @@ export default function AdminPanelView({
                     </div>
                   </div>
 
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="w-full nb-btn py-2.5 text-xs font-bold uppercase tracking-wider cursor-pointer"
                   >
                     Assign Coordinator Role
@@ -1661,14 +1691,14 @@ export default function AdminPanelView({
               {/* COORDINATORS LIST */}
               <div className="space-y-3">
                 {coordinators.map((coord) => (
-                  <div 
-                    key={coord.uid} 
+                  <div
+                    key={coord.uid}
                     className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-3.5"
                     style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex gap-3">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded bg-[var(--nb-surface-accent)] flex items-center justify-center text-[var(--nb-accent)] shrink-0"
                           style={{ border: '1.5px solid var(--nb-ink)' }}
                         >
@@ -1693,16 +1723,16 @@ export default function AdminPanelView({
                         </button>
                         <div className="flex gap-1 w-full mt-1">
                           {confirmDemoteId === coord.uid ? (
-                            <button 
-                              onClick={() => handleDemoteUser(coord.uid)} 
+                            <button
+                              onClick={() => handleDemoteUser(coord.uid)}
                               className="flex-1 text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer"
                               style={{ border: '1px solid var(--nb-ink)' }}
                             >
                               Sure?
                             </button>
                           ) : (
-                            <button 
-                              onClick={() => setConfirmDemoteId(coord.uid)} 
+                            <button
+                              onClick={() => setConfirmDemoteId(coord.uid)}
                               className="flex-1 nb-btn-ghost text-[9px] px-2 py-1 font-bold uppercase cursor-pointer"
                               style={{ border: '1px solid var(--nb-ink)' }}
                             >
@@ -1729,7 +1759,7 @@ export default function AdminPanelView({
 
                     {/* Expandable Event Assignment Editor */}
                     {activeEditingCoordId === coord.uid && (
-                      <div 
+                      <div
                         className="bg-[var(--nb-surface-accent)] p-3 rounded space-y-2"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
@@ -1741,16 +1771,15 @@ export default function AdminPanelView({
                             {events.map(ev => {
                               const isAssigned = coord.assignedEvents?.includes(ev.eventId);
                               return (
-                                <label 
-                                  key={ev.eventId} 
-                                  className={`flex justify-between items-center p-2 rounded cursor-pointer transition-all ${
-                                    isAssigned ? 'bg-[var(--nb-surface)] font-bold' : 'bg-[var(--nb-surface)]/60'
-                                  }`}
+                                <label
+                                  key={ev.eventId}
+                                  className={`flex justify-between items-center p-2 rounded cursor-pointer transition-all ${isAssigned ? 'bg-[var(--nb-surface)] font-bold' : 'bg-[var(--nb-surface)]/60'
+                                    }`}
                                   style={{ border: isAssigned ? '1.5px solid var(--nb-ink)' : '1px solid var(--nb-ink)/40' }}
                                 >
                                   <div className="min-w-0 flex-1 flex items-center gap-2">
-                                    <input 
-                                      type="checkbox" 
+                                    <input
+                                      type="checkbox"
                                       checked={isAssigned || false}
                                       onChange={() => handleToggleEventAssignment(coord.uid, ev.eventId)}
                                       className="accent-[var(--nb-accent)]"
@@ -1778,10 +1807,10 @@ export default function AdminPanelView({
             </div>
           )}
 
-          
+
           {activeTab === 'attendance' && canViewAttendanceTab && (() => {
             const activeEvent = events.find(e => e.eventId === selectedEventId);
-            
+
             // Check if today is the event date (using local date comparison)
             const now = new Date();
             const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -1801,365 +1830,363 @@ export default function AdminPanelView({
             const isBeforeEvent = activeEvent ? isBeforeEventDate(activeEvent.date) : false;
 
             return (
-            <div className="space-y-4">
-              
-              {/* Event Selector */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="nb-label text-[10px] text-[var(--nb-secondary)]">SELECT EVENT TO MANAGE</label>
-                  {selectedEventId && activeEvent && (
-                    <button 
-                      onClick={() => exportAttendanceCSV(activeEvent)}
-                      className="nb-btn-ghost text-[10px] flex items-center gap-1.5 px-2.5 py-1 font-bold uppercase cursor-pointer"
-                      style={{ border: '1.5px solid var(--nb-ink)' }}
-                    >
-                      <Download className="w-3 h-3" />
-                      Export CSV
-                    </button>
-                  )}
-                </div>
-                <select 
-                  value={selectedEventId} 
-                  onChange={(e) => {
-                    setSelectedEventId(e.target.value);
-                    setScanResultMsg('');
-                  }}
-                  className="bg-[var(--nb-surface)] text-xs text-[var(--nb-content)] rounded py-2 px-3 outline-none font-bold"
-                  style={{ border: '1.5px solid var(--nb-ink)' }}
-                >
-                  {events.length === 0 && <option value="">No events available</option>}
-                  {events.map(ev => (
-                    <option key={ev.eventId} value={ev.eventId}>{ev.title} ({ev.date})</option>
-                  ))}
-                </select>
-              </div>
+              <div className="space-y-4">
 
-              {selectedEventId && activeEvent && (
-                <>
-                  {/* Event Date Status Banner */}
-                  {isBeforeEvent ? (
-                    <div 
-                      className="bg-amber-500/10 text-xs p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-2 border-amber-500/40"
-                      style={{ boxShadow: 'var(--shadow-hard-sm)' }}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded bg-amber-400 text-black flex items-center justify-center shrink-0 border border-black font-bold">
-                          <Lock className="w-4 h-4 stroke-[2.5]" />
-                        </div>
-                        <div>
-                          <div className="font-mono font-bold text-xs text-[var(--nb-content)]">
-                            ATTENDANCE CHECK-IN LOCKED
-                          </div>
-                          <div className="text-[11px] text-[var(--nb-secondary)] mt-0.5">
-                            Event scheduled for <strong className="font-mono text-[var(--nb-content)]">{activeEvent.date}</strong>. Attendance opens on the event date.
-                          </div>
-                        </div>
-                      </div>
-                      <span 
-                        className="nb-tag text-[9px] font-mono font-bold self-start sm:self-auto bg-amber-400 text-black border border-black uppercase"
-                      >
-                        Opens on {activeEvent.date}
-                      </span>
-                    </div>
-                  ) : isEventToday ? (
-                    <div 
-                      className="bg-emerald-500/10 text-xs p-3.5 rounded-lg flex items-center justify-between gap-2 border-2 border-emerald-500/40"
-                      style={{ boxShadow: 'var(--shadow-hard-sm)' }}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded bg-emerald-400 text-black flex items-center justify-center shrink-0 border border-black font-bold">
-                          <CheckCircle className="w-4 h-4 stroke-[2.5]" />
-                        </div>
-                        <div>
-                          <div className="font-mono font-bold text-xs text-[var(--nb-content)]">
-                            EVENT DAY ACTIVE ({activeEvent.date})
-                          </div>
-                          <div className="text-[11px] text-[var(--nb-secondary)] mt-0.5">
-                            Live scanner and attendance verification are unlocked.
-                          </div>
-                        </div>
-                      </div>
-                      <span className="nb-tag-green text-[9px] font-mono font-bold uppercase">
-                        Live Today
-                      </span>
-                    </div>
-                  ) : (
-                    <div 
-                      className="bg-[var(--nb-surface-accent)] text-xs p-3 rounded-lg flex items-center justify-between gap-2 border border-[var(--nb-ink)]/20"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-[var(--nb-secondary)] shrink-0" />
-                        <span className="text-[var(--nb-secondary)]">Concluded Event ({activeEvent.date}) — Post-Event Record Updates Active</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* QR SCANNER CARD */}
-                  <div 
-                    className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3.5"
-                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
-                  >
-                    <div className="flex justify-between items-center border-b border-[var(--nb-ink)]/15 pb-2">
-                      <span className="nb-label text-xs font-bold text-[var(--nb-content)] flex items-center gap-1.5">
-                        <QrCode className="w-4 h-4 text-[var(--nb-accent)]" />
-                        Quick Check-in Scanner
-                      </span>
-                      {isBeforeEvent ? (
-                        <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border border-[var(--nb-ink)]/30 flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-amber-500" /> Locked until {activeEvent.date}
-                        </span>
-                      ) : (
-                        <button 
-                          onClick={() => setShowQRScanner(!showQRScanner)}
-                          className={`text-xs px-3 py-1.5 font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase ${
-                            showQRScanner 
-                              ? 'nb-btn-ghost' 
-                              : 'nb-btn'
-                          }`}
-                          style={{ border: '1.5px solid var(--nb-ink)' }}
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                          {showQRScanner ? 'Close Scanner' : 'Open Camera'}
-                        </button>
-                      )}
-                    </div>
-
-                    {isBeforeEvent ? (
-                      <div className="py-6 px-4 text-center rounded-lg bg-[var(--nb-surface-accent)] border border-dashed border-[var(--nb-ink)]/30 space-y-2">
-                        <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30">
-                          <Lock className="w-5 h-5 stroke-[2.5]" />
-                        </div>
-                        <h5 className="nb-headline text-sm text-[var(--nb-content)]">Check-in Camera Inactive</h5>
-                        <p className="text-xs text-[var(--nb-secondary)] max-w-sm mx-auto leading-relaxed">
-                          Attendance check-in opens on the scheduled date (<strong className="font-mono text-[var(--nb-content)]">{activeEvent.date}</strong>). Neither QR scanning nor manual roll marking is permitted prior to event day.
-                        </p>
-                      </div>
-                    ) : showQRScanner && (
-                      <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <p className="text-[10px] text-[var(--nb-secondary)]">
-                          Point camera at student QR pass or upload a photo to verify attendance instantly.
-                        </p>
-                        
-                        <QRCameraScanner 
-                          onScan={(text) => {
-                            handleQRCheckIn(text);
-                          }}
-                          onError={(err) => {
-                            if (err && err.message) {
-                              setScanResultMsg(err.message);
-                              setScanResultType('error');
-                            }
-                          }}
-                        />
-
-                        <form onSubmit={(e) => { e.preventDefault(); handleQRCheckIn(scannedRollInput); }} className="flex gap-2 pt-1">
-                          <input 
-                            type="text" 
-                            placeholder="Or type Roll Number manually..." 
-                            value={scannedRollInput}
-                            onChange={(e) => setScannedRollInput(e.target.value)}
-                            className="flex-1 bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded py-2 px-3 outline-none font-mono"
-                            style={{ border: '1.5px solid var(--nb-ink)' }}
-                          />
-                          <button 
-                            type="submit" 
-                            className="nb-btn text-[10px] font-bold uppercase px-4 py-2 cursor-pointer"
-                          >
-                            Mark
-                          </button>
-                        </form>
-                      </div>
-                    )}
-
-                    {/* Scan Result Feedback Banner */}
-                    {scanResultMsg && (
-                      <div 
-                        className={`p-3 rounded flex items-center justify-between gap-2.5 transition-all animate-in fade-in zoom-in-95 ${
-                          scanResultType === 'success' 
-                            ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300' 
-                            : scanResultType === 'info'
-                            ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
-                            : 'bg-rose-500/15 text-rose-800 dark:text-rose-300'
-                        }`}
+                {/* Event Selector */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="nb-label text-[10px] text-[var(--nb-secondary)]">SELECT EVENT TO MANAGE</label>
+                    {selectedEventId && activeEvent && (
+                      <button
+                        onClick={() => exportAttendanceCSV(activeEvent)}
+                        className="nb-btn-ghost text-[10px] flex items-center gap-1.5 px-2.5 py-1 font-bold uppercase cursor-pointer"
                         style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
-                        <div className="flex items-center gap-2 text-xs font-bold">
-                          {scanResultType === 'success' && <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />}
-                          {scanResultType === 'info' && <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />}
-                          {scanResultType === 'error' && <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
-                          <span>{scanResultMsg}</span>
-                        </div>
-                        <button
-                          onClick={() => setScanResultMsg('')}
-                          className="text-[var(--nb-secondary)] hover:text-[var(--nb-content)] p-1 cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                        <Download className="w-3 h-3" />
+                        Export CSV
+                      </button>
                     )}
                   </div>
-
-                  {/* REGISTRATIONS LIST */}
-                  <div 
-                    className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
-                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                  <select
+                    value={selectedEventId}
+                    onChange={(e) => {
+                      setSelectedEventId(e.target.value);
+                      setScanResultMsg('');
+                    }}
+                    className="bg-[var(--nb-surface)] text-xs text-[var(--nb-content)] rounded py-2 px-3 outline-none font-bold"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--nb-ink)]/15 pb-2.5 gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="nb-label text-xs font-bold text-[var(--nb-content)]">
-                          Registered Students ({activeRegistrations?.length || 0})
-                        </span>
-                        <span 
-                          className="nb-tag text-[10px] font-mono font-bold bg-emerald-400 text-black"
-                          style={{ border: '1px solid var(--nb-ink)' }}
+                    {events.length === 0 && <option value="">No events available</option>}
+                    {events.map(ev => (
+                      <option key={ev.eventId} value={ev.eventId}>{ev.title} ({ev.date})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedEventId && activeEvent && (
+                  <>
+                    {/* Event Date Status Banner */}
+                    {isBeforeEvent ? (
+                      <div
+                        className="bg-amber-500/10 text-xs p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-2 border-amber-500/40"
+                        style={{ boxShadow: 'var(--shadow-hard-sm)' }}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded bg-amber-400 text-black flex items-center justify-center shrink-0 border border-black font-bold">
+                            <Lock className="w-4 h-4 stroke-[2.5]" />
+                          </div>
+                          <div>
+                            <div className="font-mono font-bold text-xs text-[var(--nb-content)]">
+                              ATTENDANCE CHECK-IN LOCKED
+                            </div>
+                            <div className="text-[11px] text-[var(--nb-secondary)] mt-0.5">
+                              Event scheduled for <strong className="font-mono text-[var(--nb-content)]">{activeEvent.date}</strong>. Attendance opens on the event date.
+                            </div>
+                          </div>
+                        </div>
+                        <span
+                          className="nb-tag text-[9px] font-mono font-bold self-start sm:self-auto bg-amber-400 text-black border border-black uppercase"
                         >
-                          {activeRegistrations?.filter(r => r.status === 'Attended').length || 0} Present
+                          Opens on {activeEvent.date}
                         </span>
                       </div>
+                    ) : isEventToday ? (
+                      <div
+                        className="bg-emerald-500/10 text-xs p-3.5 rounded-lg flex items-center justify-between gap-2 border-2 border-emerald-500/40"
+                        style={{ boxShadow: 'var(--shadow-hard-sm)' }}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded bg-emerald-400 text-black flex items-center justify-center shrink-0 border border-black font-bold">
+                            <CheckCircle className="w-4 h-4 stroke-[2.5]" />
+                          </div>
+                          <div>
+                            <div className="font-mono font-bold text-xs text-[var(--nb-content)]">
+                              EVENT DAY ACTIVE ({activeEvent.date})
+                            </div>
+                            <div className="text-[11px] text-[var(--nb-secondary)] mt-0.5">
+                              Live scanner and attendance verification are unlocked.
+                            </div>
+                          </div>
+                        </div>
+                        <span className="nb-tag-green text-[9px] font-mono font-bold uppercase">
+                          Live Today
+                        </span>
+                      </div>
+                    ) : (
+                      <div
+                        className="bg-[var(--nb-surface-accent)] text-xs p-3 rounded-lg flex items-center justify-between gap-2 border border-[var(--nb-ink)]/20"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-[var(--nb-secondary)] shrink-0" />
+                          <span className="text-[var(--nb-secondary)]">Concluded Event ({activeEvent.date}) — Post-Event Record Updates Active</span>
+                        </div>
+                      </div>
+                    )}
 
-                      {activeEvent && (
-                        <button 
-                          type="button"
-                          onClick={() => handleGenerateBatchForEvent(activeEvent.eventId)}
-                          disabled={!activeRegistrations?.some(r => r.status === 'Attended')}
-                          className="nb-btn text-[10px] py-1.5 px-3 font-bold uppercase cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                          title="Generate batch certificates for all attended students of this event"
+                    {/* QR SCANNER CARD */}
+                    <div
+                      className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3.5"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <div className="flex justify-between items-center border-b border-[var(--nb-ink)]/15 pb-2">
+                        <span className="nb-label text-xs font-bold text-[var(--nb-content)] flex items-center gap-1.5">
+                          <QrCode className="w-4 h-4 text-[var(--nb-accent)]" />
+                          Quick Check-in Scanner
+                        </span>
+                        {isBeforeEvent ? (
+                          <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border border-[var(--nb-ink)]/30 flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-amber-500" /> Locked until {activeEvent.date}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setShowQRScanner(!showQRScanner)}
+                            className={`text-xs px-3 py-1.5 font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase ${showQRScanner
+                                ? 'nb-btn-ghost'
+                                : 'nb-btn'
+                              }`}
+                            style={{ border: '1.5px solid var(--nb-ink)' }}
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            {showQRScanner ? 'Close Scanner' : 'Open Camera'}
+                          </button>
+                        )}
+                      </div>
+
+                      {isBeforeEvent ? (
+                        <div className="py-6 px-4 text-center rounded-lg bg-[var(--nb-surface-accent)] border border-dashed border-[var(--nb-ink)]/30 space-y-2">
+                          <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30">
+                            <Lock className="w-5 h-5 stroke-[2.5]" />
+                          </div>
+                          <h5 className="nb-headline text-sm text-[var(--nb-content)]">Check-in Camera Inactive</h5>
+                          <p className="text-xs text-[var(--nb-secondary)] max-w-sm mx-auto leading-relaxed">
+                            Attendance check-in opens on the scheduled date (<strong className="font-mono text-[var(--nb-content)]">{activeEvent.date}</strong>). Neither QR scanning nor manual roll marking is permitted prior to event day.
+                          </p>
+                        </div>
+                      ) : showQRScanner && (
+                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <p className="text-[10px] text-[var(--nb-secondary)]">
+                            Point camera at student QR pass or upload a photo to verify attendance instantly.
+                          </p>
+
+                          <QRCameraScanner
+                            onScan={(text) => {
+                              handleQRCheckIn(text);
+                            }}
+                            onError={(err) => {
+                              if (err && err.message) {
+                                setScanResultMsg(err.message);
+                                setScanResultType('error');
+                              }
+                            }}
+                          />
+
+                          <form onSubmit={(e) => { e.preventDefault(); handleQRCheckIn(scannedRollInput); }} className="flex gap-2 pt-1">
+                            <input
+                              type="text"
+                              placeholder="Or type Roll Number manually..."
+                              value={scannedRollInput}
+                              onChange={(e) => setScannedRollInput(e.target.value)}
+                              className="flex-1 bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded py-2 px-3 outline-none font-mono"
+                              style={{ border: '1.5px solid var(--nb-ink)' }}
+                            />
+                            <button
+                              type="submit"
+                              className="nb-btn text-[10px] font-bold uppercase px-4 py-2 cursor-pointer"
+                            >
+                              Mark
+                            </button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* Scan Result Feedback Banner */}
+                      {scanResultMsg && (
+                        <div
+                          className={`p-3 rounded flex items-center justify-between gap-2.5 transition-all animate-in fade-in zoom-in-95 ${scanResultType === 'success'
+                              ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300'
+                              : scanResultType === 'info'
+                                ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+                                : 'bg-rose-500/15 text-rose-800 dark:text-rose-300'
+                            }`}
+                          style={{ border: '1.5px solid var(--nb-ink)' }}
                         >
-                          <Zap className="w-3 h-3 text-amber-300" />
-                          <span>Generate Batch Certificates</span>
-                        </button>
+                          <div className="flex items-center gap-2 text-xs font-bold">
+                            {scanResultType === 'success' && <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />}
+                            {scanResultType === 'info' && <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />}
+                            {scanResultType === 'error' && <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+                            <span>{scanResultMsg}</span>
+                          </div>
+                          <button
+                            onClick={() => setScanResultMsg('')}
+                            className="text-[var(--nb-secondary)] hover:text-[var(--nb-content)] p-1 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-[var(--nb-surface-accent)] border-b-2 border-[var(--nb-ink)]">
-                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">ROLL NO.</th>
-                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">NAME</th>
-                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">TYPE</th>
-                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-center">ATTENDANCE</th>
-                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-center">CERTIFICATE</th>
-                            <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-right">ACTION</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--nb-ink)]/15">
-                          {(() => {
-                            const currentRegs = activeRegistrations;
-                            if (currentRegs.length === 0) {
-                              return (
-                                <tr>
-                                  <td colSpan={6} className="py-6 text-center text-xs text-[var(--nb-secondary)] italic">
-                                    No registrations yet.
-                                  </td>
-                                </tr>
-                              );
-                            }
+                    {/* REGISTRATIONS LIST */}
+                    <div
+                      className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3"
+                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--nb-ink)]/15 pb-2.5 gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="nb-label text-xs font-bold text-[var(--nb-content)]">
+                            Registered Students ({activeRegistrations?.length || 0})
+                          </span>
+                          <span
+                            className="nb-tag text-[10px] font-mono font-bold bg-emerald-400 text-black"
+                            style={{ border: '1px solid var(--nb-ink)' }}
+                          >
+                            {activeRegistrations?.filter(r => r.status === 'Attended').length || 0} Present
+                          </span>
+                        </div>
 
-                            return currentRegs.map(reg => {
-                              const profile = allUsers.find(u => u.uid === reg.studentId);
-                              if (!profile) return null;
-                              const existingCert = dbCertificates.find(c => 
-                                c.eventId === activeEvent?.eventId && 
-                                (c.studentId === reg.studentId || (profile.rollNumber && c.rollNumber.toUpperCase() === profile.rollNumber.toUpperCase()))
-                              );
-                              const isCertIssued = Boolean(existingCert && existingCert.status !== 'Revoked');
+                        {activeEvent && (
+                          <button
+                            type="button"
+                            onClick={() => handleGenerateBatchForEvent(activeEvent.eventId)}
+                            disabled={!activeRegistrations?.some(r => r.status === 'Attended')}
+                            className="nb-btn text-[10px] py-1.5 px-3 font-bold uppercase cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                            title="Generate batch certificates for all attended students of this event"
+                          >
+                            <Zap className="w-3 h-3 text-amber-300" />
+                            <span>Generate Batch Certificates</span>
+                          </button>
+                        )}
+                      </div>
 
-                              return (
-                                <tr key={reg.registrationId} className="hover:bg-[var(--nb-surface-accent)]/50 transition-colors">
-                                  <td className="py-2.5 px-2 text-[11px] font-mono font-bold text-[var(--nb-content)]">
-                                    {profile.rollNumber || 'N/A'}
-                                  </td>
-                                  <td className="py-2.5 px-2 text-xs font-bold text-[var(--nb-content)]">
-                                    {profile.name || 'Unknown User'}
-                                    {reg.teamName && (
-                                      <span className="block text-[9px] text-[var(--nb-secondary)] mt-0.5">Team: {reg.teamName}</span>
-                                    )}
-                                  </td>
-                                  <td className="py-2.5 px-2">
-                                    <span 
-                                      className="nb-tag text-[9px] font-bold uppercase"
-                                      style={{ border: '1px solid var(--nb-ink)' }}
-                                    >
-                                      {(reg.isTeam ? 'Team' : 'Solo')}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-2 text-center">
-                                    {reg.status === 'Attended' ? (
-                                      <span 
-                                        className="inline-flex items-center gap-1 bg-emerald-400 text-black px-2 py-0.5 rounded text-[9px] font-bold uppercase"
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-[var(--nb-surface-accent)] border-b-2 border-[var(--nb-ink)]">
+                              <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">ROLL NO.</th>
+                              <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">NAME</th>
+                              <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)]">TYPE</th>
+                              <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-center">ATTENDANCE</th>
+                              <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-center">CERTIFICATE</th>
+                              <th className="py-2.5 px-2 nb-label text-[10px] text-[var(--nb-content)] text-right">ACTION</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[var(--nb-ink)]/15">
+                            {(() => {
+                              const currentRegs = activeRegistrations;
+                              if (currentRegs.length === 0) {
+                                return (
+                                  <tr>
+                                    <td colSpan={6} className="py-6 text-center text-xs text-[var(--nb-secondary)] italic">
+                                      No registrations yet.
+                                    </td>
+                                  </tr>
+                                );
+                              }
+
+                              return currentRegs.map(reg => {
+                                const profile = allUsers.find(u => u.uid === reg.studentId);
+                                if (!profile) return null;
+                                const existingCert = dbCertificates.find(c =>
+                                  c.eventId === activeEvent?.eventId &&
+                                  (c.studentId === reg.studentId || (profile.rollNumber && c.rollNumber.toUpperCase() === profile.rollNumber.toUpperCase()))
+                                );
+                                const isCertIssued = Boolean(existingCert && existingCert.status !== 'Revoked');
+
+                                return (
+                                  <tr key={reg.registrationId} className="hover:bg-[var(--nb-surface-accent)]/50 transition-colors">
+                                    <td className="py-2.5 px-2 text-[11px] font-mono font-bold text-[var(--nb-content)]">
+                                      {profile.rollNumber || 'N/A'}
+                                    </td>
+                                    <td className="py-2.5 px-2 text-xs font-bold text-[var(--nb-content)]">
+                                      {profile.name || 'Unknown User'}
+                                      {reg.teamName && (
+                                        <span className="block text-[9px] text-[var(--nb-secondary)] mt-0.5">Team: {reg.teamName}</span>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 px-2">
+                                      <span
+                                        className="nb-tag text-[9px] font-bold uppercase"
                                         style={{ border: '1px solid var(--nb-ink)' }}
                                       >
-                                        <CheckCircle className="w-3 h-3" />
-                                        Present
+                                        {(reg.isTeam ? 'Team' : 'Solo')}
                                       </span>
-                                    ) : (
-                                      <span 
-                                        className="inline-flex items-center gap-1 bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] px-2 py-0.5 rounded text-[9px] font-bold uppercase"
-                                        style={{ border: '1px solid var(--nb-ink)/30' }}
-                                      >
-                                        Absent
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="py-2.5 px-2 text-center">
-                                    {isCertIssued && existingCert ? (
-                                      <span 
-                                        className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-[9px] font-mono font-bold"
-                                        style={{ border: '1px solid var(--nb-ink)' }}
-                                      >
-                                        <ShieldCheck className="w-3 h-3" />
-                                        <span>Issued</span>
-                                      </span>
-                                    ) : (
-                                      <span 
-                                        className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded text-[9px] font-mono font-bold"
-                                        style={{ border: '1px solid var(--nb-ink)' }}
-                                      >
-                                        <Lock className="w-3 h-3" />
-                                        <span>Locked</span>
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="py-2.5 px-2 text-right">
-                                    {reg.status === 'Attended' ? (
-                                      <button 
-                                        onClick={() => handleToggleAttendance(reg.registrationId, false)}
-                                        className="text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer hover:bg-rose-600"
-                                        style={{ border: '1px solid var(--nb-ink)' }}
-                                      >
-                                        Revoke
-                                      </button>
-                                    ) : isBeforeEvent ? (
-                                      <button 
-                                        disabled
-                                        title={`Attendance check-in opens on ${activeEvent.date}`}
-                                        className="text-[9px] px-2 py-1 font-bold uppercase rounded opacity-40 bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] cursor-not-allowed border border-[var(--nb-ink)]/30"
-                                      >
-                                        Locked
-                                      </button>
-                                    ) : (
-                                      <button 
-                                        onClick={() => handleToggleAttendance(reg.registrationId, true)}
-                                        className="nb-btn text-[9px] px-2 py-1 font-bold uppercase cursor-pointer"
-                                        style={{ border: '1px solid var(--nb-ink)' }}
-                                      >
-                                        Mark Present
-                                      </button>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            });
-                          })()}
-                        </tbody>
-                      </table>
+                                    </td>
+                                    <td className="py-2.5 px-2 text-center">
+                                      {reg.status === 'Attended' ? (
+                                        <span
+                                          className="inline-flex items-center gap-1 bg-emerald-400 text-black px-2 py-0.5 rounded text-[9px] font-bold uppercase"
+                                          style={{ border: '1px solid var(--nb-ink)' }}
+                                        >
+                                          <CheckCircle className="w-3 h-3" />
+                                          Present
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className="inline-flex items-center gap-1 bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] px-2 py-0.5 rounded text-[9px] font-bold uppercase"
+                                          style={{ border: '1px solid var(--nb-ink)/30' }}
+                                        >
+                                          Absent
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 px-2 text-center">
+                                      {isCertIssued && existingCert ? (
+                                        <span
+                                          className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-[9px] font-mono font-bold"
+                                          style={{ border: '1px solid var(--nb-ink)' }}
+                                        >
+                                          <ShieldCheck className="w-3 h-3" />
+                                          <span>Issued</span>
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded text-[9px] font-mono font-bold"
+                                          style={{ border: '1px solid var(--nb-ink)' }}
+                                        >
+                                          <Lock className="w-3 h-3" />
+                                          <span>Locked</span>
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 px-2 text-right">
+                                      {reg.status === 'Attended' ? (
+                                        <button
+                                          onClick={() => handleToggleAttendance(reg.registrationId, false)}
+                                          className="text-[9px] bg-rose-500 text-white px-2 py-1 rounded font-bold uppercase cursor-pointer hover:bg-rose-600"
+                                          style={{ border: '1px solid var(--nb-ink)' }}
+                                        >
+                                          Revoke
+                                        </button>
+                                      ) : isBeforeEvent ? (
+                                        <button
+                                          disabled
+                                          title={`Attendance check-in opens on ${activeEvent.date}`}
+                                          className="text-[9px] px-2 py-1 font-bold uppercase rounded opacity-40 bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] cursor-not-allowed border border-[var(--nb-ink)]/30"
+                                        >
+                                          Locked
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleToggleAttendance(reg.registrationId, true)}
+                                          className="nb-btn text-[9px] px-2 py-1 font-bold uppercase cursor-pointer"
+                                          style={{ border: '1px solid var(--nb-ink)' }}
+                                        >
+                                          Mark Present
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              });
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </div>
-          );
+                  </>
+                )}
+              </div>
+            );
           })()}
           {/* ==================== 4. STUDENTS DB & BULK IMPORT ==================== */}
           {activeTab === 'students' && canManageRoles && (
@@ -2181,7 +2208,7 @@ export default function AdminPanelView({
 
               {/* BULK CREATOR INTERFACE */}
               {showBulkAdd && (
-                <div 
+                <div
                   className="bg-[var(--nb-surface)] p-4 rounded-lg space-y-3.5"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
@@ -2191,9 +2218,8 @@ export default function AdminPanelView({
                       <button
                         type="button"
                         onClick={() => setBulkMode('series')}
-                        className={`text-xs font-bold px-3 py-1 rounded cursor-pointer uppercase ${
-                          bulkMode === 'series' ? 'nb-btn' : 'nb-btn-ghost'
-                        }`}
+                        className={`text-xs font-bold px-3 py-1 rounded cursor-pointer uppercase ${bulkMode === 'series' ? 'nb-btn' : 'nb-btn-ghost'
+                          }`}
                         style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         Roll Series
@@ -2201,9 +2227,8 @@ export default function AdminPanelView({
                       <button
                         type="button"
                         onClick={() => setBulkMode('column')}
-                        className={`text-xs font-bold px-3 py-1 rounded cursor-pointer uppercase ${
-                          bulkMode === 'column' ? 'nb-btn' : 'nb-btn-ghost'
-                        }`}
+                        className={`text-xs font-bold px-3 py-1 rounded cursor-pointer uppercase ${bulkMode === 'column' ? 'nb-btn' : 'nb-btn-ghost'
+                          }`}
                         style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         Paste Column
@@ -2274,11 +2299,10 @@ export default function AdminPanelView({
                       <button
                         type="button"
                         onClick={() => setPasswordOption('roll')}
-                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                          passwordOption === 'roll'
+                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${passwordOption === 'roll'
                             ? 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)]'
                             : 'bg-[var(--nb-surface)] text-[var(--nb-secondary)] opacity-70'
-                        }`}
+                          }`}
                         style={{ border: passwordOption === 'roll' ? '2px solid var(--nb-ink)' : '1px solid var(--nb-ink)/30' }}
                       >
                         <span className="font-bold">Same as Roll</span>
@@ -2287,11 +2311,10 @@ export default function AdminPanelView({
                       <button
                         type="button"
                         onClick={() => setPasswordOption('preset')}
-                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                          passwordOption === 'preset'
+                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${passwordOption === 'preset'
                             ? 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)]'
                             : 'bg-[var(--nb-surface)] text-[var(--nb-secondary)] opacity-70'
-                        }`}
+                          }`}
                         style={{ border: passwordOption === 'preset' ? '2px solid var(--nb-ink)' : '1px solid var(--nb-ink)/30' }}
                       >
                         <span className="font-bold">Preset Code</span>
@@ -2300,11 +2323,10 @@ export default function AdminPanelView({
                       <button
                         type="button"
                         onClick={() => setPasswordOption('random')}
-                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                          passwordOption === 'random'
+                        className={`text-xs font-bold p-2 rounded transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${passwordOption === 'random'
                             ? 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)]'
                             : 'bg-[var(--nb-surface)] text-[var(--nb-secondary)] opacity-70'
-                        }`}
+                          }`}
                         style={{ border: passwordOption === 'random' ? '2px solid var(--nb-ink)' : '1px solid var(--nb-ink)/30' }}
                       >
                         <span className="font-bold">Random Alpha</span>
@@ -2339,7 +2361,7 @@ export default function AdminPanelView({
 
               {/* STUDENT LIST WITH GROUPING AND SEARCH */}
               <div className="flex flex-col gap-2">
-                <div 
+                <div
                   className="flex justify-between items-center bg-[var(--nb-surface)] rounded-lg px-3 py-2"
                   style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
@@ -2357,22 +2379,22 @@ export default function AdminPanelView({
 
                 <div className="flex justify-between items-center px-1">
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       id="selectAll"
                       className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
                       checked={
-                        allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                        allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
                           u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                           u.name.toLowerCase().includes(studentSearch.toLowerCase())
-                        ).length > 0 && 
-                        selectedStudentIds.length === allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                        ).length > 0 &&
+                        selectedStudentIds.length === allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
                           u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                           u.name.toLowerCase().includes(studentSearch.toLowerCase())
                         ).length
                       }
                       onChange={(e) => {
-                        const filtered = allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                        const filtered = allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
                           u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                           u.name.toLowerCase().includes(studentSearch.toLowerCase())
                         );
@@ -2387,9 +2409,9 @@ export default function AdminPanelView({
                       SELECT ALL VISIBLE
                     </label>
                   </div>
-                  
+
                   {selectedStudentIds.length > 0 && (
-                    <HoldButton 
+                    <HoldButton
                       size="sm"
                       holdTime={2000}
                       radius={4}
@@ -2411,7 +2433,7 @@ export default function AdminPanelView({
 
               <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
                 {(() => {
-                  const filteredStudents = allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
+                  const filteredStudents = allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
                     u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                     u.name.toLowerCase().includes(studentSearch.toLowerCase())
                   );
@@ -2432,8 +2454,8 @@ export default function AdminPanelView({
                   }, {} as Record<string, typeof filteredStudents>);
 
                   return Object.entries(groupedStudents).map(([groupKey, studentsInGroup]) => (
-                    <div 
-                      key={groupKey} 
+                    <div
+                      key={groupKey}
                       className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-2.5"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -2445,80 +2467,81 @@ export default function AdminPanelView({
                         {studentsInGroup.map((student) => {
                           const isExpanded = expandedStudentId === student.uid;
                           return (
-                          <div 
-                            key={student.uid} 
-                            onClick={() => setExpandedStudentId(isExpanded ? null : student.uid)}
-                            className="bg-[var(--nb-surface-accent)] rounded p-3 flex flex-col gap-2.5 cursor-pointer transition-all"
-                            style={{ border: '1.5px solid var(--nb-ink)' }}
-                          >
-                            <div className="flex justify-between items-center w-full">
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center justify-center mr-1" onClick={(e) => e.stopPropagation()}>
-                                  <input 
-                                    type="checkbox" 
-                                    className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
-                                    checked={selectedStudentIds.includes(student.uid)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedStudentIds(prev => [...prev, student.uid]);
-                                      } else {
-                                        setSelectedStudentIds(prev => prev.filter(id => id !== student.uid));
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <span 
-                                  className="nb-tag font-mono text-[10px] font-bold"
-                                  style={{ border: '1px solid var(--nb-ink)' }}
-                                >
-                                  {student.rollNumber || 'NO ROLL'}
-                                </span>
-                                <h5 className="nb-headline text-xs text-[var(--nb-content)] truncate">{student.name}</h5>
-                              </div>
-                              <span className="nb-tag text-[10px] font-mono font-bold">{isExpanded ? '[-]' : '[+]'}</span>
-                            </div>
-                            
-                            {isExpanded && (
-                              <div className="pt-2 border-t border-[var(--nb-ink)]/15 flex justify-between gap-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px] text-[var(--nb-secondary)] flex-1">
-                                  <span className="truncate">Email: <strong className="text-[var(--nb-content)] font-mono">{student.email}</strong></span>
-                                  {student.googleEmail && (<span className="truncate">Google: <strong className="text-[var(--nb-content)] font-mono">{student.googleEmail}</strong></span>)}
-                                  <span>Phone: <strong className="text-[var(--nb-content)]">{student.phone || 'N/A'}</strong></span>
-                                  <span>Password: <strong className="font-mono bg-[var(--nb-surface)] px-1 py-0.2 rounded border border-[var(--nb-ink)]/20">••••••••</strong></span>
-                                  <span>Role: <strong className="uppercase text-[var(--nb-content)]">{student.role}</strong></span>
-                                </div>
-                                
-                                <div className="flex flex-col gap-1.5 flex-shrink-0 w-24">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); student.rollNumber && handleResetPassword(student.uid, student.rollNumber); }}
-                                    className="nb-btn-ghost text-[9px] font-bold uppercase py-1 px-2 rounded cursor-pointer w-full text-center"
+                            <div
+                              key={student.uid}
+                              onClick={() => setExpandedStudentId(isExpanded ? null : student.uid)}
+                              className="bg-[var(--nb-surface-accent)] rounded p-3 flex flex-col gap-2.5 cursor-pointer transition-all"
+                              style={{ border: '1.5px solid var(--nb-ink)' }}
+                            >
+                              <div className="flex justify-between items-center w-full">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center justify-center mr-1" onClick={(e) => e.stopPropagation()}>
+                                    <input
+                                      type="checkbox"
+                                      className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
+                                      checked={selectedStudentIds.includes(student.uid)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedStudentIds(prev => [...prev, student.uid]);
+                                        } else {
+                                          setSelectedStudentIds(prev => prev.filter(id => id !== student.uid));
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                  <span
+                                    className="nb-tag font-mono text-[10px] font-bold"
                                     style={{ border: '1px solid var(--nb-ink)' }}
                                   >
-                                    Reset Pass
-                                  </button>
-                                  <div onClick={(e) => e.stopPropagation()}>
-                                    <HoldButton
-                                      size="sm"
-                                      holdTime={1600}
-                                      radius={4}
-                                      backgroundColor="rgba(244, 63, 94, 0.1)"
-                                      fillColor="#e11d48"
-                                      textColor="#fda4af"
-                                      fillTextColor="#ffffff"
-                                      doneLabel="Deleted"
-                                      onHold={() => handleDeleteUser(student.uid)}
-                                      className="border border-rose-500/20 text-[10px] font-bold uppercase !h-7 w-full !px-1"
-                                      style={{ border: '1px solid var(--nb-ink)', fontSize: '10px' }}
-                                    >
-                                      Hold to Delete
-                                    </HoldButton>
-                                  </div>
-                                  
+                                    {student.rollNumber || 'NO ROLL'}
+                                  </span>
+                                  <h5 className="nb-headline text-xs text-[var(--nb-content)] truncate">{student.name}</h5>
                                 </div>
+                                <span className="nb-tag text-[10px] font-mono font-bold">{isExpanded ? '[-]' : '[+]'}</span>
                               </div>
-                            )}
-                          </div>
-                        );})}
+
+                              {isExpanded && (
+                                <div className="pt-2 border-t border-[var(--nb-ink)]/15 flex justify-between gap-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px] text-[var(--nb-secondary)] flex-1">
+                                    <span className="truncate">Email: <strong className="text-[var(--nb-content)] font-mono">{student.email}</strong></span>
+                                    {student.googleEmail && (<span className="truncate">Google: <strong className="text-[var(--nb-content)] font-mono">{student.googleEmail}</strong></span>)}
+                                    <span>Phone: <strong className="text-[var(--nb-content)]">{student.phone || 'N/A'}</strong></span>
+                                    <span>Password: <strong className="font-mono bg-[var(--nb-surface)] px-1 py-0.2 rounded border border-[var(--nb-ink)]/20">••••••••</strong></span>
+                                    <span>Role: <strong className="uppercase text-[var(--nb-content)]">{student.role}</strong></span>
+                                  </div>
+
+                                  <div className="flex flex-col gap-1.5 flex-shrink-0 w-24">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); student.rollNumber && handleResetPassword(student.uid, student.rollNumber); }}
+                                      className="nb-btn-ghost text-[9px] font-bold uppercase py-1 px-2 rounded cursor-pointer w-full text-center"
+                                      style={{ border: '1px solid var(--nb-ink)' }}
+                                    >
+                                      Reset Pass
+                                    </button>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                      <HoldButton
+                                        size="sm"
+                                        holdTime={1600}
+                                        radius={4}
+                                        backgroundColor="rgba(244, 63, 94, 0.1)"
+                                        fillColor="#e11d48"
+                                        textColor="#fda4af"
+                                        fillTextColor="#ffffff"
+                                        doneLabel="Deleted"
+                                        onHold={() => handleDeleteUser(student.uid)}
+                                        className="border border-rose-500/20 text-[10px] font-bold uppercase !h-7 w-full !px-1"
+                                        style={{ border: '1px solid var(--nb-ink)', fontSize: '10px' }}
+                                      >
+                                        Hold to Delete
+                                      </HoldButton>
+                                    </div>
+
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ));
@@ -2530,7 +2553,7 @@ export default function AdminPanelView({
           {activeTab === 'certificates' && canManageRoles && (
             <div className="flex flex-col h-full overflow-hidden">
               {/* Header with Sub-tabs and actions */}
-              <div 
+              <div
                 className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-[var(--nb-surface)]"
                 style={{ borderBottom: '2px solid var(--nb-ink)' }}
               >
@@ -2540,12 +2563,11 @@ export default function AdminPanelView({
                       <Award className="w-4 h-4 text-[var(--nb-accent)]" />
                       <span>E-Certificate Management & Database</span>
                     </h3>
-                    <span 
-                      className={`nb-tag text-[9px] font-mono font-bold ${
-                        isCertificatesEnabled 
-                          ? 'bg-emerald-400 text-black' 
+                    <span
+                      className={`nb-tag text-[9px] font-mono font-bold ${isCertificatesEnabled
+                          ? 'bg-emerald-400 text-black'
                           : 'bg-amber-400 text-black'
-                      }`}
+                        }`}
                       style={{ border: '1px solid var(--nb-ink)' }}
                     >
                       {isCertificatesEnabled ? 'ACTIVE' : 'PAUSED'}
@@ -2593,18 +2615,17 @@ export default function AdminPanelView({
               </div>
 
               {/* Sub-Navigation Switcher */}
-              <div 
+              <div
                 className="px-5 py-2.5 bg-[var(--nb-surface-accent)] flex items-center justify-between shrink-0"
                 style={{ borderBottom: '2px solid var(--nb-ink)' }}
               >
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCertSubTab('batch')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${
-                      certSubTab === 'batch'
+                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${certSubTab === 'batch'
                         ? 'nb-btn'
                         : 'nb-btn-ghost'
-                    }`}
+                      }`}
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <Zap className="w-3.5 h-3.5" />
@@ -2616,11 +2637,10 @@ export default function AdminPanelView({
 
                   <button
                     onClick={() => setCertSubTab('db')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${
-                      certSubTab === 'db'
+                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${certSubTab === 'db'
                         ? 'nb-btn'
                         : 'nb-btn-ghost'
-                    }`}
+                      }`}
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <Database className="w-3.5 h-3.5" />
@@ -2632,11 +2652,10 @@ export default function AdminPanelView({
 
                   <button
                     onClick={() => setCertSubTab('template')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${
-                      certSubTab === 'template'
+                    className={`px-3 py-1.5 text-xs font-bold uppercase cursor-pointer flex items-center gap-1.5 rounded ${certSubTab === 'template'
                         ? 'nb-btn'
                         : 'nb-btn-ghost'
-                    }`}
+                      }`}
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -2649,11 +2668,10 @@ export default function AdminPanelView({
                   <span className="nb-label text-[10px] text-[var(--nb-secondary)] hidden sm:inline">FEATURE:</span>
                   <button
                     onClick={() => handleToggleCertificates()}
-                    className={`px-2.5 py-1 text-[10px] font-bold tracking-tight cursor-pointer uppercase rounded flex items-center gap-1.5 ${
-                      isCertificatesEnabled
+                    className={`px-2.5 py-1 text-[10px] font-bold tracking-tight cursor-pointer uppercase rounded flex items-center gap-1.5 ${isCertificatesEnabled
                         ? 'bg-emerald-400 text-black'
                         : 'nb-btn-ghost'
-                    }`}
+                      }`}
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <div className={`w-1.5 h-1.5 rounded-full ${isCertificatesEnabled ? 'bg-black' : 'bg-[var(--nb-secondary)]'}`} />
@@ -2669,8 +2687,8 @@ export default function AdminPanelView({
                   {(() => {
                     const allAttendedRegs = registrations.filter(r => r.status === 'Attended');
                     const pendingTotal = allAttendedRegs.filter(r => {
-                      return !dbCertificates.some(c => 
-                        c.eventId === r.eventId && 
+                      return !dbCertificates.some(c =>
+                        c.eventId === r.eventId &&
                         (c.studentId === r.studentId || (r.rollNumber && c.rollNumber.toUpperCase() === r.rollNumber.toUpperCase()))
                       );
                     }).length;
@@ -2678,7 +2696,7 @@ export default function AdminPanelView({
 
                     return (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                        <div 
+                        <div
                           className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                           style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                         >
@@ -2689,7 +2707,7 @@ export default function AdminPanelView({
                           <span className="text-[10px] text-[var(--nb-secondary)]">Department event catalogue</span>
                         </div>
 
-                        <div 
+                        <div
                           className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                           style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                         >
@@ -2700,7 +2718,7 @@ export default function AdminPanelView({
                           <span className="text-[10px] text-[var(--nb-secondary)]">Eligible for certificates</span>
                         </div>
 
-                        <div 
+                        <div
                           className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                           style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                         >
@@ -2711,7 +2729,7 @@ export default function AdminPanelView({
                           <span className="text-[10px] text-[var(--nb-secondary)]">Unlocked in student profiles</span>
                         </div>
 
-                        <div 
+                        <div
                           className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                           style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                         >
@@ -2726,7 +2744,7 @@ export default function AdminPanelView({
                   })()}
 
                   {/* Batch Authority Banner */}
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface-accent)] rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3"
                     style={{ border: '2px solid var(--nb-ink)' }}
                   >
@@ -2755,18 +2773,17 @@ export default function AdminPanelView({
                   </div>
 
                   {/* Filter & Search Bar for Events */}
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface)] rounded-lg p-3 flex flex-col sm:flex-row items-center justify-between gap-3"
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => setBatchEventStatusFilter('all')}
-                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer ${
-                          batchEventStatusFilter === 'all'
+                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer ${batchEventStatusFilter === 'all'
                             ? 'nb-btn'
                             : 'nb-btn-ghost'
-                        }`}
+                          }`}
                         style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         All Events ({events.length})
@@ -2774,11 +2791,10 @@ export default function AdminPanelView({
 
                       <button
                         onClick={() => setBatchEventStatusFilter('pending')}
-                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1 ${
-                          batchEventStatusFilter === 'pending'
+                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1 ${batchEventStatusFilter === 'pending'
                             ? 'bg-amber-400 text-black'
                             : 'nb-btn-ghost'
-                        }`}
+                          }`}
                         style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         <Lock className="w-3 h-3" />
@@ -2787,11 +2803,10 @@ export default function AdminPanelView({
 
                       <button
                         onClick={() => setBatchEventStatusFilter('completed')}
-                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1 ${
-                          batchEventStatusFilter === 'completed'
+                        className={`px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer flex items-center gap-1 ${batchEventStatusFilter === 'completed'
                             ? 'bg-emerald-400 text-black'
                             : 'nb-btn-ghost'
-                        }`}
+                          }`}
                         style={{ border: '1.5px solid var(--nb-ink)' }}
                       >
                         <CheckCircle className="w-3 h-3" />
@@ -2820,8 +2835,8 @@ export default function AdminPanelView({
                         const eventAttended = eventRegs.filter(r => r.status === 'Attended');
                         const eventCerts = dbCertificates.filter(c => c.eventId === ev.eventId);
                         const pendingCount = eventAttended.filter(r => {
-                          return !eventCerts.some(c => 
-                            c.studentId === r.studentId || 
+                          return !eventCerts.some(c =>
+                            c.studentId === r.studentId ||
                             (r.rollNumber && c.rollNumber.toUpperCase() === r.rollNumber.toUpperCase())
                           );
                         }).length;
@@ -2838,7 +2853,7 @@ export default function AdminPanelView({
 
                       if (filteredEvents.length === 0) {
                         return (
-                          <div 
+                          <div
                             className="bg-[var(--nb-surface)] rounded-lg p-8 text-center text-[var(--nb-secondary)] text-xs"
                             style={{ border: '2px solid var(--nb-ink)' }}
                           >
@@ -2852,8 +2867,8 @@ export default function AdminPanelView({
                         const eventAttended = eventRegs.filter(r => r.status === 'Attended');
                         const eventCerts = dbCertificates.filter(c => c.eventId === ev.eventId);
                         const pendingCount = eventAttended.filter(r => {
-                          return !eventCerts.some(c => 
-                            c.studentId === r.studentId || 
+                          return !eventCerts.some(c =>
+                            c.studentId === r.studentId ||
                             (r.rollNumber && c.rollNumber.toUpperCase() === r.rollNumber.toUpperCase())
                           );
                         }).length;
@@ -2868,12 +2883,12 @@ export default function AdminPanelView({
                           if (!participantQuery) return true;
                           const student = allUsers.find(u => u.uid === r.studentId);
                           return (r.studentName || student?.name || '').toLowerCase().includes(participantQuery) ||
-                                 (r.rollNumber || student?.rollNumber || '').toLowerCase().includes(participantQuery);
+                            (r.rollNumber || student?.rollNumber || '').toLowerCase().includes(participantQuery);
                         });
 
                         return (
-                          <div 
-                            key={ev.eventId} 
+                          <div
+                            key={ev.eventId}
                             className="bg-[var(--nb-surface)] rounded-lg overflow-hidden transition-all"
                             style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                           >
@@ -2884,7 +2899,7 @@ export default function AdminPanelView({
                                   <h4 className="nb-headline text-sm text-[var(--nb-content)] truncate">
                                     {ev.title}
                                   </h4>
-                                  <span 
+                                  <span
                                     className="nb-tag text-[9px] font-mono"
                                     style={{ border: '1px solid var(--nb-ink)' }}
                                   >
@@ -2893,14 +2908,14 @@ export default function AdminPanelView({
 
                                   {/* Status Badge */}
                                   {eventAttended.length === 0 ? (
-                                    <span 
+                                    <span
                                       className="nb-tag text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)]"
                                       style={{ border: '1px solid var(--nb-ink)/30' }}
                                     >
                                       ⚪ 0 Attendees Marked
                                     </span>
                                   ) : pendingCount === 0 ? (
-                                    <span 
+                                    <span
                                       className="nb-tag text-[9px] font-mono font-bold bg-emerald-400 text-black flex items-center gap-1"
                                       style={{ border: '1px solid var(--nb-ink)' }}
                                     >
@@ -2908,7 +2923,7 @@ export default function AdminPanelView({
                                       <span>All Batch Generated ({generatedCount}/{eventAttended.length})</span>
                                     </span>
                                   ) : (
-                                    <span 
+                                    <span
                                       className="nb-tag text-[9px] font-mono font-bold bg-amber-400 text-black flex items-center gap-1"
                                       style={{ border: '1px solid var(--nb-ink)' }}
                                     >
@@ -2953,11 +2968,10 @@ export default function AdminPanelView({
 
                                 <button
                                   onClick={() => setExpandedEventId(isExpanded ? null : ev.eventId)}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer ${
-                                    isExpanded 
-                                      ? 'nb-btn' 
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase transition-all cursor-pointer ${isExpanded
+                                      ? 'nb-btn'
                                       : 'nb-btn-ghost'
-                                  }`}
+                                    }`}
                                   style={{ border: '1.5px solid var(--nb-ink)' }}
                                 >
                                   <Users className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
@@ -2969,7 +2983,7 @@ export default function AdminPanelView({
 
                             {/* Expandable Participant Roster Drawer */}
                             {isExpanded && (
-                              <div 
+                              <div
                                 className="bg-[var(--nb-surface-accent)] p-4 space-y-3"
                                 style={{ borderTop: '2px solid var(--nb-ink)' }}
                               >
@@ -3029,7 +3043,7 @@ export default function AdminPanelView({
                                 </div>
 
                                 {/* Participants Table */}
-                                <div 
+                                <div
                                   className="bg-[var(--nb-surface)] rounded-lg overflow-hidden"
                                   style={{ border: '1.5px solid var(--nb-ink)' }}
                                 >
@@ -3055,8 +3069,8 @@ export default function AdminPanelView({
                                         displayedRegs.map(reg => {
                                           const student = allUsers.find(u => u.uid === reg.studentId || (reg.rollNumber && u.rollNumber?.toUpperCase() === reg.rollNumber.toUpperCase()));
                                           const isSelected = selectedInThis.includes(reg.studentId);
-                                          const existingCert = dbCertificates.find(c => 
-                                            c.eventId === ev.eventId && 
+                                          const existingCert = dbCertificates.find(c =>
+                                            c.eventId === ev.eventId &&
                                             (c.studentId === reg.studentId || (reg.rollNumber && c.rollNumber.toUpperCase() === reg.rollNumber.toUpperCase()))
                                           );
                                           const isCertIssued = Boolean(existingCert && existingCert.status !== 'Revoked');
@@ -3079,7 +3093,7 @@ export default function AdminPanelView({
 
                                               <td className="py-2.5 px-3">
                                                 <div className="flex items-center gap-2">
-                                                  <div 
+                                                  <div
                                                     className="w-7 h-7 rounded bg-[var(--nb-surface-accent)] overflow-hidden shrink-0"
                                                     style={{ border: '1px solid var(--nb-ink)' }}
                                                   >
@@ -3106,14 +3120,13 @@ export default function AdminPanelView({
 
                                               <td className="py-2.5 px-3">
                                                 <div className="flex items-center gap-1.5">
-                                                  <span 
-                                                    className={`nb-tag text-[9px] font-bold uppercase ${
-                                                      reg.status === 'Attended'
+                                                  <span
+                                                    className={`nb-tag text-[9px] font-bold uppercase ${reg.status === 'Attended'
                                                         ? 'bg-emerald-400 text-black'
                                                         : reg.status === 'Absent'
-                                                        ? 'bg-rose-500 text-white'
-                                                        : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)]'
-                                                    }`}
+                                                          ? 'bg-rose-500 text-white'
+                                                          : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)]'
+                                                      }`}
                                                     style={{ border: '1px solid var(--nb-ink)' }}
                                                   >
                                                     {reg.status}
@@ -3122,7 +3135,7 @@ export default function AdminPanelView({
                                                   <button
                                                     type="button"
                                                     onClick={async () => {
-                                                      const currentEv = events.find(e => e.eventId === currentCertEventId);
+                                                      const currentEv = events.find(e => e.eventId === ev.eventId);
                                                       if (reg.status !== 'Attended' && currentEv && isBeforeEventDate(currentEv.date)) {
                                                         setFeedbackErr(`Attendance Locked: Event scheduled for ${currentEv.date}. Check-in opens on event day.`);
                                                         setTimeout(() => setFeedbackErr(''), 3500);
@@ -3142,7 +3155,7 @@ export default function AdminPanelView({
                                               <td className="py-2.5 px-3">
                                                 {isCertIssued && existingCert ? (
                                                   <div className="space-y-0.5">
-                                                    <span 
+                                                    <span
                                                       className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded"
                                                       style={{ border: '1px solid var(--nb-ink)' }}
                                                     >
@@ -3161,7 +3174,7 @@ export default function AdminPanelView({
                                                     </div>
                                                   </div>
                                                 ) : (
-                                                  <span 
+                                                  <span
                                                     className="inline-flex items-center gap-1 text-[9px] font-mono font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded"
                                                     style={{ border: '1px solid var(--nb-ink)' }}
                                                   >
@@ -3226,7 +3239,7 @@ export default function AdminPanelView({
                 <div className="p-5 overflow-y-auto space-y-5 flex-grow">
                   {/* Summary Metric Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -3237,7 +3250,7 @@ export default function AdminPanelView({
                       <span className="text-[10px] text-[var(--nb-secondary)]">Verified credentials issued</span>
                     </div>
 
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -3248,7 +3261,7 @@ export default function AdminPanelView({
                       <span className="text-[10px] text-[var(--nb-secondary)]">Students eligible for certs</span>
                     </div>
 
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -3259,7 +3272,7 @@ export default function AdminPanelView({
                       <span className="text-[10px] text-[var(--nb-secondary)]">Out of {events.length} total events</span>
                     </div>
 
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface)] rounded-lg p-3.5 space-y-1"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -3272,7 +3285,7 @@ export default function AdminPanelView({
                   </div>
 
                   {/* Filters: Event Select & Text Search */}
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface)] rounded-lg p-3.5 flex flex-col sm:flex-row items-center gap-3"
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
@@ -3322,7 +3335,7 @@ export default function AdminPanelView({
                     const filtered = dbCertificates.filter(cert => {
                       const matchesEvent = certEventFilter === 'all' || cert.eventId === certEventFilter;
                       const q = certSearch.toLowerCase().trim();
-                      const matchesSearch = !q || 
+                      const matchesSearch = !q ||
                         (cert.certificateId || '').toLowerCase().includes(q) ||
                         (cert.studentName || '').toLowerCase().includes(q) ||
                         (cert.rollNumber || '').toLowerCase().includes(q) ||
@@ -3332,14 +3345,14 @@ export default function AdminPanelView({
 
                     if (filtered.length === 0) {
                       return (
-                        <div 
+                        <div
                           className="bg-[var(--nb-surface)] rounded-lg p-10 text-center space-y-3"
                           style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                         >
                           <Award className="w-10 h-10 text-[var(--nb-secondary)] mx-auto opacity-40 mb-1" />
                           <h4 className="nb-headline text-sm text-[var(--nb-content)]">No Certificates in Database</h4>
                           <p className="text-xs text-[var(--nb-secondary)] max-w-md mx-auto">
-                            {dbCertificates.length === 0 
+                            {dbCertificates.length === 0
                               ? "No certificates have been issued yet. Click 'Sync All Attended' to automatically generate official Certificate IDs for all students marked as Attended, or click 'Issue Custom'."
                               : "No certificates matched your current event filter or search query."}
                           </p>
@@ -3358,7 +3371,7 @@ export default function AdminPanelView({
                     }
 
                     return (
-                      <div 
+                      <div
                         className="bg-[var(--nb-surface)] rounded-lg overflow-hidden"
                         style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                       >
@@ -3373,13 +3386,13 @@ export default function AdminPanelView({
                             const peerCount = dbCertificates.filter(c => c.eventId === cert.eventId).length;
 
                             return (
-                              <div 
-                                key={cert.certificateId} 
+                              <div
+                                key={cert.certificateId}
                                 className="p-3.5 hover:bg-[var(--nb-surface-accent)]/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
                               >
                                 {/* Left Info: Student + Cert ID */}
                                 <div className="flex items-start gap-3 min-w-0">
-                                  <div 
+                                  <div
                                     className="w-9 h-9 rounded bg-[var(--nb-surface-accent)] p-0.5 shrink-0 overflow-hidden mt-0.5"
                                     style={{ border: '1.5px solid var(--nb-ink)' }}
                                   >
@@ -3395,13 +3408,13 @@ export default function AdminPanelView({
                                       <span className="nb-headline text-xs sm:text-sm text-[var(--nb-content)] truncate">
                                         {cert.studentName}
                                       </span>
-                                      <span 
+                                      <span
                                         className="nb-tag font-mono text-[10px] font-bold"
                                         style={{ border: '1px solid var(--nb-ink)' }}
                                       >
                                         {cert.rollNumber}
                                       </span>
-                                      <span 
+                                      <span
                                         className="nb-tag font-mono text-[9px] font-bold bg-emerald-400 text-black"
                                         style={{ border: '1px solid var(--nb-ink)' }}
                                       >
@@ -3510,34 +3523,32 @@ export default function AdminPanelView({
               {certSubTab === 'template' && (
                 <div className="p-5 overflow-y-auto space-y-6 flex-grow">
                   {/* Feature On / Off Control Banner */}
-                  <div 
+                  <div
                     className="p-5 rounded-lg transition-all bg-[var(--nb-surface)]"
                     style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${
-                            isCertificatesEnabled ? 'bg-emerald-500' : 'bg-amber-500'
-                          }`} />
+                          <span className={`w-2.5 h-2.5 rounded-full ${isCertificatesEnabled ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`} />
                           <h4 className="nb-headline text-sm text-[var(--nb-content)]">
                             Certificate Issuance Status: {isCertificatesEnabled ? 'ACTIVE' : 'PAUSED'}
                           </h4>
                         </div>
                         <p className="text-xs text-[var(--nb-secondary)] max-w-xl">
-                          {isCertificatesEnabled 
-                            ? 'Students who attended verified department events can view, generate, and print their digital credentials from their profile.' 
+                          {isCertificatesEnabled
+                            ? 'Students who attended verified department events can view, generate, and print their digital credentials from their profile.'
                             : 'Certificate viewing is currently paused. Students will see a friendly notice on their profile that certificates are temporarily paused.'}
                         </p>
                       </div>
 
                       <button
                         onClick={() => handleToggleCertificates()}
-                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
-                          isCertificatesEnabled 
-                            ? 'bg-rose-500 text-white' 
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0 ${isCertificatesEnabled
+                            ? 'bg-rose-500 text-white'
                             : 'nb-btn'
-                        }`}
+                          }`}
                         style={{ border: '2px solid var(--nb-ink)' }}
                       >
                         <div className={`w-2 h-2 rounded-full ${isCertificatesEnabled ? 'bg-white' : 'bg-black'}`} />
@@ -3548,7 +3559,7 @@ export default function AdminPanelView({
 
                   {/* Quick Stats Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-1"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -3559,7 +3570,7 @@ export default function AdminPanelView({
                       <span className="text-[10px] text-[var(--nb-secondary)]">Students marked as Attended</span>
                     </div>
 
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-1"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -3570,7 +3581,7 @@ export default function AdminPanelView({
                       <span className="text-[10px] text-[var(--nb-secondary)]">{certificateTemplate.badgeStyle || 'Seal'} emblem style</span>
                     </div>
 
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-1"
                       style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                     >
@@ -3583,7 +3594,7 @@ export default function AdminPanelView({
                   </div>
 
                   {/* Live Template Showcase */}
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
                     style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                   >
@@ -3624,22 +3635,22 @@ export default function AdminPanelView({
 
           {activeTab === 'settings' && canManageRoles && (
             <div className="flex flex-col h-full overflow-hidden">
-              <div 
+              <div
                 className="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[var(--nb-surface)]"
                 style={{ borderBottom: '2px solid var(--nb-ink)' }}
               >
                 <h3 className="nb-headline text-sm text-[var(--nb-content)]">System Settings</h3>
               </div>
               <div className="p-5 overflow-y-auto space-y-6">
-                
+
                 {/* Brand Name & Logo Customizer */}
-                <div 
+                <div
                   className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div 
+                      <div
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
@@ -3662,7 +3673,7 @@ export default function AdminPanelView({
                         <span>Edit Name & Logo</span>
                       </button>
                     ) : (
-                      <span 
+                      <span
                         className="nb-tag text-[10px] font-mono font-bold bg-amber-400 text-black px-2.5 py-1 shrink-0"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
@@ -3672,7 +3683,7 @@ export default function AdminPanelView({
                   </div>
 
                   {/* Live brand preview bar */}
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface-accent)] rounded p-3.5 flex items-center justify-between gap-3 flex-wrap"
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
@@ -3682,7 +3693,7 @@ export default function AdminPanelView({
                         <div className="flex items-center gap-1.5 flex-nowrap">
                           <span className="nb-headline text-sm text-[var(--nb-content)]">{branding.appName || 'NOTX'}</span>
                           {branding.subtitle && (
-                            <span 
+                            <span
                               className="nb-tag text-[9px] font-mono font-bold px-1.5 py-0.2"
                               style={{ border: '1px solid var(--nb-ink)' }}
                             >
@@ -3697,7 +3708,7 @@ export default function AdminPanelView({
                       </div>
                     </div>
 
-                    <span 
+                    <span
                       className="nb-tag text-[9.5px] font-mono font-bold bg-emerald-400 text-black px-2 py-0.5"
                       style={{ border: '1px solid var(--nb-ink)' }}
                     >
@@ -3707,7 +3718,7 @@ export default function AdminPanelView({
                 </div>
 
                 {/* Chat Feature Toggle */}
-                <div 
+                <div
                   className="bg-[var(--nb-surface)] rounded-lg p-5"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
@@ -3716,18 +3727,16 @@ export default function AdminPanelView({
                       <h4 className="nb-headline text-sm text-[var(--nb-content)] mb-1">Global Chat System</h4>
                       <p className="text-xs text-[var(--nb-secondary)]">Enable or disable the peer-to-peer messaging page for all users.</p>
                     </div>
-                    
+
                     <button
                       onClick={handleToggleChat}
-                      className={`relative inline-flex h-7 w-12 items-center rounded transition-colors cursor-pointer ${
-                        isChatEnabled ? 'bg-emerald-500' : 'bg-[var(--nb-surface-accent)]'
-                      }`}
+                      className={`relative inline-flex h-7 w-12 items-center rounded transition-colors cursor-pointer ${isChatEnabled ? 'bg-emerald-500' : 'bg-[var(--nb-surface-accent)]'
+                        }`}
                       style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded bg-white transition-transform ${
-                          isChatEnabled ? 'translate-x-6' : 'translate-x-1'
-                        }`}
+                        className={`inline-block h-4 w-4 transform rounded bg-white transition-transform ${isChatEnabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
                         style={{ border: '1px solid var(--nb-ink)' }}
                       />
                     </button>
@@ -3735,13 +3744,13 @@ export default function AdminPanelView({
                 </div>
 
                 {/* E-Certificate Feature Toggle & Template Designer */}
-                <div 
+                <div
                   className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div 
+                      <div
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
@@ -3764,34 +3773,31 @@ export default function AdminPanelView({
 
                       <button
                         onClick={() => handleToggleCertificates()}
-                        className={`relative inline-flex h-7 w-12 items-center rounded transition-colors cursor-pointer ${
-                          isCertificatesEnabled ? 'bg-emerald-500' : 'bg-[var(--nb-surface-accent)]'
-                        }`}
+                        className={`relative inline-flex h-7 w-12 items-center rounded transition-colors cursor-pointer ${isCertificatesEnabled ? 'bg-emerald-500' : 'bg-[var(--nb-surface-accent)]'
+                          }`}
                         style={{ border: '1.5px solid var(--nb-ink)' }}
                         title="Toggle certificate feature on or off"
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded bg-white transition-transform ${
-                            isCertificatesEnabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
+                          className={`inline-block h-4 w-4 transform rounded bg-white transition-transform ${isCertificatesEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
                           style={{ border: '1px solid var(--nb-ink)' }}
                         />
                       </button>
                     </div>
                   </div>
 
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface-accent)] rounded p-3.5 space-y-1.5 text-xs"
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[var(--nb-content)]">{certificateTemplate.certificateTitle || "Certificate of Participation"}</span>
-                      <span 
-                        className={`nb-tag text-[10px] font-mono font-bold px-2 py-0.5 ${
-                          isCertificatesEnabled 
-                            ? 'bg-emerald-400 text-black' 
+                      <span
+                        className={`nb-tag text-[10px] font-mono font-bold px-2 py-0.5 ${isCertificatesEnabled
+                            ? 'bg-emerald-400 text-black'
                             : 'bg-amber-400 text-black'
-                        }`}
+                          }`}
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
                         {isCertificatesEnabled ? 'Feature Enabled' : 'Feature Paused'}
@@ -3804,13 +3810,13 @@ export default function AdminPanelView({
                 </div>
 
                 {/* Dynamic Support Box Configuration */}
-                <div 
+                <div
                   className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div 
+                      <div
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
@@ -3831,7 +3837,7 @@ export default function AdminPanelView({
                   </div>
 
                   {/* Summary preview */}
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface-accent)] rounded p-3.5 space-y-2 text-xs"
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
@@ -3861,13 +3867,13 @@ export default function AdminPanelView({
                 </div>
 
                 {/* Overall Data Export & System Backup */}
-                <div 
+                <div
                   className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
                   style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div 
+                      <div
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--nb-surface-accent)] text-[var(--nb-content)] mb-1.5"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
@@ -3895,28 +3901,28 @@ export default function AdminPanelView({
 
                   {/* Quick stats snapshot */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
                       style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
                       <div className="text-lg font-mono font-bold text-[var(--nb-content)]">{allUsers.length}</div>
                       <div className="nb-label text-[9px] text-[var(--nb-secondary)] uppercase mt-0.5">Enrolled Users</div>
                     </div>
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
                       style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
                       <div className="text-lg font-mono font-bold text-[var(--nb-accent)]">{events.length}</div>
                       <div className="nb-label text-[9px] text-[var(--nb-secondary)] uppercase mt-0.5">Department Events</div>
                     </div>
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
                       style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
                       <div className="text-lg font-mono font-bold text-emerald-600">{registrations.length}</div>
                       <div className="nb-label text-[9px] text-[var(--nb-secondary)] uppercase mt-0.5">Registrations</div>
                     </div>
-                    <div 
+                    <div
                       className="bg-[var(--nb-surface-accent)] rounded p-3 text-center"
                       style={{ border: '1.5px solid var(--nb-ink)' }}
                     >
@@ -3927,13 +3933,13 @@ export default function AdminPanelView({
                 </div>
 
                 {/* Reset Association & Start New Academic Year (DANGER ZONE) */}
-                <div 
+                <div
                   className="bg-[var(--nb-surface)] rounded-lg p-5 space-y-4"
                   style={{ border: '2px solid #e11d48', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div 
+                      <div
                         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500 text-white mb-1.5"
                         style={{ border: '1px solid var(--nb-ink)' }}
                       >
@@ -3960,7 +3966,7 @@ export default function AdminPanelView({
                     </button>
                   </div>
 
-                  <div 
+                  <div
                     className="bg-[var(--nb-surface-accent)] rounded p-3.5 text-xs flex items-center justify-between gap-3 flex-wrap"
                     style={{ border: '1.5px solid var(--nb-ink)' }}
                   >
@@ -3968,7 +3974,7 @@ export default function AdminPanelView({
                       <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>Root Admin account (<strong>{currentUser.email}</strong>) is preserved automatically so you never lose access.</span>
                     </div>
-                    <span 
+                    <span
                       className="nb-tag text-[10px] font-mono text-rose-600 font-bold bg-white"
                       style={{ border: '1px solid var(--nb-ink)' }}
                     >
@@ -4030,13 +4036,13 @@ export default function AdminPanelView({
       {/* Manual Issue Certificate Modal */}
       {showManualIssueModal && (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-3 select-none animate-fadeIn">
-          <div 
+          <div
             className="bg-[var(--nb-surface)] rounded-lg w-full max-w-md p-5 space-y-4"
             style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
           >
             <div className="flex items-center justify-between border-b-2 border-[var(--nb-ink)] pb-3">
               <div className="flex items-center gap-2">
-                <div 
+                <div
                   className="w-8 h-8 rounded bg-[var(--nb-surface-accent)] flex items-center justify-center text-[var(--nb-accent)]"
                   style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
@@ -4097,7 +4103,7 @@ export default function AdminPanelView({
                 </select>
               </div>
 
-              <div 
+              <div
                 className="p-3 rounded bg-[var(--nb-surface-accent)] space-y-1"
                 style={{ border: '1.5px solid var(--nb-ink)' }}
               >
@@ -4132,7 +4138,7 @@ export default function AdminPanelView({
       {/* Certificate Lightbox Preview */}
       {activePreviewCert && (
         <div className="fixed inset-0 bg-black/80 z-60 flex items-center justify-center p-3 animate-fadeIn">
-          <div 
+          <div
             className="bg-[var(--nb-surface)] rounded-lg max-w-xl w-full p-4 sm:p-6 space-y-4"
             style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
           >
@@ -4141,7 +4147,7 @@ export default function AdminPanelView({
                 <h4 className="nb-headline text-xs text-[var(--nb-content)]">Certificate Preview</h4>
                 <p className="nb-label text-[10px] text-[var(--nb-secondary)]">ID: {activePreviewCert.certificateId}</p>
               </div>
-              <button 
+              <button
                 onClick={() => setActivePreviewCert(null)}
                 className="nb-btn-ghost w-7 h-7 flex items-center justify-center cursor-pointer rounded"
                 style={{ border: '1.5px solid var(--nb-ink)' }}
