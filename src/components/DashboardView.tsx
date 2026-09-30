@@ -41,6 +41,7 @@ interface DashboardViewProps {
   onNavigate: (tab: string) => void;
   onSelectEvent: (event: DepartmentEvent) => void;
   isLoading?: boolean;
+  activeTenantId?: string;
 }
 
 export default function DashboardView({ 
@@ -51,7 +52,8 @@ export default function DashboardView({
   registrations, 
   onNavigate,
   onSelectEvent,
-  isLoading = false
+  isLoading = false,
+  activeTenantId
 }: DashboardViewProps) {
   const [winners, setWinners] = useState<EventWinner[]>([]);
   const [isAddWinnerOpen, setIsAddWinnerOpen] = useState(false);
@@ -65,12 +67,14 @@ export default function DashboardView({
   const [winnerSearch, setWinnerSearch] = useState('');
   const [winnerRankFilter, setWinnerRankFilter] = useState<'all' | '1st' | '2nd' | '3rd' | 'Special'>('all');
 
+  const resolvedTenantId = activeTenantId || user.tenantId;
+
   useEffect(() => {
     const unsub = subscribeToEventWinners((fetchedWinners) => {
       setWinners(fetchedWinners);
-    });
+    }, resolvedTenantId);
     return () => unsub();
-  }, []);
+  }, [resolvedTenantId]);
 
   const canManageWinners = user.role === 'admin' || user.role === 'president' || (user.role === 'associate' && user.powers?.canManageEvents);
 
@@ -103,10 +107,10 @@ export default function DashboardView({
     return (
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 sm:pb-32 space-y-4 select-none">
         {/* Shimmer Welcoming Card */}
-        <div className="relative rounded-2xl bg-surface/60 p-4 border border-divider/80 overflow-hidden animate-pulse">
+        <div className="relative rounded-lg bg-[var(--nb-surface)] p-4 border-2 border-[var(--nb-ink)] overflow-hidden animate-pulse">
           <div className="flex items-center justify-between gap-3.5">
             <div className="flex items-center gap-3.5 min-w-0 flex-1">
-              <div className="w-13 h-13 rounded-2xl bg-surface-accent border border-divider" />
+              <div className="w-13 h-13 rounded-lg bg-[var(--nb-surface-accent)] border border-[var(--nb-ink)]" />
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="h-4.5 w-36 bg-surface-accent rounded-md" />
                 <div className="flex items-center gap-1.5">
@@ -128,7 +132,7 @@ export default function DashboardView({
           </div>
           <div className="flex gap-3.5 overflow-x-auto pb-2 scrollbar-none">
             {[1, 2].map((i) => (
-              <div key={i} className="w-[240px] flex-shrink-0 bg-surface/60 rounded-2xl border border-divider/80 overflow-hidden animate-pulse">
+              <div key={i} className="w-[240px] flex-shrink-0 bg-[var(--nb-surface)] rounded-lg border-2 border-[var(--nb-ink)] overflow-hidden animate-pulse">
                 <div className="h-24 bg-surface-accent" />
                 <div className="p-3 space-y-2">
                   <div className="h-3.5 w-3/4 bg-surface-accent rounded" />
@@ -199,35 +203,35 @@ export default function DashboardView({
 
         {/* Text */}
         <div className="min-w-0 flex-1">
-          <p className="nb-label text-xs text-black/70 font-bold">
+          <p className="font-mono text-xs text-neutral-900 font-extrabold tracking-wider uppercase">
             GOOD {new Date().getHours() < 12 ? 'MORNING' : new Date().getHours() < 18 ? 'AFTERNOON' : 'EVENING'}
           </p>
           <h2
-            className="nb-headline leading-none truncate text-black"
+            className="nb-headline leading-none truncate text-neutral-900"
             style={{ fontSize: 'clamp(1.5rem, 5vw, 2.2rem)' }}
           >
             {user.name}!
           </h2>
           {/* Badge row */}
           <div className="flex items-center gap-2 flex-wrap mt-2">
-            <span className={`nb-pill-${user.role === 'admin' ? 'coral' : user.role === 'associate' ? 'purple' : 'blue'} text-[10px] px-2 py-0.5 rounded flex items-center gap-1`}>
-              {user.role === 'admin' ? <ShieldCheck className="w-3 h-3" /> : user.role === 'associate' ? <Award className="w-3 h-3" /> : <GraduationCap className="w-3 h-3" />}
+            <span className={`nb-pill-${user.role === 'admin' ? 'coral' : user.role === 'associate' ? 'purple' : 'blue'} text-[10px] px-2 py-0.5 rounded flex items-center gap-1 font-bold text-white border border-black shadow-[1.5px_1.5px_0_#000]`}>
+              {user.role === 'admin' ? <ShieldCheck className="w-3 h-3 text-white" /> : user.role === 'associate' ? <Award className="w-3 h-3 text-white" /> : <GraduationCap className="w-3 h-3 text-white" />}
               {user.role.toUpperCase()}
             </span>
             {user.rollNumber && (
-              <span className="nb-pill-green text-[10px] px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-                <Hash className="w-3 h-3" />
+              <span className="nb-pill-green text-[10px] px-2 py-0.5 rounded flex items-center gap-1 font-mono font-bold text-neutral-900 border border-black shadow-[1.5px_1.5px_0_#000]">
+                <Hash className="w-3 h-3 text-neutral-900" />
                 {user.rollNumber}
               </span>
             )}
             {user.role === 'student' && (user.year || user.section) ? (
-              <span className="nb-pill-pink text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
-                <BookOpen className="w-3 h-3" />
+              <span className="nb-pill-pink text-[10px] px-2 py-0.5 rounded flex items-center gap-1 font-bold text-white border border-black shadow-[1.5px_1.5px_0_#000]">
+                <BookOpen className="w-3 h-3 text-white" />
                 {user.year}{user.section ? ` · SEC ${user.section}` : ''}
               </span>
             ) : user.position ? (
-              <span className="nb-pill-cyan text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
-                <Award className="w-3 h-3" />
+              <span className="nb-pill-cyan text-[10px] px-2 py-0.5 rounded flex items-center gap-1 font-bold text-neutral-900 border border-black shadow-[1.5px_1.5px_0_#000]">
+                <Award className="w-3 h-3 text-neutral-900" />
                 {user.position}
               </span>
             ) : null}
@@ -239,38 +243,38 @@ export default function DashboardView({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div 
           onClick={() => onNavigate('events')}
-          className="nb-card-blue p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+          className="nb-card-blue p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5 select-none"
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="nb-label text-[10px] text-white/90">TOTAL EVENTS</span>
-            <Calendar className="w-4 h-4 text-white" />
+            <span className="font-mono text-[10px] font-black tracking-wider text-white uppercase">TOTAL EVENTS</span>
+            <Calendar className="w-4 h-4 text-white stroke-[2.5]" />
           </div>
           <div className="nb-headline text-2xl sm:text-3xl text-white">{events.length}</div>
-          <span className="text-[10px] font-bold text-white/90 mt-1 uppercase font-mono">Campus Events →</span>
+          <span className="text-[10px] font-bold text-white mt-1 uppercase font-mono tracking-wider">Campus Events →</span>
         </div>
 
         <div 
           onClick={() => onNavigate('events')}
-          className="nb-card-green p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+          className="nb-card-green p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5 select-none"
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="nb-label text-[10px] text-black/80">REGISTERED</span>
-            <CheckCircle2 className="w-4 h-4 text-black" />
+            <span className="font-mono text-[10px] font-black tracking-wider text-white uppercase">REGISTERED</span>
+            <CheckCircle2 className="w-4 h-4 text-white stroke-[2.5]" />
           </div>
-          <div className="nb-headline text-2xl sm:text-3xl text-black">{myRegs.length}</div>
-          <span className="text-[10px] font-bold text-black/80 mt-1 uppercase font-mono">My Passes →</span>
+          <div className="nb-headline text-2xl sm:text-3xl text-white">{myRegs.length}</div>
+          <span className="text-[10px] font-bold text-white mt-1 uppercase font-mono tracking-wider">My Passes →</span>
         </div>
 
         <div 
           onClick={() => onNavigate('announcements')}
-          className="nb-card-coral p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+          className="nb-card-coral p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5 select-none"
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="nb-label text-[10px] text-white/90">NOTICES</span>
-            <Volume2 className="w-4 h-4 text-white" />
+            <span className="font-mono text-[10px] font-black tracking-wider text-white uppercase">NOTICES</span>
+            <Volume2 className="w-4 h-4 text-white stroke-[2.5]" />
           </div>
           <div className="nb-headline text-2xl sm:text-3xl text-white">{announcements.length}</div>
-          <span className="text-[10px] font-bold text-white/90 mt-1 uppercase font-mono">Bulletins →</span>
+          <span className="text-[10px] font-bold text-white mt-1 uppercase font-mono tracking-wider">Bulletins →</span>
         </div>
 
         <div 
@@ -280,14 +284,14 @@ export default function DashboardView({
               el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
           }}
-          className="nb-card-purple p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5"
+          className="nb-card-purple p-3.5 rounded-lg flex flex-col justify-between cursor-pointer transition-transform hover:-translate-y-0.5 select-none"
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="nb-label text-[10px] text-white/90">CHAMPIONS</span>
-            <Trophy className="w-4 h-4 text-white" />
+            <span className="font-mono text-[10px] font-black tracking-wider text-white uppercase">CHAMPIONS</span>
+            <Trophy className="w-4 h-4 text-white stroke-[2.5]" />
           </div>
           <div className="nb-headline text-2xl sm:text-3xl text-white">{winners.length}</div>
-          <span className="text-[10px] font-bold text-white/90 mt-1 uppercase font-mono">Wall of Fame →</span>
+          <span className="text-[10px] font-bold text-white mt-1 uppercase font-mono tracking-wider">Wall of Fame →</span>
         </div>
       </div>
 
@@ -389,7 +393,7 @@ export default function DashboardView({
             </div>
 
             <div
-              className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center nb-card-yellow"
+              className="w-16 h-16 rounded-lg mx-auto mb-4 flex items-center justify-center nb-card-yellow"
               style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0 var(--nb-ink)' }}
             >
               <Trophy className="w-8 h-8 text-neutral-900 stroke-[2.5]" />

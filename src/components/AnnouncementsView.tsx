@@ -6,7 +6,7 @@ import { UserProfile, Announcement } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Bold, Italic, List, ListOrdered, Link, Heading1, Heading2, Quote, Code } from 'lucide-react';
-import { createAnnouncement, deleteAnnouncement, DEFAULT_TENANT_ID } from '../firebase';
+import { createAnnouncement, deleteAnnouncement } from '../firebase';
 
 interface AnnouncementsViewProps {
   user: UserProfile;
@@ -75,7 +75,7 @@ export default function AnnouncementsView({
       const announceId = `announce_${Date.now()}`;
       const newNotice: Announcement = {
         announcementId: announceId,
-        tenantId: activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
+        tenantId: activeTenantId || user.tenantId,
         title,
         content,
         category,
@@ -133,7 +133,7 @@ export default function AnnouncementsView({
             const getSelectedAnnounceCatClass = (category: string) => {
               switch (category) {
                 case 'All': return 'nb-pill-yellow text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
-                case 'Notice': return 'nb-pill-cyan text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
+                case 'Notice': return 'nb-pill-cyan text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
                 case 'Exam': return 'nb-pill-coral text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
                 case 'Workshop': return 'nb-pill-blue text-white border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
                 case 'Result': return 'nb-pill-green text-neutral-900 border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)]';
@@ -170,12 +170,12 @@ export default function AnnouncementsView({
             }}
           >
             {/* Top decorative badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full nb-pill-cyan text-white text-[10px] font-mono font-bold tracking-wider uppercase border-1.5 border-black shadow-[2px_2px_0_#000]">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full nb-pill-cyan text-neutral-900 text-[10px] font-mono font-bold tracking-wider uppercase border-1.5 border-black shadow-[2px_2px_0_#000]">
               <span>★ BULLETIN RADAR ★</span>
             </div>
 
             <div 
-              className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center nb-card-yellow"
+              className="w-16 h-16 rounded-lg mx-auto mb-4 flex items-center justify-center nb-card-yellow"
               style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0 var(--nb-ink)' }}
             >
               <Volume2 className="w-8 h-8 text-neutral-900 stroke-[2.5]" />

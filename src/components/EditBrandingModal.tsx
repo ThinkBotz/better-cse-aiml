@@ -21,13 +21,15 @@ interface EditBrandingModalProps {
   onClose: () => void;
   currentBranding?: AppBranding;
   onSaved?: (updated: AppBranding) => void;
+  tenantId?: string;
 }
 
 export default function EditBrandingModal({
   isOpen,
   onClose,
   currentBranding = DEFAULT_BRANDING,
-  onSaved
+  onSaved,
+  tenantId
 }: EditBrandingModalProps) {
   const [appName, setAppName] = useState(currentBranding.appName || 'NOTX');
   const [tagline, setTagline] = useState(currentBranding.tagline || 'Connect');
@@ -96,7 +98,7 @@ export default function EditBrandingModal({
         updatedAt: new Date().toISOString()
       };
 
-      await updateAppBranding(updated);
+      await updateAppBranding(updated, tenantId);
       if (onSaved) onSaved(updated);
       onClose();
     } catch (err: any) {

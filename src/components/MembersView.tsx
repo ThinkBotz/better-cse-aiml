@@ -10,7 +10,7 @@ interface MembersViewProps {
 
 export default function MembersView({ allUsers, events, branding = DEFAULT_BRANDING }: MembersViewProps) {
   // Sort users into sections
-  const patrons = allUsers.filter(u => u.role === 'admin');
+  const patrons = allUsers.filter(u => u.role === 'admin' && !u.isSuperAdmin);
   const executive = allUsers.filter(u => u.role === 'president' || (u.role === 'associate' && u.position?.toLowerCase().includes('president')));
   const leads = allUsers.filter(u => u.role === 'associate' && !u.position?.toLowerCase().includes('president'));
   const coordinators = allUsers.filter(u => u.role === 'coordinator');

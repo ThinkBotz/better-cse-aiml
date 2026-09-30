@@ -347,8 +347,8 @@ export default function AddEventWinnerModal({
 
                 {isStudentDropdownOpen && (
                   <div 
-                    className="mt-1 bg-[var(--nb-surface)] rounded shadow-xl max-h-48 overflow-y-auto z-20 divide-y divide-[var(--nb-ink)]/20"
-                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                    className="mt-1 bg-[var(--nb-surface)] rounded max-h-48 overflow-y-auto z-20 divide-y divide-[var(--nb-ink)]/20"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                   >
                     {filteredStudents.length === 0 ? (
                       <div className="p-3 text-[11px] text-[var(--nb-secondary)] text-center italic">

@@ -73,8 +73,8 @@ export default function FirstTimeSetupView({ user, onComplete }: FirstTimeSetupV
   return (
     <div className="h-full w-full bg-[var(--nb-bg)] flex items-center justify-center p-4">
       <div 
-        className="w-full max-w-md bg-[var(--nb-surface)] rounded-xl p-6 sm:p-7 relative overflow-hidden"
-        style={{ border: '2.5px solid var(--nb-ink)', boxShadow: '6px 6px 0 var(--nb-ink)' }}
+        className="w-full max-w-md bg-[var(--nb-surface)] rounded-lg p-6 sm:p-7 relative overflow-hidden"
+        style={{ border: '2.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
       >
         <div className="text-center mb-6">
           <div 

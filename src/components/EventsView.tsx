@@ -6,7 +6,7 @@ import HoldButton from './HoldButton';
 import EventTicketModal from './EventTicketModal';
 import { fireConfetti } from '../utils/confetti';
 import { UserProfile, DepartmentEvent, EventRegistration, IssuedCertificate, AppBranding, DEFAULT_BRANDING } from '../types';
-import { createEvent, createRegistration, updateRegistrationStatus, updateRegistrationTeamMembers, deleteRegistration, deleteCertificate, deleteEvent, updateEvent, subscribeToCertificates, generateBatchCertificatesForEvent, DEFAULT_TENANT_ID } from '../firebase';
+import { createEvent, createRegistration, updateRegistrationStatus, updateRegistrationTeamMembers, deleteRegistration, deleteCertificate, deleteEvent, updateEvent, subscribeToCertificates, generateBatchCertificatesForEvent } from '../firebase';
 
 interface EventsViewProps {
   user: UserProfile;
@@ -180,12 +180,14 @@ export default function EventsView({
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
   const [batchFeedback, setBatchFeedback] = useState('');
 
+  const resolvedTenantId = activeTenantId || user.tenantId;
+
   useEffect(() => {
     const unsub = subscribeToCertificates((certs) => {
       setDbCertificates(certs);
-    });
+    }, resolvedTenantId);
     return () => unsub();
-  }, []);
+  }, [resolvedTenantId]);
 
   const handleGenerateBatchInModal = async (eventId: string) => {
     setIsGeneratingBatch(true);
@@ -195,7 +197,7 @@ export default function EventsView({
         registrations,
         allUsers,
         issuedBy: user.name || 'Department Administration'
-      });
+      }, resolvedTenantId);
       setBatchFeedback(`Batch generated! ${res.newlyIssued} new certificates generated (${res.alreadyIssued} already existed).`);
       setTimeout(() => setBatchFeedback(''), 4000);
       refreshRegistrations();
@@ -422,7 +424,7 @@ export default function EventsView({
         const eventId = `event_${Date.now()}`;
         const newEvent: DepartmentEvent = {
           eventId,
-          tenantId: activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
+          tenantId: resolvedTenantId,
           title: eventTitle,
           category: eventCategory,
           description: eventDescription,
@@ -486,7 +488,7 @@ export default function EventsView({
         rollNumber: user.rollNumber || 'N/A',
         phone: user.phone || 'N/A',
         year: user.year || '3rd Year',
-        tenantId: selectedEvent.tenantId || activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
+        tenantId: selectedEvent.tenantId || resolvedTenantId,
         isTeam: !!selectedEvent.isTeamBased,
       };
 
@@ -518,7 +520,7 @@ export default function EventsView({
       }
     }
     try {
-      await updateRegistrationStatus(regId, newStatus);
+      await updateRegistrationStatus(regId, newStatus, user.email);
       refreshRegistrations();
     } catch (err) {
       console.error(err);
@@ -939,7 +941,7 @@ export default function EventsView({
             </div>
 
             <div
-              className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center nb-card-purple"
+              className="w-16 h-16 rounded-lg mx-auto mb-4 flex items-center justify-center nb-card-purple"
               style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0 var(--nb-ink)' }}
             >
               <Calendar className="w-8 h-8 text-white stroke-[2.5]" />
@@ -1049,8 +1051,8 @@ export default function EventsView({
                           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                         />
 
-                        {/* Subtle gradient at bottom for text contrast without obscuring the poster artwork */}
-                        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none z-10" />
+                        {/* Solid high-contrast backing at bottom for brutalist legibility */}
+                        <div className="absolute inset-x-0 bottom-0 h-16 bg-black/85 border-t border-black pointer-events-none z-10" />
 
                         {/* Top Badges: Category only */}
                         {event.category && (
@@ -1276,7 +1278,7 @@ export default function EventsView({
                     </span>
                     <span>{eventImageIdx + 1} / {selectedEvent.images.length} Photos</span>
                   </div>
-                  <div className="relative rounded-2xl overflow-hidden bg-black/60 border border-divider aspect-video w-full flex items-center justify-center group">
+                  <div className="relative rounded-lg overflow-hidden bg-black/80 border-2 border-[var(--nb-ink)] aspect-video w-full flex items-center justify-center group">
                     <img
                       src={selectedEvent.images[eventImageIdx] || selectedEvent.posterImage}
                       alt={`${selectedEvent.title} photo ${eventImageIdx + 1}`}
@@ -1286,19 +1288,19 @@ export default function EventsView({
                     <button
                       type="button"
                       onClick={() => setEventImageIdx(prev => (prev === 0 ? selectedEvent.images!.length - 1 : prev - 1))}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm border border-white/20 transition-all opacity-80 group-hover:opacity-100 cursor-pointer shadow-md"
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded bg-black text-white flex items-center justify-center border-2 border-white transition-all cursor-pointer shadow-[2px_2px_0_#000] active:translate-x-0.5 active:translate-y-0.5"
                       aria-label="Previous photo"
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
                     </button>
                     {/* Next Button */}
                     <button
                       type="button"
                       onClick={() => setEventImageIdx(prev => (prev === selectedEvent.images!.length - 1 ? 0 : prev + 1))}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm border border-white/20 transition-all opacity-80 group-hover:opacity-100 cursor-pointer shadow-md"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded bg-black text-white flex items-center justify-center border-2 border-white transition-all cursor-pointer shadow-[2px_2px_0_#000] active:translate-x-0.5 active:translate-y-0.5"
                       aria-label="Next photo"
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
                   </div>
                   {/* Thumbnail Strip */}
@@ -1308,7 +1310,7 @@ export default function EventsView({
                         key={idx}
                         type="button"
                         onClick={() => setEventImageIdx(idx)}
-                        className={`relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${idx === eventImageIdx ? 'border-indigo-500 scale-105 shadow-md' : 'border-divider opacity-60 hover:opacity-100'
+                        className={`relative flex-shrink-0 w-14 h-14 rounded overflow-hidden border-2 transition-all cursor-pointer ${idx === eventImageIdx ? 'border-[var(--nb-ink)] shadow-[2px_2px_0_var(--nb-ink)]' : 'border-[var(--nb-divider)] opacity-60 hover:opacity-100'
                           }`}
                       >
                         <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
@@ -1321,7 +1323,7 @@ export default function EventsView({
                   const modalImg = selectedEvent.images?.[0] || selectedEvent.posterImage;
                   const isModalPortrait = (selectedEvent.posterOrientation === 'portrait') || (posterOrientations[modalImg] === 'portrait');
                   return (
-                    <div className={`rounded-2xl overflow-hidden bg-black/60 relative border border-divider flex items-center justify-center group ${isModalPortrait ? 'max-h-[460px] aspect-[3/4] mx-auto w-full max-w-sm' : 'max-h-[300px] aspect-video w-full'
+                    <div className={`rounded-lg overflow-hidden bg-black/80 relative border-2 border-[var(--nb-ink)] flex items-center justify-center group ${isModalPortrait ? 'max-h-[460px] aspect-[3/4] mx-auto w-full max-w-sm' : 'max-h-[300px] aspect-video w-full'
                       }`}>
                       <img
                         src={modalImg}
@@ -2069,24 +2071,24 @@ export default function EventsView({
             {/* Scrollable Form */}
             <form onSubmit={handleCreateEvent} className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Event Title *</label>
+                <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Event Title *</label>
                 <input
                   type="text"
                   required
                   value={eventTitle}
                   onChange={(e) => setEventTitle(e.target.value)}
                   placeholder="e.g. AI Builder Arena Hackathon"
-                  className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                  className="nb-input !text-xs !min-h-[38px] !py-2 !px-3"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Category *</label>
+                  <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Category *</label>
                   <select
                     value={eventCategory}
                     onChange={(e) => setEventCategory(e.target.value as any)}
-                    className="w-full bg-surface border border-divider text-xs text-primary rounded-lg py-2 px-2 outline-none focus:border-indigo-500/50"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-2.5 cursor-pointer font-bold"
                   >
                     <option value="Workshops">Workshops</option>
                     <option value="Hackathons">Hackathons</option>
@@ -2096,44 +2098,44 @@ export default function EventsView({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Venue *</label>
+                  <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Venue *</label>
                   <input
                     type="text"
                     required
                     value={eventVenue}
                     onChange={(e) => setEventVenue(e.target.value)}
                     placeholder="e.g. Seminar Hall-1 or AI Lab"
-                    className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-3"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Description *</label>
+                <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Description *</label>
                 <textarea
                   required
                   rows={3}
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
                   placeholder="Provide details about registration incentives, topics, target participants..."
-                  className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none resize-none focus:border-indigo-500/50"
+                  className="nb-input !text-xs !py-2 !px-3 resize-none leading-relaxed"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Date *</label>
+                  <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Date *</label>
                   <input
                     type="date"
                     required
                     value={eventDate}
                     onChange={(e) => setEventDate(e.target.value)}
-                    className="w-full bg-surface border border-divider text-xs text-primary rounded-lg py-2 px-2 outline-none focus:border-indigo-500/50"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-2.5 cursor-pointer font-mono font-bold"
                   />
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider">Start Time *</label>
+                    <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider">Start Time *</label>
                     {eventStartTime && (
                       <span className="text-[10px] font-mono font-bold text-[var(--nb-accent)]">
                         {eventStartTime}
@@ -2152,7 +2154,7 @@ export default function EventsView({
                         if (calculatedDur) setEventDuration(calculatedDur);
                       }
                     }}
-                    className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50 cursor-pointer"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-2.5 cursor-pointer font-mono font-bold"
                   />
                 </div>
               </div>
@@ -2160,7 +2162,7 @@ export default function EventsView({
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider">End Time *</label>
+                    <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider">End Time *</label>
                     {eventEndTime && eventEndTime !== 'N/A' && (
                       <span className="text-[10px] font-mono font-bold text-[var(--nb-accent)]">
                         {eventEndTime}
@@ -2179,11 +2181,11 @@ export default function EventsView({
                         if (calculatedDur) setEventDuration(calculatedDur);
                       }
                     }}
-                    className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50 cursor-pointer"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-2.5 cursor-pointer font-mono font-bold"
                   />
                   {eventDuration && (
                     <div className="mt-1 flex items-center gap-1.5">
-                      <span className="text-[9px] font-mono font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded">
                         Duration: {eventDuration}
                       </span>
                     </div>
@@ -2208,7 +2210,7 @@ export default function EventsView({
                           className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border transition-all cursor-pointer whitespace-nowrap ${
                             eventDuration === durString
                               ? 'nb-pill-yellow text-black border-black shadow-[1.5px_1.5px_0_#000]'
-                              : 'bg-surface border-divider text-secondary hover:text-content'
+                              : 'bg-[var(--nb-surface-accent)] border-[1.5px] border-[var(--nb-ink)] text-[var(--nb-content)] hover:bg-[var(--nb-surface)]'
                           }`}
                         >
                           {chip}
@@ -2218,55 +2220,61 @@ export default function EventsView({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Max Participants</label>
+                  <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Max Participants</label>
                   <input
                     type="number"
                     value={eventMaxParticipants}
                     onChange={(e) => setEventMaxParticipants(Number(e.target.value))}
-                    className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-3 font-mono font-bold"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 bg-surface p-3 rounded-xl border border-divider">
+              <div 
+                className="grid grid-cols-2 gap-2.5 bg-[var(--nb-surface)] p-3 rounded-lg"
+                style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+              >
                 <div className="flex items-center justify-between col-span-2">
                   <div>
-                    <span className="block text-[10px] font-bold text-content uppercase tracking-wider">Team-Based Event</span>
-                    <span className="text-[9px] text-secondary">Students register as a team</span>
+                    <span className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider">Team-Based Event</span>
+                    <span className="text-[9px] text-[var(--nb-secondary)]">Students register as a team</span>
                   </div>
                   <input
                     type="checkbox"
                     checked={eventIsTeamBased}
                     onChange={(e) => setEventIsTeamBased(e.target.checked)}
-                    className="w-4 h-4 rounded border-divider bg-background text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded border-[1.5px] border-[var(--nb-ink)] text-[var(--nb-accent)] cursor-pointer"
                   />
                 </div>
                 {eventIsTeamBased && (
-                  <div className="col-span-2 pt-2 border-t border-divider animate-fade-in">
-                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Max Team Size</label>
+                  <div className="col-span-2 pt-2 border-t border-[var(--nb-divider)] animate-fade-in">
+                    <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Max Team Size</label>
                     <input
                       type="number"
                       min={2}
                       max={10}
                       value={eventMaxTeamSize}
                       onChange={(e) => setEventMaxTeamSize(Number(e.target.value))}
-                      className="w-full bg-background border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                      className="nb-input !text-xs !min-h-[38px] !py-2 !px-3 font-mono font-bold"
                     />
                   </div>
                 )}
               </div>
 
               {/* DYNAMIC COORDINATOR SELECTION (FACULTY & STUDENT DB COORDINATORS) */}
-              <div className="space-y-3 bg-surface p-3.5 rounded-2xl border border-divider shadow-sm">
-                <div className="flex items-center justify-between border-b border-divider/60 pb-2">
+              <div 
+                className="space-y-3 bg-[var(--nb-surface)] p-3.5 rounded-lg"
+                style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+              >
+                <div className="flex items-center justify-between border-b border-[var(--nb-divider)] pb-2">
                   <div className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-indigo-400" />
-                    <span className="text-[10px] font-bold text-content uppercase tracking-wider">
+                    <Users className="w-3.5 h-3.5 text-[var(--nb-accent)]" />
+                    <span className="text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider">
                       Event Coordinators (Dynamic DB Selection)
                     </span>
                   </div>
-                  <span className="text-[9px] font-mono text-tertiary">
-                    {allUsers.filter(u => u.role === 'coordinator').length} Official Coordinators in DB
+                  <span className="text-[9px] font-mono text-[var(--nb-tertiary)] font-bold">
+                    {allUsers.filter(u => u.role === 'coordinator').length} In DB
                   </span>
                 </div>
 
@@ -2274,10 +2282,10 @@ export default function EventsView({
                   {/* Faculty Coordinator */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                      <label className="text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider">
                         Faculty Coordinator
                       </label>
-                      <span className="text-[8.5px] text-tertiary font-mono">Quick Pick</span>
+                      <span className="text-[8.5px] text-[var(--nb-tertiary)] font-mono font-bold">Quick Pick</span>
                     </div>
 
                     <input
@@ -2285,21 +2293,21 @@ export default function EventsView({
                       value={eventFaculty}
                       onChange={(e) => setEventFaculty(e.target.value)}
                       placeholder="Dr. XYZ Prasad"
-                      className="w-full bg-background border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                      className="nb-input !text-xs !min-h-[38px] !py-2 !px-3 font-bold"
                     />
 
                     {/* Quick Faculty Picks */}
                     <div className="flex flex-wrap gap-1 items-center pt-0.5">
-                      <span className="text-[8.5px] text-tertiary font-mono mr-0.5">DB Leads:</span>
+                      <span className="text-[8.5px] text-[var(--nb-tertiary)] font-mono font-bold mr-0.5">DB Leads:</span>
                       {allUsers.filter(u => u.role === 'faculty').length > 0 ? (
                         allUsers.filter(u => u.role === 'faculty').map(f => (
                           <button
                             key={f.uid}
                             type="button"
                             onClick={() => selectFacultyCoordinator(f.name)}
-                            className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${eventFaculty.toLowerCase() === f.name.toLowerCase()
-                                ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40 font-bold'
-                                : 'bg-surface hover:bg-surface-accent text-secondary border-divider'
+                            className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer font-bold ${eventFaculty.toLowerCase() === f.name.toLowerCase()
+                                ? 'bg-[var(--nb-accent)] text-[var(--nb-accent-fg)] border-[1.5px] border-[var(--nb-ink)] shadow-[1.5px_1.5px_0_var(--nb-ink)]'
+                                : 'bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-surface)] text-[var(--nb-content)] border-[1.5px] border-[var(--nb-ink)]'
                               }`}
                           >
                             👨‍🏫 {f.name}
@@ -2311,9 +2319,9 @@ export default function EventsView({
                             key={fac}
                             type="button"
                             onClick={() => selectFacultyCoordinator(fac)}
-                            className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${eventFaculty.toLowerCase() === fac.toLowerCase()
-                                ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40 font-bold'
-                                : 'bg-surface hover:bg-surface-accent text-secondary border-divider'
+                            className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer font-bold ${eventFaculty.toLowerCase() === fac.toLowerCase()
+                                ? 'bg-[var(--nb-accent)] text-[var(--nb-accent-fg)] border-[1.5px] border-[var(--nb-ink)] shadow-[1.5px_1.5px_0_var(--nb-ink)]'
+                                : 'bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-surface)] text-[var(--nb-content)] border-[1.5px] border-[var(--nb-ink)]'
                               }`}
                           >
                             👨‍🏫 {fac}
@@ -2326,15 +2334,15 @@ export default function EventsView({
                   {/* Student Coordinators */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                      <label className="text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider">
                         Student Coordinators
                       </label>
                       <button
                         type="button"
                         onClick={() => setShowCoordPickerModal(true)}
-                        className="inline-flex items-center gap-1 text-[9.5px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-lg transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1 text-[9.5px] font-bold font-mono text-white bg-[var(--nb-purple)] hover:opacity-90 border-[1.5px] border-[var(--nb-ink)] shadow-[1.5px_1.5px_0_var(--nb-ink)] px-2 py-0.5 rounded transition-all cursor-pointer"
                       >
-                        <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
+                        <Sparkles className="w-2.5 h-2.5 text-white" />
                         <span>Fetch from DB</span>
                       </button>
                     </div>
@@ -2347,19 +2355,19 @@ export default function EventsView({
                           return (
                             <span
                               key={name}
-                              className="inline-flex items-center gap-1 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                              className="inline-flex items-center gap-1 bg-[var(--nb-surface-accent)] border-[1.5px] border-[var(--nb-ink)] text-[var(--nb-content)] px-2 py-0.5 rounded text-[10px] font-bold"
                             >
                               <span>{name}</span>
                               {matchedUser?.rollNumber && (
-                                <span className="text-[8.5px] font-mono text-tertiary">({matchedUser.rollNumber})</span>
+                                <span className="text-[8.5px] font-mono text-[var(--nb-secondary)]">({matchedUser.rollNumber})</span>
                               )}
                               <button
                                 type="button"
                                 onClick={() => removeCoordinatorName(name)}
-                                className="text-indigo-400 hover:text-rose-400 p-0.5 cursor-pointer"
+                                className="text-red-500 hover:text-red-700 p-0.5 cursor-pointer font-black"
                                 title="Remove coordinator"
                               >
-                                <X className="w-2.5 h-2.5" />
+                                <X className="w-3 h-3" />
                               </button>
                             </span>
                           );
@@ -2372,12 +2380,12 @@ export default function EventsView({
                       value={eventStudent}
                       onChange={(e) => setEventStudent(e.target.value)}
                       placeholder="e.g. Sameer, John (or click Fetch from DB)"
-                      className="w-full bg-background border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                      className="nb-input !text-xs !min-h-[38px] !py-2 !px-3 font-bold"
                     />
 
                     {/* Quick DB Coordinator pills */}
                     <div className="pt-0.5">
-                      <div className="text-[8.5px] text-tertiary font-mono mb-1">Quick Add DB Coordinators:</div>
+                      <div className="text-[8.5px] text-[var(--nb-tertiary)] font-mono font-bold mb-1">Quick Add DB Coordinators:</div>
                       <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
                         {allUsers
                           .filter(u => u.role === 'coordinator' || u.role === 'associate')
@@ -2388,15 +2396,15 @@ export default function EventsView({
                                 key={c.uid}
                                 type="button"
                                 onClick={() => toggleCoordinatorName(c.name)}
-                                className={`inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${isSelected
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold'
-                                    : 'bg-surface hover:bg-surface-accent text-secondary border-divider'
+                                className={`inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer font-bold ${isSelected
+                                    ? 'bg-[var(--nb-green)] text-neutral-900 border-[1.5px] border-black shadow-[1.5px_1.5px_0_#000]'
+                                    : 'bg-[var(--nb-surface-accent)] hover:bg-[var(--nb-surface)] text-[var(--nb-content)] border-[1.5px] border-[var(--nb-ink)]'
                                   }`}
                               >
                                 <span>{isSelected ? '✓' : '+'}</span>
                                 <span>{c.name}</span>
                                 {c.rollNumber && (
-                                  <span className="font-mono text-[8px] opacity-70">({c.rollNumber})</span>
+                                  <span className="font-mono text-[8px] opacity-75">({c.rollNumber})</span>
                                 )}
                               </button>
                             );
@@ -2408,7 +2416,7 @@ export default function EventsView({
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Event Poster / Cover Images</label>
+                <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Event Poster / Cover Images</label>
                 <ImageUploader
                   maxFiles={5}
                   onUploadSuccess={(urls) => {
@@ -2429,11 +2437,11 @@ export default function EventsView({
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Poster Orientation</label>
+                  <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Poster Orientation</label>
                   <select
                     value={eventPosterOrientation}
                     onChange={(e) => setEventPosterOrientation(e.target.value as any)}
-                    className="w-full bg-surface border border-divider text-xs text-primary rounded-lg py-2 px-2 outline-none focus:border-indigo-500/50"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-2.5 cursor-pointer font-bold"
                   >
                     <option value="auto">Auto-detect from image</option>
                     <option value="portrait">Portrait (Tall)</option>
@@ -2441,7 +2449,7 @@ export default function EventsView({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Direct Poster URL (Optional)</label>
+                  <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Direct Poster URL (Optional)</label>
                   <input
                     type="url"
                     value={eventPoster}
@@ -2458,30 +2466,30 @@ export default function EventsView({
                       }
                     }}
                     placeholder="https://..."
-                    className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50 truncate"
+                    className="nb-input !text-xs !min-h-[38px] !py-2 !px-3 truncate"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Event Rules</label>
+                <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Event Rules</label>
                 <textarea
                   rows={2}
                   value={eventRules}
                   onChange={(e) => setEventRules(e.target.value)}
                   placeholder="1. Open only to CSE students&#10;2. Max 4 members..."
-                  className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none resize-none focus:border-indigo-500/50"
+                  className="nb-input !text-xs !py-2 !px-3 resize-none leading-relaxed"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">Requirements</label>
+                <label className="block text-[10px] font-bold font-mono text-[var(--nb-content)] uppercase tracking-wider mb-1">Requirements</label>
                 <input
                   type="text"
                   value={eventReqs}
                   onChange={(e) => setEventReqs(e.target.value)}
                   placeholder="e.g. Laptops, GitHub ID, etc."
-                  className="w-full bg-surface border border-divider text-xs text-content rounded-lg py-2 px-3 outline-none focus:border-indigo-500/50"
+                  className="nb-input !text-xs !min-h-[38px] !py-2 !px-3"
                 />
               </div>
 
@@ -2492,13 +2500,15 @@ export default function EventsView({
                     setShowAddForm(false);
                     setEditingEventId(null);
                   }}
-                  className="flex-1 bg-surface border border-divider hover:bg-surface-accent text-secondary font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition-all cursor-pointer"
+                  className="flex-1 nb-btn-ghost font-bold text-xs uppercase tracking-wider rounded py-2.5 cursor-pointer"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
+                  className="flex-[2] nb-btn font-bold text-xs uppercase tracking-wider rounded py-2.5 cursor-pointer"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
                 >
                   {editingEventId ? 'Save Changes' : 'Publish & Notify'}
                 </button>
@@ -2639,7 +2649,8 @@ export default function EventsView({
               <button
                 type="button"
                 onClick={() => setShowCoordPickerModal(false)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition-all cursor-pointer shadow-md shadow-indigo-600/20"
+                className="nb-btn font-bold text-xs uppercase tracking-wider px-4 py-2 rounded cursor-pointer"
+                style={{ border: '1.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
               >
                 Done
               </button>

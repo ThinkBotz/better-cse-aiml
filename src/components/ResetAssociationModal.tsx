@@ -78,7 +78,7 @@ export default function ResetAssociationModal({
     setExportSuccess(false);
 
     try {
-      const backupData: SystemBackupData = await exportAllDatabaseData(currentUser.name);
+      const backupData: SystemBackupData = await exportAllDatabaseData(currentUser.name, currentUser.tenantId);
       
       const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
         JSON.stringify(backupData, null, 2)
@@ -162,7 +162,7 @@ export default function ResetAssociationModal({
     setResetPercent(5);
 
     try {
-      const summary = await resetEntireDatabaseForNewAssociation(currentUser, (stage, percent) => {
+      const summary = await resetEntireDatabaseForNewAssociation(currentUser, currentUser.tenantId || '', (stage, percent) => {
         setResetStage(stage);
         setResetPercent(percent);
       });

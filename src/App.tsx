@@ -16,19 +16,20 @@ import {
 } from 'lucide-react';
 
 import { onSnapshot, collection, doc, query, where } from 'firebase/firestore';
-import { db } from './firebase';
+import { ref, onValue } from 'firebase/database';
+import { db, rtdb } from './firebase';
 import { UserProfile, DepartmentEvent, EventRegistration, Album, Announcement, UserInvitation, ChatRoom, AppConfig, SupportInfo, DEFAULT_SUPPORT_INFO, AppBranding, DEFAULT_BRANDING, Tenant, SUPER_ADMIN_EMAILS } from './types';
 import BrandLogo, { ACCENT_THEMES, getCssAccent, getCssAccentFg } from './components/BrandLogo';
 import { 
   fetchUsers, 
   fetchEvents, 
   fetchRegistrations, 
+  subscribeToRegistrations,
   fetchAlbums, 
   fetchAnnouncements, 
   fetchReceivedInvitations,
   getAppConfig,
   seedDatabaseIfEmpty,
-  DEFAULT_TENANT_ID,
   getTenant
 } from './firebase';
 import { isSessionExpired, recordUserActivity, clearUserSession } from './utils/auth';
@@ -189,7 +190,7 @@ export default function App() {
       localStorage.setItem('notx_active_tenant', fromUrl);
       return fromUrl;
     }
-    return localStorage.getItem('notx_active_tenant') || DEFAULT_TENANT_ID;
+    return localStorage.getItem('notx_active_tenant') || '';
   });
 
   const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
@@ -332,15 +333,12 @@ export default function App() {
       snapshot.forEach((docSnap) => {
         allRawUsers.push(docSnap.data() as UserProfile);
       });
-      // Filter to only users belonging to the active tenant (+ super admins)
+      // Filter to only users belonging to the active tenant
+      const cleanActiveTid = activeTenantId ? activeTenantId.trim().toLowerCase() : '';
       const tenantUsers = allRawUsers.filter(u => 
-        u.tenantId === activeTenantId || 
-        (!u.tenantId && activeTenantId === DEFAULT_TENANT_ID) || 
-        u.isSuperAdmin
+        cleanActiveTid ? (u.tenantId && u.tenantId.trim().toLowerCase() === cleanActiveTid) : false
       );
-      if (tenantUsers.length > 0) {
-        setAllUsers(tenantUsers);
-      }
+      setAllUsers(tenantUsers);
 
       if (currentUser) {
         const freshUser = allRawUsers.find(u => u.uid === currentUser.uid);
@@ -356,30 +354,48 @@ export default function App() {
     return () => unsubscribeUsers();
   }, [currentUser?.uid, activeTenantId]);
 
+  // Keep registrations and attendance synchronized in real-time across all devices (tenant-scoped)
+  useEffect(() => {
+    if (!activeTenantId) {
+      setRegistrations([]);
+      return;
+    }
+    const unsubscribeRegistrations = subscribeToRegistrations((freshRegistrations) => {
+      setRegistrations(freshRegistrations);
+    }, activeTenantId);
+
+    return () => unsubscribeRegistrations();
+  }, [activeTenantId]);
+
   useEffect(() => {
     if (!currentUser?.rollNumber) return;
-    const qChats = query(
-      collection(db, 'chats'),
-      where('participants', 'array-contains', currentUser.rollNumber.trim().toUpperCase())
-    );
+    const userRoll = currentUser.rollNumber.trim().toUpperCase();
+    const chatsPath = activeTenantId ? `chats/${activeTenantId.trim().toLowerCase()}` : 'chats';
+    const chatsRef = ref(rtdb, chatsPath);
 
-    const unsubscribe = onSnapshot(qChats, (snapshot) => {
+    const unsubscribe = onValue(chatsRef, (snapshot) => {
       let unread = 0;
-      const userRoll = currentUser.rollNumber!.trim().toUpperCase();
-      snapshot.forEach((docSnap) => {
-        const room = docSnap.data() as ChatRoom;
-        if (room.messages) {
-          const hasUnread = room.messages.some(m => m.recipientRoll.toUpperCase() === userRoll && m.type === 'chat' && !m.isRead);
-          if (hasUnread) {
-            const roomUnreadCount = room.messages.filter(m => m.recipientRoll.toUpperCase() === userRoll && m.type === 'chat' && !m.isRead).length;
-            unread += roomUnreadCount;
-          }
+      const val = snapshot.val() || {};
+      Object.values(val).forEach((roomAny: any) => {
+        const room = roomAny as {
+          participants?: string[];
+          messages?: Record<string, UserInvitation> | UserInvitation[];
+        };
+        const participants = Array.isArray(room.participants) ? room.participants : [];
+        if (!participants.some(p => p.toUpperCase() === userRoll)) return;
+
+        let rawMsgs: UserInvitation[] = [];
+        if (Array.isArray(room.messages)) {
+          rawMsgs = room.messages;
+        } else if (room.messages && typeof room.messages === 'object') {
+          rawMsgs = Object.values(room.messages);
         }
+        unread += rawMsgs.filter(m => m.recipientRoll?.toUpperCase() === userRoll && m.type === 'chat' && !m.isRead).length;
       });
       setUnreadChatsCount(unread);
     });
     return () => unsubscribe();
-  }, [currentUser?.rollNumber]);
+  }, [currentUser?.rollNumber, activeTenantId]);
 
   const refreshAllData = async (targetTenantId?: string) => {
     const tId = targetTenantId || activeTenantId;
@@ -387,7 +403,7 @@ export default function App() {
       setIsDataLoading(true);
       
       const invitesPromise = (currentUser && currentUser.rollNumber) 
-        ? fetchReceivedInvitations(currentUser.rollNumber) 
+        ? fetchReceivedInvitations(currentUser.rollNumber, tId) 
         : Promise.resolve([]);
 
       const [u, e, r, g, a, invites, config, tenantData] = await Promise.all([
@@ -647,6 +663,7 @@ export default function App() {
                 onNavigate={setActiveTab}
                 onSelectEvent={selectEventFromDashboard}
                 isLoading={isDataLoading}
+                activeTenantId={activeTenantId}
               />
             )}
 
@@ -690,6 +707,7 @@ export default function App() {
                   allUsers={allUsers}
                   initialTargetRoll={messageTargetRoll}
                   onTargetHandled={() => setMessageTargetRoll(null)}
+                  activeTenantId={activeTenantId}
                 />
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">

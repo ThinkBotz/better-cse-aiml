@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, Album } from '../types';
-import { addAlbum, deleteAlbum, updateAlbum, DEFAULT_TENANT_ID } from '../firebase';
+import { addAlbum, deleteAlbum, updateAlbum } from '../firebase';
 import { 
   Image as ImageIcon, 
   X, 
@@ -124,7 +124,7 @@ export default function GalleryView({ user, albums, refreshData, activeTenantId 
       const albumId = `album_${Date.now()}`;
       const newAlbum: Album = {
         albumId,
-        tenantId: activeTenantId || user.tenantId || DEFAULT_TENANT_ID,
+        tenantId: activeTenantId || user.tenantId,
         title: title.trim(),
         description: description.trim(),
         thumbnailUrl: images[0],

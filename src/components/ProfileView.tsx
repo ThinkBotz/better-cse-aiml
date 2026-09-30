@@ -117,12 +117,14 @@ export default function ProfileView({
   const [verifyInitialId, setVerifyInitialId] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const resolvedTenantId = activeTenantId || user.tenantId;
+
   useEffect(() => {
     const unsub = subscribeToCertificates((certs) => {
       setDbCertificates(certs);
-    });
+    }, resolvedTenantId);
     return () => unsub();
-  }, []);
+  }, [resolvedTenantId]);
 
   const [activeTicket, setActiveTicket] = useState<{event: DepartmentEvent, registration: EventRegistration} | null>(null);
   const [isLinkingGoogle, setIsLinkingGoogle] = useState(false);
@@ -1271,7 +1273,7 @@ export default function ProfileView({
       {activeTicket && (
         <EventTicketModal
           event={activeTicket.event}
-          registration={activeTicket.registration}
+          registration={registrations.find(r => r.registrationId === activeTicket.registration.registrationId) || activeTicket.registration}
           user={user}
           onClose={() => setActiveTicket(null)}
           branding={branding}

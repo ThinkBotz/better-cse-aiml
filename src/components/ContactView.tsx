@@ -186,8 +186,8 @@ export default function ContactView({ user, supportInfo, onSupportInfoUpdated }:
                     onClick={() => setCategory(cat)}
                     className={`py-2 px-3 rounded-md text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
                       category === cat
-                        ? 'bg-[var(--nb-ink)] text-[var(--nb-bg)] border-2 border-[var(--nb-ink)] shadow-[2px_2px_0_var(--nb-accent)]'
-                        : 'bg-[var(--nb-surface-accent)] border border-[var(--nb-divider)] text-[var(--nb-secondary)] hover:border-[var(--nb-ink)] hover:text-[var(--nb-content)]'
+                        ? 'bg-[var(--nb-accent)] text-white border-2 border-[var(--nb-ink)] shadow-[2px_2px_0_var(--nb-ink)]'
+                        : 'bg-[var(--nb-surface-accent)] border-[1.5px] border-[var(--nb-ink)] text-[var(--nb-content)] hover:bg-[var(--nb-surface)]'
                     }`}
                   >
                     {cat}

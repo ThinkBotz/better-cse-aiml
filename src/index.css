@@ -68,6 +68,14 @@
   --nb-accent:    #E63946;
   --nb-accent-fg: #FFFFFF;
 
+  /* Dynamic Multi-Tenant Theme Tokens (overridden per-tenant via JS) */
+  --tenant-hero-bg:     #FFE600;
+  --tenant-hero-fg:     #111111;
+  --tenant-accent:      #E63946;
+  --tenant-accent-fg:   #FFFFFF;
+  --tenant-subtle:      #FFF9C4;
+  --tenant-border:      #1A1A1A;
+
   /* Hard-offset shadow using ink */
   --shadow-hard-sm: 2px 2px 0 #1A1A1A;
   --shadow-hard:    3px 3px 0 #1A1A1A;
@@ -131,6 +139,14 @@
   --nb-accent:    #FF4D5B;
   --nb-accent-fg: #FFFFFF;
 
+  /* Dynamic Multi-Tenant Theme Tokens (overridden per-tenant via JS) */
+  --tenant-hero-bg:     #FFE600;
+  --tenant-hero-fg:     #000000;
+  --tenant-accent:      #FF4D5B;
+  --tenant-accent-fg:   #FFFFFF;
+  --tenant-subtle:      #2C2600;
+  --tenant-border:      #EBEBEB;
+
   --nb-yellow:        #FFDE59;
   --nb-yellow-fg:     #000000;
   --nb-yellow-subtle: #2C2600;
@@ -147,12 +163,12 @@
   --nb-coral-fg:      #FFFFFF;
   --nb-coral-subtle:  #3D1708;
 
-  --nb-purple:        #A78BFA;
-  --nb-purple-fg:     #000000;
+  --nb-purple:        #7C3AED;
+  --nb-purple-fg:     #FFFFFF;
   --nb-purple-subtle: #25103F;
 
   --nb-pink:          #FF65A3;
-  --nb-pink-fg:       #000000;
+  --nb-pink-fg:       #FFFFFF;
   --nb-pink-subtle:   #3D0B20;
 
   --nb-cyan:          #22D3EE;
@@ -283,6 +299,8 @@ input, textarea, select {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+:where(.nb-label):not([class*="text-"]) {
   color: var(--nb-secondary);
 }
 
@@ -330,6 +348,21 @@ input, textarea, select {
   box-shadow: var(--shadow-hard);
 }
 
+/* Dynamic Multi-Tenant Branded Hero Card */
+.nb-tenant-hero {
+  background: var(--tenant-hero-bg);
+  color: var(--tenant-hero-fg);
+  border: 2.5px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.nb-tenant-hero:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
 .nb-card-tinted {
   background: var(--nb-surface-accent);
   border: 1.5px solid var(--nb-divider);
@@ -340,35 +373,40 @@ input, textarea, select {
 /* Saturated Color Blocks & Cards */
 .nb-card-yellow {
   background: var(--nb-yellow);
-  color: var(--nb-yellow-fg);
+  color: #000000;
   border: 2px solid var(--nb-ink);
   box-shadow: var(--shadow-hard-sm);
 }
 
 .nb-card-blue {
   background: var(--nb-blue);
-  color: var(--nb-blue-fg);
+  color: #FFFFFF;
   border: 2px solid var(--nb-ink);
   box-shadow: var(--shadow-hard-sm);
 }
 
 .nb-card-green {
-  background: var(--nb-green);
-  color: var(--nb-green-fg);
+  background: #059669;
+  color: #FFFFFF;
   border: 2px solid var(--nb-ink);
   box-shadow: var(--shadow-hard-sm);
 }
 
+:root.dark .nb-card-green {
+  background: #047857;
+  color: #FFFFFF;
+}
+
 .nb-card-coral {
   background: var(--nb-coral);
-  color: var(--nb-coral-fg);
+  color: #FFFFFF;
   border: 2px solid var(--nb-ink);
   box-shadow: var(--shadow-hard-sm);
 }
 
 .nb-card-purple {
   background: var(--nb-purple);
-  color: var(--nb-purple-fg);
+  color: #FFFFFF;
   border: 2px solid var(--nb-ink);
   box-shadow: var(--shadow-hard-sm);
 }
@@ -630,6 +668,24 @@ input, textarea, select {
 .nb-input.has-icon-right,
 .nb-input[class*="pr-"] {
   padding-right: 2.75rem !important;
+}
+
+/* Native date/time picker indicator & select option legibility */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  color-scheme: light dark;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+select option {
+  background-color: var(--nb-surface);
+  color: var(--nb-content);
 }
 
 /* ─────────────────────────────────────────────────────────────

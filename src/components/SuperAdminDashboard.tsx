@@ -29,9 +29,10 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { Tenant, UserProfile } from '../types';
-import { getAllTenants, createTenant, updateTenant, updateAppBranding, subscribeToTenants, fetchUsers, fetchEvents, fetchRegistrations, DEFAULT_TENANT_ID } from '../firebase';
+import { getAllTenants, createTenant, updateTenant, updateAppBranding, subscribeToTenants, fetchUsers, fetchEvents, fetchRegistrations } from '../firebase';
 import { runSecurityAndTenantValidation, TestResult } from '../utils/testTenantSecurity';
 import BrandLogo from './BrandLogo';
+import { THEME_PRESETS, ThemePresetKey, TenantThemeConfig, resolveTenantTheme } from '../utils/themePresets';
 
 interface SuperAdminDashboardProps {
   currentUser: UserProfile;
@@ -75,6 +76,8 @@ export default function SuperAdminDashboard({
   const [editAdminEmail, setEditAdminEmail] = useState('');
   const [editInstitution, setEditInstitution] = useState('');
   const [editAccentColor, setEditAccentColor] = useState('indigo');
+  const [editThemePreset, setEditThemePreset] = useState<ThemePresetKey>('cyber-gold');
+  const [editLoginHeroText, setEditLoginHeroText] = useState('');
   const [editFormError, setEditFormError] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editFeedback, setEditFeedback] = useState('');
@@ -86,6 +89,8 @@ export default function SuperAdminDashboard({
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newInstitution, setNewInstitution] = useState('Annamacharya Institute of Tech & Sciences');
   const [newAccentColor, setNewAccentColor] = useState('indigo');
+  const [newThemePreset, setNewThemePreset] = useState<ThemePresetKey>('cobalt-tech');
+  const [newLoginHeroText, setNewLoginHeroText] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -183,8 +188,11 @@ export default function SuperAdminDashboard({
     setEditName(tenant.name);
     setEditShortCode(tenant.shortCode);
     setEditAdminEmail(tenant.adminEmail);
-    setEditInstitution(tenant.institution || '');
+    setEditInstitution(tenant.institution || tenant.branding?.institution || '');
     setEditAccentColor(tenant.branding?.accentColor || 'indigo');
+    const resolvedTheme = resolveTenantTheme(tenant.branding);
+    setEditThemePreset(tenant.branding?.theme?.presetKey || resolvedTheme.presetKey || 'cyber-gold');
+    setEditLoginHeroText(tenant.branding?.loginHeroText || '');
     setEditFormError('');
     setEditFeedback('');
   };
@@ -202,6 +210,7 @@ export default function SuperAdminDashboard({
 
     setEditSubmitting(true);
     try {
+      const chosenTheme = THEME_PRESETS[editThemePreset as Exclude<ThemePresetKey, 'custom'>] || THEME_PRESETS['cyber-gold'];
       const updates: Partial<Tenant> = {
         name: editName.trim(),
         shortCode: (editShortCode.trim() || editingTenant.shortCode).substring(0, 10),
@@ -209,22 +218,23 @@ export default function SuperAdminDashboard({
         institution: editInstitution.trim(),
         branding: {
           ...(editingTenant.branding || { appName: 'NOTX', tagline: 'Connect', logoType: 'preset' as const, logoIcon: 'Cpu' }),
+          appName: editingTenant.branding?.appName || editName.trim().split(' ')[0].toUpperCase(),
           subtitle: editShortCode.trim() || editName.trim(),
-          accentColor: editAccentColor
+          institution: editInstitution.trim(),
+          loginHeroText: editLoginHeroText.trim(),
+          accentColor: editAccentColor,
+          theme: chosenTheme
         }
       };
       await updateTenant(editingTenant.tenantId, updates);
       try {
-        await updateAppBranding({
-          appName: updates.branding?.appName || 'NOTX',
-          tagline: updates.branding?.tagline || 'Connect',
-          subtitle: editShortCode.trim() || editName.trim(),
-          accentColor: editAccentColor
-        }, editingTenant.tenantId);
+        if (updates.branding) {
+          await updateAppBranding(updates.branding, editingTenant.tenantId);
+        }
       } catch (brandErr) {
         console.warn('Config branding update note:', brandErr);
       }
-      setEditFeedback('Changes saved successfully!');
+      setEditFeedback('Theme & branding allotted successfully!');
       setTimeout(() => {
         setEditingTenant(null);
         setEditFeedback('');
@@ -254,6 +264,7 @@ export default function SuperAdminDashboard({
 
     setSubmitting(true);
     try {
+      const chosenTheme = THEME_PRESETS[newThemePreset as Exclude<ThemePresetKey, 'custom'>] || THEME_PRESETS['cobalt-tech'];
       const newTenant: Tenant = {
         tenantId: cleanSlug,
         name: newName.trim(),
@@ -262,24 +273,33 @@ export default function SuperAdminDashboard({
         institution: newInstitution.trim(),
         status: 'active',
         branding: {
-          appName: 'NOTX',
+          appName: newName.trim().split(' ')[0].toUpperCase(),
           tagline: 'Connect',
-          subtitle: newShortCode.trim() || newName.trim(),
+          subtitle: newShortCode.trim() || cleanSlug.toUpperCase(),
+          institution: newInstitution.trim(),
+          loginHeroText: newLoginHeroText.trim() || 'Universal department pass verification, live notifications, and digital credentials.',
           logoType: 'preset',
           logoIcon: 'Cpu',
-          accentColor: newAccentColor
+          accentColor: newAccentColor,
+          theme: chosenTheme
         },
         createdAt: new Date().toISOString(),
         createdBy: currentUser.email
       };
 
       await createTenant(newTenant);
+      try {
+        await updateAppBranding(newTenant.branding, newTenant.tenantId);
+      } catch (e) {
+        console.warn('Initial branding sync note:', e);
+      }
       setIsAddModalOpen(false);
       setNewTenantId('');
       setNewName('');
       setNewShortCode('');
       setNewAdminEmail('');
-      setGlobalFeedback(`Tenant "${newTenant.name}" provisioned successfully!`);
+      setNewLoginHeroText('');
+      setGlobalFeedback(`Tenant "${newTenant.name}" provisioned with ${chosenTheme.name} theme!`);
       setTimeout(() => setGlobalFeedback(''), 4000);
       loadTenantStats();
     } catch (err: any) {
@@ -288,6 +308,108 @@ export default function SuperAdminDashboard({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const renderThemeAllotmentPicker = (
+    selectedPreset: ThemePresetKey,
+    onSelect: (preset: ThemePresetKey) => void,
+    name: string,
+    shortCode: string,
+    institution: string,
+    heroText: string
+  ) => {
+    const currentConfig = THEME_PRESETS[selectedPreset as Exclude<ThemePresetKey, 'custom'>] || THEME_PRESETS['cyber-gold'];
+
+    return (
+      <div className="space-y-3 pt-1">
+        <div className="flex items-center justify-between">
+          <label className="block nb-label text-[10px] text-[var(--nb-secondary)] font-bold">
+            ALLOT TENANT THEME (BRAND IDENTITY) *
+          </label>
+          <span className="text-[9px] font-mono font-bold text-[var(--nb-accent)] uppercase">
+            7 Curated Presets
+          </span>
+        </div>
+
+        {/* 7 Preset Swatches */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {Object.entries(THEME_PRESETS).map(([key, preset]) => {
+            const isSelected = selectedPreset === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onSelect(key as ThemePresetKey)}
+                className={`p-2 rounded-md text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-2 border-[var(--nb-ink)] shadow-[2.5px_2.5px_0_var(--nb-ink)] scale-[1.02]'
+                    : 'border border-[var(--nb-divider)] bg-[var(--nb-surface-accent)] hover:border-[var(--nb-ink)] opacity-75 hover:opacity-100'
+                }`}
+                style={isSelected ? { background: 'var(--nb-surface)' } : {}}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span
+                    className="w-4 h-4 rounded-full border border-black flex-shrink-0"
+                    style={{ background: preset.heroBg }}
+                  />
+                  <span
+                    className="w-2.5 h-2.5 rounded-full border border-black flex-shrink-0"
+                    style={{ background: preset.accent }}
+                  />
+                </div>
+                <p className="font-mono text-[10px] font-bold truncate text-[var(--nb-content)]">
+                  {preset.name}
+                </p>
+                <p className="text-[8.5px] text-[var(--nb-secondary)] truncate">
+                  {preset.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Live WYSIWYG Miniature Preview Card */}
+        <div
+          className="p-3.5 rounded-lg select-none space-y-2.5 transition-all"
+          style={{
+            background: currentConfig.heroBg,
+            color: currentConfig.heroFg,
+            border: '2px solid #1A1A1A',
+            boxShadow: '3px 3px 0 #1A1A1A'
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-mono font-extrabold px-2 py-0.5 rounded bg-white text-black border border-black shadow-[1.5px_1.5px_0_#000] uppercase">
+              ⚡ {shortCode || 'AIML'} · LIVE PREVIEW
+            </span>
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider opacity-85">
+              {currentConfig.name}
+            </span>
+          </div>
+
+          <div>
+            <h4 className="nb-headline text-lg leading-tight truncate">
+              {name || 'Department Association'}
+            </h4>
+            <p className="text-[10px] opacity-90 line-clamp-1 mt-0.5 font-sans">
+              {heroText || institution || 'Universal department pass verification, live notifications, and digital credentials.'}
+            </p>
+          </div>
+
+          <div className="pt-1.5 flex items-center justify-between border-t border-black/20">
+            <span className="text-[9px] font-mono opacity-80 uppercase truncate max-w-[200px]">
+              🏛 {institution || 'Academic SaaS Ecosystem'}
+            </span>
+            <span
+              className="text-[9px] font-mono font-black uppercase px-2.5 py-0.5 rounded border border-black shadow-[1.5px_1.5px_0_#000]"
+              style={{ background: currentConfig.accent, color: currentConfig.accentFg }}
+            >
+              Access Portal →
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -481,16 +603,25 @@ export default function SuperAdminDashboard({
                         <Mail className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
                         <span className="truncate text-[var(--nb-content)] font-bold">{tenant.adminEmail}</span>
                       </div>
-                      {tenant.branding?.accentColor && (
-                        <div className="flex items-center gap-2">
-                          <Palette className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="capitalize">{tenant.branding.accentColor} theme</span>
-                          <span 
-                            className="w-3 h-3 rounded-full border border-[var(--nb-ink)]" 
-                            style={{ backgroundColor: ACCENT_OPTIONS.find(a => a.value === tenant.branding?.accentColor)?.color || '#6366f1' }}
-                          />
-                        </div>
-                      )}
+                      {(() => {
+                        const themeConfig = tenant.branding?.theme || resolveTenantTheme(tenant.branding);
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Palette className="w-3.5 h-3.5 flex-shrink-0 text-[var(--nb-accent)]" />
+                            <span className="font-bold text-[var(--nb-content)]">{themeConfig.name}</span>
+                            <span 
+                              className="w-3.5 h-3.5 rounded-full border border-[var(--nb-ink)] inline-block flex-shrink-0" 
+                              style={{ backgroundColor: themeConfig.heroBg }}
+                              title={`Hero: ${themeConfig.heroBg}`}
+                            />
+                            <span 
+                              className="w-2.5 h-2.5 rounded-full border border-[var(--nb-ink)] inline-block flex-shrink-0" 
+                              style={{ backgroundColor: themeConfig.accent }}
+                              title={`Accent: ${themeConfig.accent}`}
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Live Stats */}
@@ -559,7 +690,7 @@ export default function SuperAdminDashboard({
 
       {/* ── EDIT TENANT MODAL ── */}
       {editingTenant && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
           <div 
             className="bg-[var(--nb-surface)] rounded-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto"
             style={{ border: '2.5px solid var(--nb-ink)', boxShadow: '6px 6px 0 var(--nb-ink)' }}
@@ -620,7 +751,7 @@ export default function SuperAdminDashboard({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
                     SHORT CODE
@@ -635,26 +766,41 @@ export default function SuperAdminDashboard({
                 </div>
                 <div>
                   <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
-                    ACCENT COLOR
+                    COLLEGE / INSTITUTION NAME
                   </label>
-                  <div className="flex items-center gap-1.5">
-                    <select
-                      value={editAccentColor}
-                      onChange={(e) => setEditAccentColor(e.target.value)}
-                      className="flex-1 bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none font-bold cursor-pointer"
-                      style={{ border: '1.5px solid var(--nb-ink)' }}
-                    >
-                      {ACCENT_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                    <span 
-                      className="w-8 h-8 rounded border-2 border-[var(--nb-ink)] flex-shrink-0"
-                      style={{ backgroundColor: ACCENT_OPTIONS.find(a => a.value === editAccentColor)?.color || '#6366f1' }}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={editInstitution}
+                    onChange={(e) => setEditInstitution(e.target.value)}
+                    className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none font-bold"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  />
                 </div>
               </div>
+
+              <div>
+                <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
+                  LOGIN HERO ANNOUNCEMENT / TAGLINE
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Exclusive portal for AI & ML students and faculty"
+                  value={editLoginHeroText}
+                  onChange={(e) => setEditLoginHeroText(e.target.value)}
+                  className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none font-bold"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                />
+              </div>
+
+              {/* Theme Preset Allotment Console & Live WYSIWYG Preview */}
+              {renderThemeAllotmentPicker(
+                editThemePreset,
+                setEditThemePreset,
+                editName,
+                editShortCode,
+                editInstitution,
+                editLoginHeroText
+              )}
 
               <div>
                 <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
@@ -671,19 +817,6 @@ export default function SuperAdminDashboard({
                 <p className="text-[10px] text-[var(--nb-secondary)] mt-1">
                   Changing this will assign admin rights to the new Gmail on their next Google sign-in.
                 </p>
-              </div>
-
-              <div>
-                <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
-                  COLLEGE / INSTITUTION NAME
-                </label>
-                <input
-                  type="text"
-                  value={editInstitution}
-                  onChange={(e) => setEditInstitution(e.target.value)}
-                  className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none"
-                  style={{ border: '1.5px solid var(--nb-ink)' }}
-                />
               </div>
 
               {/* Status toggle in modal */}
@@ -734,7 +867,7 @@ export default function SuperAdminDashboard({
 
       {/* ── ADD NEW TENANT MODAL ── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
           <div 
             className="bg-[var(--nb-surface)] rounded-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto"
             style={{ border: '2.5px solid var(--nb-ink)', boxShadow: '6px 6px 0 var(--nb-ink)' }}
@@ -792,7 +925,7 @@ export default function SuperAdminDashboard({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
                     SHORT CODE
@@ -808,26 +941,42 @@ export default function SuperAdminDashboard({
                 </div>
                 <div>
                   <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
-                    ACCENT COLOR
+                    COLLEGE / INSTITUTION NAME
                   </label>
-                  <div className="flex items-center gap-1.5">
-                    <select
-                      value={newAccentColor}
-                      onChange={(e) => setNewAccentColor(e.target.value)}
-                      className="flex-1 bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none font-bold cursor-pointer"
-                      style={{ border: '1.5px solid var(--nb-ink)' }}
-                    >
-                      {ACCENT_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                    <span 
-                      className="w-8 h-8 rounded border-2 border-[var(--nb-ink)] flex-shrink-0"
-                      style={{ backgroundColor: ACCENT_OPTIONS.find(a => a.value === newAccentColor)?.color || '#6366f1' }}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Annamacharya Institute of Tech & Sciences"
+                    value={newInstitution}
+                    onChange={(e) => setNewInstitution(e.target.value)}
+                    className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none font-bold"
+                    style={{ border: '1.5px solid var(--nb-ink)' }}
+                  />
                 </div>
               </div>
+
+              <div>
+                <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
+                  LOGIN HERO ANNOUNCEMENT / TAGLINE
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Official department pass verification, live notifications, and digital credentials."
+                  value={newLoginHeroText}
+                  onChange={(e) => setNewLoginHeroText(e.target.value)}
+                  className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none font-bold"
+                  style={{ border: '1.5px solid var(--nb-ink)' }}
+                />
+              </div>
+
+              {/* Theme Preset Allotment Console & Live WYSIWYG Preview */}
+              {renderThemeAllotmentPicker(
+                newThemePreset,
+                setNewThemePreset,
+                newName,
+                newShortCode,
+                newInstitution,
+                newLoginHeroText
+              )}
 
               <div>
                 <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
@@ -845,20 +994,6 @@ export default function SuperAdminDashboard({
                 <p className="text-[10px] text-[var(--nb-secondary)] mt-1">
                   This Gmail will automatically receive Admin rights when signing in with Google.
                 </p>
-              </div>
-
-              <div>
-                <label className="block nb-label text-[10px] text-[var(--nb-secondary)] mb-1 font-bold">
-                  COLLEGE / INSTITUTION NAME
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Annamacharya Institute of Tech & Sciences"
-                  value={newInstitution}
-                  onChange={(e) => setNewInstitution(e.target.value)}
-                  className="w-full bg-[var(--nb-surface-accent)] text-xs text-[var(--nb-content)] rounded p-2.5 outline-none"
-                  style={{ border: '1.5px solid var(--nb-ink)' }}
-                />
               </div>
 
               <div className="pt-3 flex gap-3">

@@ -66,13 +66,10 @@ export async function getAllTenants(): Promise<Tenant[]> {
     const snap = await getDocs(collection(db, 'tenants'));
     const list: Tenant[] = [];
     snap.forEach((d) => list.push(d.data() as Tenant));
-    if (list.length === 0) {
-      return [INITIAL_TENANT];
-    }
     return list;
   } catch (error) {
     console.error("Error fetching tenants:", error);
-    return [INITIAL_TENANT];
+    return [];
   }
 }
 
@@ -81,21 +78,18 @@ export function subscribeToTenants(callback: (tenants: Tenant[]) => void): () =>
     return onSnapshot(collection(db, 'tenants'), (snapshot) => {
       const list: Tenant[] = [];
       snapshot.forEach((d) => list.push(d.data() as Tenant));
-      if (list.length === 0) {
-        callback([INITIAL_TENANT]);
-      } else {
-        callback(list);
-      }
+      callback(list);
     }, (error) => {
       console.error("Error subscribing to tenants:", error);
-      callback([INITIAL_TENANT]);
+      callback([]);
     });
   } catch {
     return () => {};
   }
 }
 
-export async function getTenant(tenantId: string): Promise<Tenant | null> {
+export async function getTenant(tenantId?: string): Promise<Tenant | null> {
+  if (!tenantId || !tenantId.trim()) return null;
   const cleanId = tenantId.trim().toLowerCase();
   try {
     const docRef = doc(db, 'tenants', cleanId);
@@ -103,12 +97,8 @@ export async function getTenant(tenantId: string): Promise<Tenant | null> {
     if (snap.exists()) {
       return snap.data() as Tenant;
     }
-    if (cleanId === 'cse-aiml') {
-      return INITIAL_TENANT;
-    }
     return null;
   } catch {
-    if (cleanId === 'cse-aiml') return INITIAL_TENANT;
     return null;
   }
 }
@@ -185,12 +175,8 @@ export async function findTenantByAdminEmail(email: string): Promise<Tenant | nu
     if (!snap.empty) {
       return snap.docs[0].data() as Tenant;
     }
-    if (clean === 'syedsame2244@gmail.com') {
-      return INITIAL_TENANT;
-    }
     return null;
   } catch {
-    if (clean === 'syedsame2244@gmail.com') return INITIAL_TENANT;
     return null;
   }
 }
@@ -406,244 +392,16 @@ const INITIAL_ALBUMS: Album[] = [
 ];
 
 
-// Seeding engine - Runs ONCE per database project instance
+// Seeding engine - Template auto-seeding disabled to ensure multi-tenant blank state
 export async function seedDatabaseIfEmpty() {
   try {
-    // Check if initial seeding has already taken place
     const seedStatusRef = doc(db, 'appSettings', 'seed_status');
     const seedSnap = await getDoc(seedStatusRef);
-
-    if (seedSnap.exists() && seedSnap.data()?.isSeeded) {
-      console.log("Database has already been seeded. Skipping auto-seeding to preserve admin deletions.");
-      return;
+    if (!seedSnap.exists() || !seedSnap.data()?.isSeeded) {
+      await setDoc(seedStatusRef, { isSeeded: true, seededAt: new Date().toISOString() });
     }
-
-    console.log("Seeding database with default department ecosystem data...");
-
-    // Seed Tenants if empty
-    const tenantsSnap = await getDocs(collection(db, 'tenants'));
-    if (tenantsSnap.empty) {
-      await setDoc(doc(db, 'tenants', INITIAL_TENANT.tenantId), cleanUndefined(INITIAL_TENANT));
-    }
-    
-    // Seed Users if empty
-    const usersSnap = await getDocs(collection(db, 'users'));
-    if (usersSnap.empty) {
-      for (const user of INITIAL_USERS) {
-        await setDoc(doc(db, 'users', user.uid), cleanUndefined({
-          ...user,
-          tenantId: user.tenantId || DEFAULT_TENANT_ID
-        }));
-      }
-    }
-
-    // Seed Events if empty
-    const eventsSnap = await getDocs(collection(db, 'events'));
-    if (eventsSnap.empty) {
-      for (const event of INITIAL_EVENTS) {
-        await setDoc(doc(db, 'events', event.eventId), cleanUndefined({
-          ...event,
-          tenantId: event.tenantId || DEFAULT_TENANT_ID
-        }));
-      }
-    }
-
-    // Seed Announcements if empty
-    const announceSnap = await getDocs(collection(db, 'announcements'));
-    if (announceSnap.empty) {
-      for (const announce of INITIAL_ANNOUNCEMENTS) {
-        await setDoc(doc(db, 'announcements', announce.announcementId), cleanUndefined({
-          ...announce,
-          tenantId: announce.tenantId || DEFAULT_TENANT_ID
-        }));
-      }
-    }
-
-    // Seed Gallery if empty
-    const albumsSnap = await getDocs(collection(db, 'albums'));
-    if (albumsSnap.empty) {
-      for (const gallery of INITIAL_ALBUMS) {
-        await setDoc(doc(db, 'albums', gallery.albumId), cleanUndefined({
-          ...gallery,
-          tenantId: gallery.tenantId || DEFAULT_TENANT_ID
-        }));
-      }
-    }
-
-    // Seed Certificates if empty
-    const certsSnap = await getDocs(collection(db, 'certificates'));
-    if (certsSnap.empty) {
-      const sampleCerts: IssuedCertificate[] = [
-        {
-          certificateId: "CERT-AIML-0501-A4B7",
-          eventId: "event_1",
-          eventTitle: "AI & Neural Networks Masterclass",
-          eventDate: "2026-10-28",
-          eventVenue: "Campus Auditorium, Block-3",
-          studentId: "user_student_1",
-          studentName: "Aarav Sharma",
-          rollNumber: "22A91A0501",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "A",
-          issueDate: "2026-10-28",
-          issuedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-          issuedBy: "Department Administration",
-          status: "Issued",
-          qrVerificationData: "https://notx-connect.edu/verify?id=CERT-AIML-0501-A4B7"
-        },
-        {
-          certificateId: "CERT-AIML-0502-K9X3",
-          eventId: "event_1",
-          eventTitle: "AI & Neural Networks Masterclass",
-          eventDate: "2026-10-28",
-          eventVenue: "Campus Auditorium, Block-3",
-          studentId: "user_student_2",
-          studentName: "Ananya Iyer",
-          rollNumber: "22A91A0502",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "A",
-          issueDate: "2026-10-28",
-          issuedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-          issuedBy: "Department Administration",
-          status: "Issued",
-          qrVerificationData: "https://notx-connect.edu/verify?id=CERT-AIML-0502-K9X3"
-        },
-        {
-          certificateId: "CERT-AIML-0503-M2P8",
-          eventId: "event_1",
-          eventTitle: "AI & Neural Networks Masterclass",
-          eventDate: "2026-10-28",
-          eventVenue: "Campus Auditorium, Block-3",
-          studentId: "user_student_3",
-          studentName: "Rohan Varma",
-          rollNumber: "22A91A0503",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "B",
-          issueDate: "2026-10-28",
-          issuedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-          issuedBy: "Department Administration",
-          status: "Issued",
-          qrVerificationData: "https://notx-connect.edu/verify?id=CERT-AIML-0503-M2P8"
-        },
-        {
-          certificateId: "CERT-AIML-0504-H7T1",
-          eventId: "event_2",
-          eventTitle: "Prompt Engineering & GenAI Hackathon",
-          eventDate: "2026-08-15",
-          eventVenue: "Innovation Lab 314",
-          studentId: "user_student_1",
-          studentName: "Aarav Sharma",
-          rollNumber: "22A91A0501",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "A",
-          issueDate: "2026-08-15",
-          issuedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-          issuedBy: "Department Administration",
-          status: "Issued",
-          qrVerificationData: "https://notx-connect.edu/verify?id=CERT-AIML-0504-H7T1"
-        },
-        {
-          certificateId: "CERT-AIML-0505-L4D6",
-          eventId: "event_2",
-          eventTitle: "Prompt Engineering & GenAI Hackathon",
-          eventDate: "2026-08-15",
-          eventVenue: "Innovation Lab 314",
-          studentId: "user_student_4",
-          studentName: "Sneha Reddy",
-          rollNumber: "22A91A0504",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "A",
-          issueDate: "2026-08-15",
-          issuedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-          issuedBy: "Department Administration",
-          status: "Issued",
-          qrVerificationData: "https://notx-connect.edu/verify?id=CERT-AIML-0505-L4D6"
-        }
-      ];
-
-      for (const cert of sampleCerts) {
-        await setDoc(doc(db, 'certificates', cert.certificateId), cert);
-      }
-    }
-
-    // Seed Event Winners if empty
-    const winnersSnap = await getDocs(collection(db, 'event_winners'));
-    if (winnersSnap.empty) {
-      const sampleWinners: EventWinner[] = [
-        {
-          winnerId: "winner_prompt_hackathon_1",
-          eventId: "event_2",
-          eventTitle: "Prompt Engineering & GenAI Hackathon",
-          eventDate: "2026-08-15",
-          studentId: "user_student_1",
-          studentName: "Aarav Sharma",
-          rollNumber: "22A91A0501",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "A",
-          studentPhoto: "https://api.dicebear.com/9.x/notionists/svg?seed=22A91A0501",
-          position: "1st Place",
-          prizeTitle: "🏆 1st Prize • Champion",
-          awardDetails: "₹5,000 Cash Prize + Certificate of Excellence",
-          projectTitle: "Project: MedPrompt AI Multi-Modal Diagnostic Agent",
-          addedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-          addedBy: "Department Administration"
-        },
-        {
-          winnerId: "winner_prompt_hackathon_2",
-          eventId: "event_2",
-          eventTitle: "Prompt Engineering & GenAI Hackathon",
-          eventDate: "2026-08-15",
-          studentId: "user_student_4",
-          studentName: "Sneha Reddy",
-          rollNumber: "22A91A0504",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "A",
-          studentPhoto: "https://api.dicebear.com/9.x/notionists/svg?seed=22A91A0504",
-          position: "2nd Place",
-          prizeTitle: "🥈 2nd Prize • Runner-Up",
-          awardDetails: "₹3,000 Cash Prize + Certificate of Merit",
-          projectTitle: "Project: Smart Autonomous Code Optimizer",
-          addedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-          addedBy: "Department Administration"
-        },
-        {
-          winnerId: "winner_workshop_1",
-          eventId: "event_1",
-          eventTitle: "Full-Stack AI Agents Workshop",
-          eventDate: "2026-08-10",
-          studentId: "user_student_3",
-          studentName: "Vikram Patel",
-          rollNumber: "22A91A0503",
-          department: "CSE (AI & ML)",
-          year: "III Year",
-          section: "B",
-          studentPhoto: "https://api.dicebear.com/9.x/notionists/svg?seed=22A91A0503",
-          position: "Special Mention",
-          prizeTitle: "🌟 Best Innovation Showcase",
-          awardDetails: "Citation of Excellence + Research Sponsorship",
-          projectTitle: "Project: Autonomous Curriculum Graph Agent",
-          addedAt: new Date(Date.now() - 86400000 * 8).toISOString(),
-          addedBy: "Department Administration"
-        }
-      ];
-
-      for (const w of sampleWinners) {
-        await setDoc(doc(db, 'event_winners', w.winnerId), w);
-      }
-    }
-
-    // Mark database as seeded permanently so deletions are respected
-    await setDoc(seedStatusRef, { isSeeded: true, seededAt: new Date().toISOString() });
-    console.log("Database initial seeding complete!");
   } catch (error) {
-    console.error("Error seeding database: ", error);
+    // Ignore seeding check errors
   }
 }
 
@@ -726,9 +484,14 @@ export async function fetchUsers(tenantId?: string): Promise<UserProfile[]> {
   try {
     const querySnapshot = await getDocs(collection(db, 'users'));
     const users: UserProfile[] = [];
+    const cleanTid = tenantId ? tenantId.trim().toLowerCase() : '';
     querySnapshot.forEach((doc) => {
       const u = doc.data() as UserProfile;
-      if (!tenantId || u.tenantId === tenantId || (!u.tenantId && tenantId === DEFAULT_TENANT_ID) || u.isSuperAdmin) {
+      if (cleanTid) {
+        if (u.tenantId && u.tenantId.trim().toLowerCase() === cleanTid) {
+          users.push(u);
+        }
+      } else {
         users.push(u);
       }
     });
@@ -821,7 +584,7 @@ export async function findUserForLogin(identifier: string, tenantId?: string): P
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const u = docSnap.data() as UserProfile;
-        if (!cleanTenant || u.tenantId === cleanTenant || (!u.tenantId && cleanTenant === DEFAULT_TENANT_ID) || u.isSuperAdmin) {
+        if (!cleanTenant || u.tenantId === cleanTenant || u.isSuperAdmin) {
           return u;
         }
       }
@@ -838,7 +601,7 @@ export async function findUserForLogin(identifier: string, tenantId?: string): P
       if (cleanTenant) {
         const tenantMatch = snapRoll.docs.find(d => {
           const u = d.data() as UserProfile;
-          return u.tenantId === cleanTenant || (!u.tenantId && cleanTenant === DEFAULT_TENANT_ID) || u.isSuperAdmin;
+          return u.tenantId === cleanTenant || u.isSuperAdmin;
         });
         if (tenantMatch) return tenantMatch.data() as UserProfile;
       } else {
@@ -859,7 +622,7 @@ export async function findUserForLogin(identifier: string, tenantId?: string): P
       if (cleanTenant) {
         const tenantMatch = snapEmail.docs.find(d => {
           const u = d.data() as UserProfile;
-          return u.tenantId === cleanTenant || (!u.tenantId && cleanTenant === DEFAULT_TENANT_ID) || u.isSuperAdmin;
+          return u.tenantId === cleanTenant || u.isSuperAdmin;
         });
         if (tenantMatch) return tenantMatch.data() as UserProfile;
       } else {
@@ -880,7 +643,7 @@ export async function fetchEvents(tenantId?: string): Promise<DepartmentEvent[]>
     const events: DepartmentEvent[] = [];
     querySnapshot.forEach((doc) => {
       const ev = doc.data() as DepartmentEvent;
-      if (!tenantId || ev.tenantId === tenantId || (!ev.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+      if (!tenantId || ev.tenantId === tenantId) {
         events.push(ev);
       }
     });
@@ -893,9 +656,9 @@ export async function fetchEvents(tenantId?: string): Promise<DepartmentEvent[]>
 
 export function getActiveTenantId(): string {
   try {
-    return localStorage.getItem('notx_active_tenant') || DEFAULT_TENANT_ID;
+    return localStorage.getItem('notx_active_tenant') || '';
   } catch {
-    return DEFAULT_TENANT_ID;
+    return '';
   }
 }
 
@@ -920,7 +683,7 @@ export async function fetchRegistrations(tenantId?: string): Promise<EventRegist
     const registrations: EventRegistration[] = [];
     querySnapshot.forEach((doc) => {
       const reg = doc.data() as EventRegistration;
-      if (!tenantId || reg.tenantId === tenantId || (!reg.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+      if (!tenantId || reg.tenantId === tenantId) {
         registrations.push(reg);
       }
     });
@@ -972,11 +735,56 @@ export async function createRegistration(reg: EventRegistration): Promise<void> 
   }
 }
 
-export async function updateRegistrationStatus(regId: string, status: 'Registered' | 'Attended' | 'Absent'): Promise<void> {
+export function subscribeToRegistrations(
+  callback: (registrations: EventRegistration[]) => void,
+  tenantId?: string,
+  eventId?: string
+): () => void {
+  const path = 'registrations';
+  const filterTid = (tenantId || getActiveTenantId()).trim().toLowerCase();
+  try {
+    return onSnapshot(collection(db, 'registrations'), (snapshot) => {
+      const registrations: EventRegistration[] = [];
+      snapshot.forEach((d) => {
+        const r = d.data() as EventRegistration;
+        // Tenant-scoped: only include registrations belonging to this tenant
+        if (!filterTid || (r.tenantId && r.tenantId.trim().toLowerCase() === filterTid)) {
+          if (!eventId || r.eventId === eventId) {
+            registrations.push(r);
+          }
+        }
+      });
+      // Sort newest registration first
+      registrations.sort((a, b) => new Date(b.appliedAt || 0).getTime() - new Date(a.appliedAt || 0).getTime());
+      callback(registrations);
+    }, (error) => {
+      console.error('Error subscribing to registrations:', error);
+      handleFirestoreError(error, OperationType.LIST, path);
+      callback([]);
+    });
+  } catch (error) {
+    console.error('Error setting up registrations subscription:', error);
+    handleFirestoreError(error, OperationType.LIST, path);
+    return () => {};
+  }
+}
+
+export async function updateRegistrationStatus(
+  regId: string, 
+  status: 'Registered' | 'Attended' | 'Absent',
+  verifiedBy?: string
+): Promise<void> {
   const path = `registrations/${regId}`;
   try {
     const docRef = doc(db, 'registrations', regId);
-    await updateDoc(docRef, { status });
+    const updateData: Record<string, any> = { status };
+    if (status === 'Attended') {
+      updateData.attendedAt = new Date().toISOString();
+      if (verifiedBy) {
+        updateData.verifiedBy = verifiedBy;
+      }
+    }
+    await updateDoc(docRef, updateData);
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
@@ -1009,7 +817,7 @@ export async function fetchAlbums(tenantId?: string): Promise<Album[]> {
     const items: Album[] = [];
     querySnapshot.forEach((doc) => {
       const alb = doc.data() as Album;
-      if (!tenantId || alb.tenantId === tenantId || (!alb.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+      if (!tenantId || alb.tenantId === tenantId) {
         items.push(alb);
       }
     });
@@ -1060,7 +868,7 @@ export async function fetchAnnouncements(tenantId?: string): Promise<Announcemen
     const items: Announcement[] = [];
     querySnapshot.forEach((doc) => {
       const ann = doc.data() as Announcement;
-      if (!tenantId || ann.tenantId === tenantId || (!ann.tenantId && tenantId === DEFAULT_TENANT_ID)) {
+      if (!tenantId || ann.tenantId === tenantId) {
         items.push(ann);
       }
     });
@@ -1084,13 +892,18 @@ export async function createAnnouncement(announce: Announcement): Promise<void> 
   }
 }
 // User Invitations & Direct Messaging
-export async function fetchReceivedInvitations(rollNumber: string): Promise<UserInvitation[]> {
+export async function fetchReceivedInvitations(rollNumber: string, tenantId?: string): Promise<UserInvitation[]> {
   try {
+    const cleanTid = (tenantId || getActiveTenantId()).trim().toLowerCase();
     const q = query(collection(db, 'invitations'), where('recipientRoll', '==', rollNumber.trim().toUpperCase()));
     const querySnapshot = await getDocs(q);
     const list: UserInvitation[] = [];
     querySnapshot.forEach((doc) => {
-      list.push(doc.data() as UserInvitation);
+      const inv = doc.data() as UserInvitation;
+      // Tenant-scope: include only invitations that match this tenant (or have no tenant for legacy)
+      if (!cleanTid || !inv.tenantId || inv.tenantId === cleanTid) {
+        list.push(inv);
+      }
     });
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error) {
@@ -1099,8 +912,9 @@ export async function fetchReceivedInvitations(rollNumber: string): Promise<User
   }
 }
 
-export async function fetchSentInvitations(uid: string, rollNumber?: string): Promise<UserInvitation[]> {
+export async function fetchSentInvitations(uid: string, rollNumber?: string, tenantId?: string): Promise<UserInvitation[]> {
   try {
+    const cleanTid = (tenantId || getActiveTenantId()).trim().toLowerCase();
     let q;
     if (rollNumber) {
       q = query(collection(db, 'invitations'), where('senderRoll', '==', rollNumber.trim().toUpperCase()));
@@ -1110,7 +924,10 @@ export async function fetchSentInvitations(uid: string, rollNumber?: string): Pr
     const querySnapshot = await getDocs(q);
     const list: UserInvitation[] = [];
     querySnapshot.forEach((doc) => {
-      list.push(doc.data() as UserInvitation);
+      const inv = doc.data() as UserInvitation;
+      if (!cleanTid || !inv.tenantId || inv.tenantId === cleanTid) {
+        list.push(inv);
+      }
     });
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (error) {
@@ -1123,7 +940,11 @@ export async function createInvitation(invite: UserInvitation): Promise<void> {
   const path = `invitations/${invite.invitationId}`;
   try {
     const docRef = doc(db, 'invitations', invite.invitationId);
-    await setDoc(docRef, cleanUndefined(invite));
+    const finalInvite = {
+      ...invite,
+      tenantId: invite.tenantId || getActiveTenantId()
+    };
+    await setDoc(docRef, cleanUndefined(finalInvite));
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
   }
@@ -1172,12 +993,14 @@ export async function deleteAnnouncement(announcementId: string): Promise<void> 
 
 // ---------------- UNIFIED CHATS COLLECTION (REALTIME DATABASE RTDB MODEL) ----------------
 
-export function getChatRoomId(rollA: string, rollB: string): string {
+export function getChatRoomId(rollA: string, rollB: string, tenantId?: string): string {
   const rA = rollA.trim().toUpperCase();
   const rB = rollB.trim().toUpperCase();
   // Sort alphabetically to ensure same ID is generated for both (A->B and B->A)
   const sorted = [rA, rB].sort();
-  return `CHAT_${sorted[0]}_${sorted[1]}`;
+  const base = `CHAT_${sorted[0]}_${sorted[1]}`;
+  // Prefix with tenantId so each association's chats are isolated in RTDB
+  return tenantId ? `${tenantId.trim().toLowerCase()}/${base}` : base;
 }
 
 export async function sendChatMessage(
@@ -1192,7 +1015,7 @@ export async function sendChatMessage(
   
   const rRoll = recipientRoll.trim().toUpperCase();
   const sRoll = sender.rollNumber.trim().toUpperCase();
-  const chatId = getChatRoomId(sRoll, rRoll);
+  const chatId = getChatRoomId(sRoll, rRoll, sender.tenantId || getActiveTenantId());
   
   try {
     const chatRef = ref(rtdb, `chats/${chatId}`);
@@ -1239,9 +1062,10 @@ export async function sendChatMessage(
 
 export async function markMessagesAsRead(
   userRoll: string,
-  classmateRoll: string
+  classmateRoll: string,
+  tenantId?: string
 ): Promise<void> {
-  const chatId = getChatRoomId(userRoll, classmateRoll);
+  const chatId = getChatRoomId(userRoll, classmateRoll, tenantId);
   const userRollUpper = userRoll.trim().toUpperCase();
   
   try {
@@ -1522,7 +1346,8 @@ export interface SystemBackupData {
   };
 }
 
-export async function exportAllDatabaseData(exportedByName?: string): Promise<SystemBackupData> {
+export async function exportAllDatabaseData(exportedByName?: string, tenantId?: string): Promise<SystemBackupData> {
+  const activeTenant = tenantId || getActiveTenantId();
   const collectionNames = [
     'users',
     'events',
@@ -1544,7 +1369,7 @@ export async function exportAllDatabaseData(exportedByName?: string): Promise<Sy
       version: '2.0.0',
       exportedBy: exportedByName || 'Department Administrator',
       totalRecords: 0,
-      department: 'CSE (AI & ML) - NOTX Connect'
+      department: activeTenant ? `Tenant: ${activeTenant}` : 'All Tenants'
     },
     counts: {},
     collections: {
@@ -1568,7 +1393,10 @@ export async function exportAllDatabaseData(exportedByName?: string): Promise<Sy
       const snap = await getDocs(collection(db, name));
       const items: any[] = [];
       snap.forEach(d => {
-        items.push(d.data());
+        const data = d.data();
+        if (!activeTenant || data.tenantId === activeTenant) {
+          items.push(data);
+        }
       });
       (backupData.collections as any)[name] = items;
       backupData.counts[name] = items.length;
@@ -1594,8 +1422,12 @@ export interface ResetSummary {
 
 export async function resetEntireDatabaseForNewAssociation(
   currentAdmin: UserProfile,
-  onProgress?: (stage: string, percent: number) => void
+  tenantIdOrProgress?: string | ((stage: string, percent: number) => void),
+  maybeProgress?: (stage: string, percent: number) => void
 ): Promise<ResetSummary> {
+  const tenantId = typeof tenantIdOrProgress === 'string' ? tenantIdOrProgress : (currentAdmin.tenantId || getActiveTenantId());
+  const onProgress = typeof tenantIdOrProgress === 'function' ? tenantIdOrProgress : maybeProgress;
+
   const summary: ResetSummary = {
     deletedCounts: {},
     preservedAdmin: {
@@ -1606,7 +1438,7 @@ export async function resetEntireDatabaseForNewAssociation(
     resetTimestamp: new Date().toISOString()
   };
 
-  // Step 1: Collections to wipe completely
+  // Step 1: Delete only docs that belong to this tenant
   const collectionsToWipe = [
     'events',
     'registrations',
@@ -1627,8 +1459,13 @@ export async function resetEntireDatabaseForNewAssociation(
     onProgress?.(`Wiping ${collName}...`, Math.round((completedSteps / totalSteps) * 100));
     try {
       const snap = await getDocs(collection(db, collName));
-      const count = snap.size;
-      const promises = snap.docs.map(d => deleteDoc(doc(db, collName, d.id)));
+      // Only delete documents belonging to this tenant
+      const toDelete = snap.docs.filter(d => {
+        const data = d.data();
+        return tenantId ? data.tenantId === tenantId : false;
+      });
+      const count = toDelete.length;
+      const promises = toDelete.map(d => deleteDoc(doc(db, collName, d.id)));
       await Promise.all(promises);
       summary.deletedCounts[collName] = count;
     } catch (err) {
@@ -1638,7 +1475,7 @@ export async function resetEntireDatabaseForNewAssociation(
     completedSteps++;
   }
 
-  // Step 2: Wipe all users except current admin and root admin
+  // Step 2: Wipe users belonging to this tenant, except current admin and root admin
   onProgress?.('Cleaning student and member accounts...', Math.round((completedSteps / totalSteps) * 100));
   try {
     const usersSnap = await getDocs(collection(db, 'users'));
@@ -1647,10 +1484,11 @@ export async function resetEntireDatabaseForNewAssociation(
 
     usersSnap.forEach(d => {
       const u = d.data() as UserProfile;
+      const belongsToTenant = u.tenantId === tenantId;
       const isCurrentAdmin = u.uid === currentAdmin.uid || (u.email && currentAdmin.email && u.email.toLowerCase() === currentAdmin.email.toLowerCase());
-      const isRootAdmin = (u.email && u.email.toLowerCase() === 'syedsame2244@gmail.com') || u.uid === 'user_admin_syed';
+      const isRootAdmin = u.isSuperAdmin;
 
-      if (!isCurrentAdmin && !isRootAdmin) {
+      if (belongsToTenant && !isCurrentAdmin && !isRootAdmin) {
         userDeletePromises.push(deleteDoc(doc(db, 'users', d.id)));
         userDeletedCount++;
       }
@@ -1669,6 +1507,7 @@ export async function resetEntireDatabaseForNewAssociation(
   try {
     const cleanAdminProfile: UserProfile = {
       ...currentAdmin,
+      tenantId,
       role: 'admin',
       position: 'Head Administrator',
       assignedEvents: [],
@@ -1680,30 +1519,6 @@ export async function resetEntireDatabaseForNewAssociation(
       }
     };
     await setDoc(doc(db, 'users', currentAdmin.uid), cleanUndefined(cleanAdminProfile));
-
-    if (currentAdmin.email?.toLowerCase() !== 'syedsame2244@gmail.com') {
-      const masterAdmin: UserProfile = {
-        uid: "user_admin_syed",
-        name: "Sameer Ahmed (Admin)",
-        email: "syedsame2244@gmail.com",
-        role: "admin",
-        phone: "+91 9999999999",
-        rollNumber: "ADMIN001",
-        branch: "CSE (AI & ML)",
-        year: "Faculty / Admin",
-        section: "Department",
-        position: "President / Head Admin",
-        department: "CSE (AI & ML)",
-        powers: {
-          canManageEvents: true,
-          canManageAnnouncements: true,
-          canViewRegistrations: true,
-          canManageGallery: true
-        },
-        created_at: new Date().toISOString()
-      };
-      await setDoc(doc(db, 'users', 'user_admin_syed'), cleanUndefined(masterAdmin));
-    }
   } catch (err) {
     console.error('Error re-initializing admin profile:', err);
   }
@@ -1769,13 +1584,17 @@ export async function issueCertificate(certData: Omit<IssuedCertificate, 'issued
   }
 }
 
-export async function fetchCertificates(): Promise<IssuedCertificate[]> {
+export async function fetchCertificates(tenantId?: string): Promise<IssuedCertificate[]> {
   const path = 'certificates';
   try {
     const querySnapshot = await getDocs(collection(db, 'certificates'));
     const certs: IssuedCertificate[] = [];
+    const filterTid = (tenantId || '').trim().toLowerCase();
     querySnapshot.forEach(docSnap => {
-      certs.push(docSnap.data() as IssuedCertificate);
+      const cert = docSnap.data() as IssuedCertificate;
+      if (!filterTid || cert.tenantId === filterTid) {
+        certs.push(cert);
+      }
     });
     // Sort by issuedAt descending
     return certs.sort((a, b) => new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime());
@@ -1796,7 +1615,7 @@ export function subscribeToCertificates(callback: (certs: IssuedCertificate[]) =
       snapshot.forEach(docSnap => {
         const cert = docSnap.data() as IssuedCertificate;
         // Tenant-scoped: only include certs belonging to this tenant
-        if (!filterTid || cert.tenantId === filterTid || (!cert.tenantId && filterTid === DEFAULT_TENANT_ID)) {
+        if (!filterTid || cert.tenantId === filterTid) {
           certs.push(cert);
         }
       });
@@ -1891,7 +1710,8 @@ export async function deleteCertificate(certificateId: string): Promise<void> {
 export async function syncCertificatesForAttendees(
   events: DepartmentEvent[],
   registrations: EventRegistration[],
-  allUsers: UserProfile[]
+  allUsers: UserProfile[],
+  tenantId?: string
 ): Promise<{ newlyIssued: number; totalEligible: number }> {
   // Find all attended registrations
   const attendedRegs = registrations.filter(r => r.status === 'Attended');
@@ -1899,8 +1719,8 @@ export async function syncCertificatesForAttendees(
     return { newlyIssued: 0, totalEligible: 0 };
   }
 
-  // Get currently issued certificates to avoid duplicates
-  const existingCerts = await fetchCertificates();
+  // Get currently issued certificates to avoid duplicates (tenant-scoped)
+  const existingCerts = await fetchCertificates(tenantId);
   let newlyIssued = 0;
 
   for (const reg of attendedRegs) {
@@ -1926,9 +1746,10 @@ export async function syncCertificatesForAttendees(
         studentId: reg.studentId || studentUser?.uid || 'student_' + (reg.rollNumber || 'unknown'),
         studentName: reg.studentName || studentUser?.name || 'Student Participant',
         rollNumber: reg.rollNumber || studentUser?.rollNumber || 'N/A',
-        department: studentUser?.department || 'CSE (AI & ML)',
-        year: studentUser?.year || reg.year || 'III Year',
-        section: studentUser?.section || 'A',
+        tenantId: tenantId || getActiveTenantId(),
+        department: studentUser?.department || '',
+        year: studentUser?.year || reg.year || '',
+        section: studentUser?.section || '',
         issueDate: matchedEvent.date || new Date().toISOString().split('T')[0],
         status: 'Issued',
         issuedBy: 'Department Administration',
@@ -1951,20 +1772,23 @@ export async function generateBatchCertificatesForEvent(
     events?: DepartmentEvent[];
     registrations?: EventRegistration[];
     allUsers?: UserProfile[];
-  }
+    tenantId?: string;
+  },
+  tenantId?: string
 ): Promise<{ newlyIssued: number; totalAttended: number; alreadyIssued: number }> {
+  const tid = tenantId || options?.tenantId || getActiveTenantId();
   // Get all registrations and events if not provided
   let allRegs = options?.registrations;
   if (!allRegs) {
-    allRegs = await fetchRegistrations();
+    allRegs = await fetchRegistrations(tid);
   }
   let allEvs = options?.events;
   if (!allEvs) {
-    allEvs = await fetchEvents();
+    allEvs = await fetchEvents(tid);
   }
   let usersList = options?.allUsers;
   if (!usersList) {
-    usersList = await fetchUsers();
+    usersList = await fetchUsers(tid);
   }
 
   const matchedEvent = allEvs.find(e => e.eventId === eventId);
@@ -1979,7 +1803,7 @@ export async function generateBatchCertificatesForEvent(
     eventAttendedRegs = eventAttendedRegs.filter(r => filterSet.has(r.studentId) || (r.rollNumber && filterSet.has(r.rollNumber.toUpperCase())));
   }
 
-  const existingCerts = await fetchCertificates();
+  const existingCerts = await fetchCertificates(tid);
   let newlyIssued = 0;
   let alreadyIssued = 0;
 
@@ -2004,12 +1828,13 @@ export async function generateBatchCertificatesForEvent(
       eventTitle: matchedEvent.title,
       eventDate: matchedEvent.date,
       eventVenue: matchedEvent.venue || 'Campus Auditorium',
+      tenantId: tid,
       studentId: reg.studentId || studentUser?.uid || 'student_' + (reg.rollNumber || 'unknown'),
       studentName: reg.studentName || studentUser?.name || 'Student Participant',
       rollNumber: reg.rollNumber || studentUser?.rollNumber || 'N/A',
-      department: studentUser?.department || 'CSE (AI & ML)',
-      year: studentUser?.year || reg.year || 'III Year',
-      section: studentUser?.section || 'A',
+      department: studentUser?.department || '',
+      year: studentUser?.year || reg.year || '',
+      section: studentUser?.section || '',
       issueDate: matchedEvent.date || new Date().toISOString().split('T')[0],
       status: 'Issued',
       issuedBy: options?.issuedBy || 'Department Administration',
@@ -2025,9 +1850,10 @@ export async function generateBatchCertificatesForEvent(
 
 export async function revokeBatchCertificatesForEvent(
   eventId: string,
-  specificStudentIds?: string[]
+  specificStudentIds?: string[],
+  tenantId?: string
 ): Promise<{ revokedCount: number }> {
-  const existingCerts = await fetchCertificates();
+  const existingCerts = await fetchCertificates(tenantId);
   const filterSet = specificStudentIds && specificStudentIds.length > 0 ? new Set(specificStudentIds) : null;
 
   const targetCerts = existingCerts.filter(c => {
@@ -2075,7 +1901,7 @@ export function subscribeToEventWinners(callback: (winners: EventWinner[]) => vo
       snapshot.forEach((d) => {
         const w = d.data() as EventWinner;
         // Tenant-scoped: only include winners belonging to this tenant
-        if (!filterTid || w.tenantId === filterTid || (!w.tenantId && filterTid === DEFAULT_TENANT_ID)) {
+        if (!filterTid || w.tenantId === filterTid) {
           winners.push(w);
         }
       });

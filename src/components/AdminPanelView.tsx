@@ -80,8 +80,7 @@ import {
   revokeBatchCertificatesForEvent,
   exportAllDatabaseData,
   subscribeToAppConfig,
-  createStudentAuthAccount,
-  DEFAULT_TENANT_ID
+  createStudentAuthAccount
 } from '../firebase';
 import QRCameraScanner from "./QRCameraScanner";
 import EditSupportBoxModal from './EditSupportBoxModal';
@@ -142,7 +141,7 @@ export default function AdminPanelView({
   activeTenantId,
   activeTenant
 }: AdminPanelViewProps) {
-  const activeTenantIdResolved = activeTenantId || currentUser.tenantId || DEFAULT_TENANT_ID;
+  const activeTenantIdResolved = activeTenantId || currentUser.tenantId || '';
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
 
   const handleCopyInviteLink = () => {
@@ -266,14 +265,14 @@ export default function AdminPanelView({
         setBranding(config.branding);
         try { localStorage.setItem('notx_branding', JSON.stringify(config.branding)); } catch (e) { }
       }
-    });
+    }, activeTenantIdResolved);
     return () => unsub();
-  }, []);
+  }, [activeTenantIdResolved]);
 
   const handleToggleChat = async () => {
     const newState = !isChatEnabled;
     setIsChatEnabled(newState);
-    await updateAppConfig(newState);
+    await updateAppConfig(newState, activeTenantIdResolved);
     setFeedbackMsg(`Chat feature ${newState ? 'enabled' : 'disabled'} successfully.`);
     setTimeout(() => setFeedbackMsg(''), 3000);
   };
@@ -282,7 +281,7 @@ export default function AdminPanelView({
     const nextVal = newVal !== undefined ? newVal : !isCertificatesEnabled;
     setIsCertificatesEnabled(nextVal);
     try {
-      await toggleCertificatesEnabled(nextVal);
+      await toggleCertificatesEnabled(nextVal, activeTenantIdResolved);
       setFeedbackMsg(`Certificate feature is now ${nextVal ? 'ENABLED' : 'PAUSED'}.`);
       setTimeout(() => setFeedbackMsg(''), 3000);
       refreshData();
@@ -295,7 +294,7 @@ export default function AdminPanelView({
   };
 
   const handleSaveCertificateTemplate = async (newTemplate: CertificateTemplate) => {
-    await updateCertificateTemplate(newTemplate);
+    await updateCertificateTemplate(newTemplate, activeTenantIdResolved);
     setCertificateTemplate(newTemplate);
     setFeedbackMsg("Certificate template updated successfully!");
     setTimeout(() => setFeedbackMsg(''), 3000);
@@ -328,9 +327,9 @@ export default function AdminPanelView({
   useEffect(() => {
     const unsub = subscribeToCertificates((certs) => {
       setDbCertificates(certs);
-    });
+    }, activeTenantIdResolved);
     return () => unsub();
-  }, []);
+  }, [activeTenantIdResolved]);
 
   const handleCopyCertId = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -342,7 +341,7 @@ export default function AdminPanelView({
   const handleSyncCertificates = async () => {
     setIsSyncingCerts(true);
     try {
-      const res = await syncCertificatesForAttendees(events, registrations, allUsers);
+      const res = await syncCertificatesForAttendees(events, registrations, allUsers, activeTenantIdResolved);
       setFeedbackMsg(`Synced batch certificates! ${res.newlyIssued} new credentials generated (${res.totalEligible} attended students).`);
       setTimeout(() => setFeedbackMsg(''), 4000);
       refreshData();
@@ -364,7 +363,7 @@ export default function AdminPanelView({
         registrations,
         allUsers,
         issuedBy: currentUser.name || 'Department Administration'
-      });
+      }, activeTenantIdResolved);
       setFeedbackMsg(`Batch generated! ${res.newlyIssued} new certificates generated (${res.alreadyIssued} already existed). Students can now view them!`);
       setTimeout(() => setFeedbackMsg(''), 4000);
       setSelectedParticipantsMap(prev => ({ ...prev, [eventId]: [] }));
@@ -389,7 +388,7 @@ export default function AdminPanelView({
     }
 
     try {
-      const res = await revokeBatchCertificatesForEvent(eventId, specificStudentIds);
+      const res = await revokeBatchCertificatesForEvent(eventId, specificStudentIds, activeTenantIdResolved);
       setFeedbackMsg(`Locked & revoked ${res.revokedCount} certificates for this event.`);
       setTimeout(() => setFeedbackMsg(''), 4000);
       setSelectedParticipantsMap(prev => ({ ...prev, [eventId]: [] }));
@@ -479,8 +478,14 @@ export default function AdminPanelView({
   // Set default tab if attendance is allowed
 
   // Filters
-  const associates = allUsers.filter(u => u.role === 'associate' || (u.role === 'president' && u.uid !== 'admin_master'));
-  const coordinators = allUsers.filter(u => u.role === 'coordinator');
+  const associates = allUsers.filter(u => 
+    (u.role === 'associate' || (u.role === 'president' && u.uid !== 'admin_master')) &&
+    (!activeTenantIdResolved || (u.tenantId && u.tenantId.toLowerCase() === activeTenantIdResolved.toLowerCase()))
+  );
+  const coordinators = allUsers.filter(u => 
+    u.role === 'coordinator' &&
+    (!activeTenantIdResolved || (u.tenantId && u.tenantId.toLowerCase() === activeTenantIdResolved.toLowerCase()))
+  );
 
   // Filter events that coordinator can manage
   const manageableEvents = events.filter(ev => {
@@ -573,8 +578,13 @@ export default function AdminPanelView({
 
   const handleDeleteUser = async (uid: string) => {
     const targetUser = allUsers.find(u => u.uid === uid);
-    if (targetUser?.role === 'admin' && !isTopAdmin) {
-      setFeedbackErr("Permission denied. Only top admin can delete admins.");
+    if (!targetUser) return;
+    if (targetUser.role === 'admin' || targetUser.isSuperAdmin) {
+      setFeedbackErr("Permission denied. Department administrators cannot be deleted from this panel.");
+      return;
+    }
+    if (activeTenantIdResolved && targetUser.tenantId && targetUser.tenantId.toLowerCase() !== activeTenantIdResolved.toLowerCase()) {
+      setFeedbackErr("Permission denied. Cannot delete members of another association.");
       return;
     }
     try {
@@ -633,7 +643,7 @@ export default function AdminPanelView({
       return;
     }
     try {
-      await updateRegistrationStatus(regId, present ? 'Attended' : 'Registered');
+      await updateRegistrationStatus(regId, present ? 'Attended' : 'Registered', currentUser.email);
       refreshData();
     } catch (err) {
       console.error(err);
@@ -719,7 +729,7 @@ export default function AdminPanelView({
       return;
     }
     try {
-      await updateRegistrationStatus(regId, status);
+      await updateRegistrationStatus(regId, status, currentUser.email);
       refreshData();
     } catch (err) {
       console.error("Failed to update registration: ", err);
@@ -944,7 +954,7 @@ export default function AdminPanelView({
       }
 
       try {
-        await updateRegistrationStatus(reg.registrationId, 'Attended');
+        await updateRegistrationStatus(reg.registrationId, 'Attended', currentUser.email);
         setScanResultMsg(`Check-in Successful! ${reg.studentName} (${reg.rollNumber || cleanInput}) marked as Present.`);
         setScanResultType('success');
         playFeedbackChime('success');
@@ -2384,17 +2394,17 @@ export default function AdminPanelView({
                       id="selectAll"
                       className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
                       checked={
-                        allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
+                        allUsers.filter(u => u.role === 'student' && (!activeTenantIdResolved || (u.tenantId && u.tenantId.toLowerCase() === activeTenantIdResolved.toLowerCase()))).filter(u =>
                           u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                           u.name.toLowerCase().includes(studentSearch.toLowerCase())
                         ).length > 0 &&
-                        selectedStudentIds.length === allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
+                        selectedStudentIds.length === allUsers.filter(u => u.role === 'student' && (!activeTenantIdResolved || (u.tenantId && u.tenantId.toLowerCase() === activeTenantIdResolved.toLowerCase()))).filter(u =>
                           u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                           u.name.toLowerCase().includes(studentSearch.toLowerCase())
                         ).length
                       }
                       onChange={(e) => {
-                        const filtered = allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
+                        const filtered = allUsers.filter(u => u.role === 'student' && (!activeTenantIdResolved || (u.tenantId && u.tenantId.toLowerCase() === activeTenantIdResolved.toLowerCase()))).filter(u =>
                           u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                           u.name.toLowerCase().includes(studentSearch.toLowerCase())
                         );
@@ -2433,7 +2443,7 @@ export default function AdminPanelView({
 
               <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
                 {(() => {
-                  const filteredStudents = allUsers.filter(u => u.uid !== 'admin_master').filter(u =>
+                  const filteredStudents = allUsers.filter(u => u.role === 'student' && (!activeTenantIdResolved || (u.tenantId && u.tenantId.toLowerCase() === activeTenantIdResolved.toLowerCase()))).filter(u =>
                     u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
                     u.name.toLowerCase().includes(studentSearch.toLowerCase())
                   );
@@ -3142,7 +3152,7 @@ export default function AdminPanelView({
                                                         return;
                                                       }
                                                       const next = reg.status === 'Attended' ? 'Absent' : 'Attended';
-                                                      await updateRegistrationStatus(reg.registrationId, next);
+                                                      await updateRegistrationStatus(reg.registrationId, next, currentUser.email);
                                                       refreshData();
                                                     }}
                                                     className="nb-label text-[9px] text-[var(--nb-secondary)] hover:text-[var(--nb-content)] underline cursor-pointer"
@@ -3952,18 +3962,25 @@ export default function AdminPanelView({
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setResetModalInitialTab('reset');
-                        setIsResetModalOpen(true);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0"
-                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Start New Association</span>
-                    </button>
+                    {currentUser.isSuperAdmin ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetModalInitialTab('reset');
+                          setIsResetModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Start New Association</span>
+                      </button>
+                    ) : (
+                      <div className="shrink-0 flex items-center gap-1 text-[11px] font-mono text-[var(--nb-secondary)] bg-[var(--nb-surface)] px-2.5 py-1.5 rounded border border-[var(--nb-divider)]">
+                        <Lock className="w-3 h-3 text-[var(--nb-secondary)]" />
+                        <span>Super Admin Restricted</span>
+                      </div>
+                    )}
                   </div>
 
                   <div
@@ -4212,6 +4229,7 @@ export default function AdminPanelView({
           isOpen={isEditBrandingModalOpen}
           onClose={() => setIsEditBrandingModalOpen(false)}
           currentBranding={branding}
+          tenantId={activeTenantIdResolved}
           onSaved={(updated) => {
             setBranding(updated);
             setFeedbackMsg(`Brand updated to "${updated.appName}" with live dynamic logo!`);

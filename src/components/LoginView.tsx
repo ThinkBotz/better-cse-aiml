@@ -21,11 +21,11 @@ import {
   findTenantByAdminEmail, 
   findUserForLogin, 
   createUserProfile, 
-  updateUserProfile,
-  DEFAULT_TENANT_ID
+  updateUserProfile
 } from '../firebase';
 import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { hashPassword, verifyPassword, recordUserActivity } from '../utils/auth';
+import { resolveTenantTheme, applyTenantTheme } from '../utils/themePresets';
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -41,12 +41,14 @@ export default function LoginView({
   allUsers, 
   refreshUsers,
   branding = DEFAULT_BRANDING,
-  activeTenantId = DEFAULT_TENANT_ID,
+  activeTenantId = '',
   onSelectTenant
 }: LoginViewProps) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>(() => {
-    return localStorage.getItem('notx_active_tenant') || activeTenantId || DEFAULT_TENANT_ID;
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const fromUrl = urlParams?.get('tenant') || urlParams?.get('t');
+    return fromUrl || localStorage.getItem('notx_active_tenant') || activeTenantId || '';
   });
 
   const [rollNumberInput, setRollNumberInput] = useState('');
@@ -59,14 +61,32 @@ export default function LoginView({
   useEffect(() => {
     const unsub = subscribeToTenants((list) => {
       setTenants(list);
-      // If selected tenant not in active list, default to first active tenant
       const activeTenants = list.filter(t => t.status === 'active');
-      if (activeTenants.length > 0 && !activeTenants.some(t => t.tenantId === selectedTenantId)) {
-        setSelectedTenantId(activeTenants[0].tenantId);
+      if (activeTenants.length > 0) {
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const fromUrl = urlParams?.get('tenant') || urlParams?.get('t');
+
+        let targetTenant: Tenant | undefined;
+        if (fromUrl) {
+          targetTenant = activeTenants.find(
+            t => t.tenantId.toLowerCase() === fromUrl.toLowerCase() || 
+                 t.shortCode?.toLowerCase() === fromUrl.toLowerCase()
+          );
+        }
+
+        if (!targetTenant && selectedTenantId) {
+          targetTenant = activeTenants.find(t => t.tenantId === selectedTenantId);
+        }
+
+        const chosen = targetTenant || activeTenants[0];
+        setSelectedTenantId(chosen.tenantId);
+        if (onSelectTenant) onSelectTenant(chosen.tenantId);
+      } else {
+        setSelectedTenantId('');
       }
     });
     return () => unsub();
-  }, [selectedTenantId]);
+  }, [selectedTenantId, onSelectTenant]);
 
   const handleTenantChange = (tenantId: string) => {
     setSelectedTenantId(tenantId);
@@ -77,6 +97,14 @@ export default function LoginView({
   };
 
   const selectedTenant = tenants.find(t => t.tenantId === selectedTenantId) || tenants[0];
+  const currentTheme = resolveTenantTheme(selectedTenant?.branding || branding);
+
+  // Apply tenant theme to root CSS variables for dynamic live adaptation
+  useEffect(() => {
+    if (currentTheme) {
+      applyTenantTheme(currentTheme);
+    }
+  }, [currentTheme]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +171,7 @@ export default function LoginView({
         (u.rollNumber?.toLowerCase() === cleanRoll.toLowerCase() || 
          u.email.toLowerCase() === cleanRoll.toLowerCase() ||
          u.email.toLowerCase() === syntheticEmail) &&
-        (u.tenantId === selectedTenantId || !u.tenantId || u.isSuperAdmin)
+        (u.tenantId === selectedTenantId || u.isSuperAdmin)
       );
 
       if (!foundUser) {
@@ -218,7 +246,7 @@ export default function LoginView({
             googleEmail: googleEmail,
             role: 'admin',
             isSuperAdmin: true,
-            tenantId: selectedTenantId || DEFAULT_TENANT_ID,
+            tenantId: selectedTenantId || '',
             profile_pic: result.user.photoURL || "",
             position: "SaaS Super Administrator",
             department: "NOTX Global Administration",
@@ -270,7 +298,7 @@ export default function LoginView({
       }
       const linkedStudent = allUsers.find(u => 
         u.googleEmail?.toLowerCase() === googleEmail &&
-        (u.tenantId === selectedTenantId || (!u.tenantId && selectedTenantId === DEFAULT_TENANT_ID))
+        u.tenantId === selectedTenantId
       );
       if (linkedStudent) {
         recordUserActivity();
@@ -293,66 +321,112 @@ export default function LoginView({
   return (
     <div className="h-full w-full flex flex-col sm:flex-row overflow-y-auto bg-[var(--nb-bg)]">
 
-      {/* ── LEFT / TOP HERO STRIP ── Bold saturated yellow with ink typography & stickers ── */}
+      {/* ── LEFT / TOP HERO STRIP ── Dynamic Tenant Theme Palette ── */}
       <div
-        className="flex-shrink-0 flex flex-col items-start justify-between p-6 sm:p-10 sm:w-[44%] sm:min-h-full min-h-[240px]"
+        className="flex-shrink-0 flex flex-col items-start justify-between p-6 sm:p-10 sm:w-[44%] sm:min-h-full min-h-[260px] transition-colors duration-300 relative overflow-hidden"
         style={{ 
-          background: 'var(--nb-yellow)', 
+          background: currentTheme.heroBg, 
           borderRight: '2.5px solid var(--nb-ink)', 
           borderBottom: '2.5px solid var(--nb-ink)',
-          color: '#111111' 
+          color: currentTheme.heroFg 
         }}
       >
-        {/* Logo + SaaS wordmark */}
-        <div className="flex items-center gap-3">
-          <div className="p-1 rounded-md bg-white border-2 border-black shadow-[2px_2px_0_#111]">
+        {/* Subtle Neo-Brutalist Grid Pattern in background */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-10"
+          style={{
+            backgroundImage: 'radial-gradient(circle, currentColor 1.5px, transparent 1.5px)',
+            backgroundSize: '20px 20px'
+          }}
+        />
+
+        {/* Logo + SaaS wordmark + Theme Badge */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="p-1.5 rounded-lg bg-white border-2 border-black shadow-[2.5px_2.5px_0_#111]">
             <BrandLogo branding={selectedTenant?.branding || branding} size="md" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="nb-pill-coral text-[9px] font-mono font-bold uppercase inline-block">
                 SAAS PLATFORM
               </span>
               <span className="nb-pill-cyan text-[9px] font-mono font-bold uppercase inline-block">
-                {selectedTenant?.shortCode || 'AIML'}
+                {selectedTenant?.shortCode || 'NOTX'}
+              </span>
+              <span 
+                className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border border-black shadow-[1px_1px_0_#111] inline-flex items-center gap-1 bg-white text-black"
+                title={`Theme Preset: ${currentTheme.name}`}
+              >
+                <span className="w-2 h-2 rounded-full border border-black" style={{ background: currentTheme.accent }} />
+                {currentTheme.name}
               </span>
             </div>
-            <p className="font-display text-lg tracking-wider text-[#111111] font-black">
+            <p 
+              className="font-display text-xl tracking-wider font-black mt-0.5"
+              style={{ color: currentTheme.heroFg }}
+            >
               NOTX
             </p>
           </div>
         </div>
 
-        {/* Big headline + sticker pills */}
-        <div className="mt-8 sm:mt-0 space-y-3">
+        {/* Big headline + sticker pills + Custom Hero Announcement */}
+        <div className="relative z-10 my-8 sm:my-auto space-y-4 w-full">
           <div className="flex flex-wrap gap-2">
             <span className="nb-pill-pink text-[10px] font-mono font-bold shadow-[2px_2px_0_#111]">
               ⚡ MULTI-TENANT
             </span>
             <span className="nb-pill-purple text-[10px] font-mono font-bold text-white shadow-[2px_2px_0_#111]">
-              🏛 {selectedTenant?.shortCode || 'CSE-AIML'}
+              🏛 {selectedTenant?.shortCode || 'ASSOCIATION'}
             </span>
+            {selectedTenant?.status === 'active' && (
+              <span className="nb-pill-green text-[10px] font-mono font-bold text-black shadow-[2px_2px_0_#111]">
+                ● ACTIVE
+              </span>
+            )}
           </div>
 
           <h1
-            className="nb-headline leading-none text-[#111111]"
-            style={{ fontSize: 'clamp(2.5rem, 7vw, 4rem)' }}
+            className="nb-headline leading-tight tracking-tight drop-shadow-sm"
+            style={{ 
+              fontSize: 'clamp(2.4rem, 6vw, 3.8rem)',
+              color: currentTheme.heroFg 
+            }}
           >
             {selectedTenant?.name || 'Department Connect'}
           </h1>
           
-          <p
-            className="text-xs sm:text-sm font-semibold leading-relaxed max-w-[280px] text-neutral-800"
+          {/* Tenant Tagline / Announcement Card (Always high contrast crisp surface) */}
+          <div 
+            className="p-3.5 rounded-lg border-2 border-black shadow-[3px_3px_0_rgba(0,0,0,0.3)] max-w-sm"
+            style={{ 
+              background: 'rgba(255,255,255,0.96)',
+              color: '#111111' 
+            }}
           >
-            Universal department pass verification, live notifications, and digital credentials.
-          </p>
+            <div className="flex items-center gap-1.5 mb-1 text-[10px] font-mono font-bold uppercase text-neutral-600">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Association Notice</span>
+            </div>
+            <p className="text-xs sm:text-sm font-semibold leading-relaxed">
+              {selectedTenant?.branding?.loginHeroText || 
+                'Universal department pass verification, live notifications, and digital credentials.'}
+            </p>
+          </div>
         </div>
 
-        {/* Bottom tag */}
+        {/* Bottom tag: College / Institution Badge */}
         <div
-          className="mt-6 sm:mt-0 font-mono font-bold text-xs uppercase px-3.5 py-1.5 rounded-md bg-[#111111] text-[#FFE600] border-2 border-black shadow-[2.5px_2.5px_0_rgba(0,0,0,0.3)] self-start"
+          className="relative z-10 mt-6 sm:mt-0 font-mono font-bold text-xs uppercase px-4 py-2 rounded-md border-2 border-black shadow-[3px_3px_0_rgba(0,0,0,0.35)] self-start flex items-center gap-2 transition-transform hover:-translate-y-0.5"
+          style={{
+            background: currentTheme.accent,
+            color: currentTheme.accentFg
+          }}
         >
-          {selectedTenant?.institution || 'Academic SaaS Ecosystem'}
+          <School className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate max-w-[280px]">
+            {selectedTenant?.institution || selectedTenant?.branding?.institution || 'Academic SaaS Ecosystem'}
+          </span>
         </div>
       </div>
 
@@ -371,9 +445,16 @@ export default function LoginView({
         <form onSubmit={handleLogin} className="space-y-4 max-w-md w-full mx-auto">
           <div className="border-b-2 border-[var(--nb-ink)] pb-3 mb-2">
             <div className="flex items-center justify-between">
-              <h2 className="nb-headline text-2xl text-[var(--nb-content)]">SIGN IN</h2>
-              <span className="nb-pill-yellow text-[9px] font-mono font-bold text-neutral-900 border border-[var(--nb-ink)] px-2 py-0.5">
-                NOTX SAAS
+              <h2 className="nb-headline text-2xl sm:text-3xl text-[var(--nb-content)]">SIGN IN</h2>
+              <span 
+                className="text-[10px] font-mono font-bold px-2.5 py-1 rounded border-2 border-[var(--nb-ink)] shadow-[2px_2px_0_var(--nb-ink)] flex items-center gap-1.5"
+                style={{
+                  background: currentTheme.subtleBg,
+                  color: '#111111'
+                }}
+              >
+                <span className="w-2 h-2 rounded-full border border-[var(--nb-ink)]" style={{ background: currentTheme.heroBg }} />
+                {selectedTenant?.shortCode || 'NOTX'}
               </span>
             </div>
             <p className="nb-label text-xs text-[var(--nb-secondary)] mt-0.5">
@@ -384,8 +465,16 @@ export default function LoginView({
           {/* 1. Tenant Selector */}
           <div>
             <label className="nb-label block mb-1.5 font-bold flex items-center justify-between">
-              <span>SELECT ASSOCIATION / TENANT</span>
-              <span className="text-[9px] font-mono text-[var(--nb-secondary)]">Scope</span>
+              <span className="flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5" />
+                SELECT ASSOCIATION / TENANT
+              </span>
+              <span 
+                className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-[var(--nb-ink)]"
+                style={{ background: currentTheme.subtleBg, color: '#111111' }}
+              >
+                Theme: {currentTheme.name}
+              </span>
             </label>
             <div className="relative">
               <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--nb-secondary)]" />
@@ -394,11 +483,15 @@ export default function LoginView({
                 onChange={(e) => handleTenantChange(e.target.value)}
                 className="nb-input !pl-10 !pr-10 font-bold text-xs rounded-md w-full cursor-pointer appearance-none bg-[var(--nb-surface)]"
               >
-                {tenants.filter(t => t.status === 'active').map(t => (
-                  <option key={t.tenantId} value={t.tenantId}>
-                    {t.name} ({t.shortCode || t.tenantId})
-                  </option>
-                ))}
+                {tenants.filter(t => t.status === 'active').length === 0 ? (
+                  <option value="">No associations registered yet</option>
+                ) : (
+                  tenants.filter(t => t.status === 'active').map(t => (
+                    <option key={t.tenantId} value={t.tenantId}>
+                      {t.name} ({t.shortCode || t.tenantId})
+                    </option>
+                  ))
+                )}
               </select>
               <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--nb-secondary)]" />
             </div>
@@ -453,11 +546,15 @@ export default function LoginView({
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full mt-3 py-3 px-4 rounded-md font-mono font-bold text-xs uppercase tracking-wider text-white bg-[var(--nb-blue)] hover:bg-blue-600 border-2 border-[var(--nb-ink)] shadow-[3px_3px_0_var(--nb-ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            disabled={loading || !selectedTenantId}
+            className="w-full mt-3 py-3 px-4 rounded-md font-mono font-bold text-xs uppercase tracking-wider border-2 border-[var(--nb-ink)] shadow-[3px_3px_0_var(--nb-ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:brightness-105"
+            style={{
+              background: currentTheme.accent,
+              color: currentTheme.accentFg
+            }}
           >
             {loading ? (
-              <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              <span className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
             ) : (
               <>
                 <KeyRound className="w-4 h-4" />
@@ -468,10 +565,13 @@ export default function LoginView({
 
           {/* Info note */}
           <div 
-            className="p-3 rounded-md bg-[var(--nb-yellow-subtle)] dark:bg-[var(--nb-surface-accent)] text-neutral-900 dark:text-neutral-100"
-            style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '2px 2px 0 var(--nb-ink)' }}
+            className="p-3 rounded-md text-xs font-medium leading-relaxed border-2 border-[var(--nb-ink)] shadow-[2px_2px_0_var(--nb-ink)]"
+            style={{
+              background: currentTheme.subtleBg,
+              color: '#111111'
+            }}
           >
-            <p className="text-xs font-medium leading-relaxed">
+            <p>
               Default password is your <strong>Roll Number</strong> or temporary password <strong>notx@123</strong>.
             </p>
           </div>

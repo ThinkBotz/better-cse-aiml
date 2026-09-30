@@ -22,6 +22,7 @@ interface MessagesViewProps {
   allUsers: UserProfile[];
   initialTargetRoll?: string | null;
   onTargetHandled?: () => void;
+  activeTenantId?: string;
 }
 
 interface Conversation {
@@ -33,7 +34,8 @@ interface Conversation {
   typing?: string[];
 }
 
-export default function MessagesView({ user, allUsers, initialTargetRoll, onTargetHandled }: MessagesViewProps) {
+export default function MessagesView({ user, allUsers, initialTargetRoll, onTargetHandled, activeTenantId }: MessagesViewProps) {
+  const tenant = activeTenantId || user.tenantId;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedRoll, setSelectedRoll] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +87,8 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
     
     setIsLoading(true);
     const userRollUpper = user.rollNumber.trim().toUpperCase();
-    const chatsRef = ref(rtdb, 'chats');
+    const chatsPath = tenant ? `chats/${tenant.trim().toLowerCase()}` : 'chats';
+    const chatsRef = ref(rtdb, chatsPath);
 
     const unsubscribe = onValue(chatsRef, (snapshot) => {
       const list: Conversation[] = [];
@@ -160,7 +163,7 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
     });
 
     return () => unsubscribe();
-  }, [user, allUsers]);
+  }, [user, allUsers, tenant]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -170,9 +173,8 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
   // Mark messages as read when viewing a chat
   useEffect(() => {
     if (!selectedRoll || !user?.rollNumber) return;
-    const chatId = getChatRoomId(user.rollNumber, selectedRoll);
-    markMessagesAsRead(chatId, user.rollNumber);
-  }, [selectedRoll, user]);
+    markMessagesAsRead(user.rollNumber, selectedRoll, tenant);
+  }, [selectedRoll, user, tenant]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,7 +204,7 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
   const handleRespondToInvite = async (inviteId: string, status: 'Accepted' | 'Declined') => {
     if (!user || !user.rollNumber || !selectedRoll) return;
     try {
-      const chatId = getChatRoomId(user.rollNumber, selectedRoll);
+      const chatId = getChatRoomId(user.rollNumber, selectedRoll, tenant);
       await respondToChatInvite(chatId, inviteId, status);
     } catch (err) {
       console.error("Failed to update status", err);
@@ -214,7 +216,7 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
     setIsDeletingChat(true);
     setActionError('');
     try {
-      const chatId = getChatRoomId(user.rollNumber, chatToDelete.roll);
+      const chatId = getChatRoomId(user.rollNumber, chatToDelete.roll, tenant);
       await deleteChatRoom(chatId);
       
       setConversations(prev => prev.filter(c => c.classmateRoll.toUpperCase() !== chatToDelete.roll.toUpperCase()));
@@ -236,7 +238,7 @@ export default function MessagesView({ user, allUsers, initialTargetRoll, onTarg
     setIsDeletingMessage(true);
     setActionError('');
     try {
-      const chatId = getChatRoomId(user.rollNumber, selectedRoll);
+      const chatId = getChatRoomId(user.rollNumber, selectedRoll, tenant);
       await deleteChatMessage(chatId, messageToDelete.id);
       
       setConversations(prev => prev.map(c => {

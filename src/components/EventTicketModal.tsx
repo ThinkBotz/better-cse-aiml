@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, Clock, MapPin, Users, Check, Copy, 
   Sparkles, CheckCircle2, ShieldCheck, Download, Share2
 } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
+import { fireConfetti } from '../utils/confetti';
 import { DepartmentEvent, EventRegistration, UserProfile, AppBranding, DEFAULT_BRANDING } from '../types';
 
 interface EventTicketModalProps {
@@ -60,12 +63,38 @@ export default function EventTicketModal({
     }
   };
 
-  const isCheckedIn = registration.status === 'Attended';
-  const isAbsent = registration.status === 'Absent';
+  const [liveRegistration, setLiveRegistration] = useState<EventRegistration>(registration);
+
+  useEffect(() => {
+    setLiveRegistration(registration);
+  }, [registration]);
+
+  useEffect(() => {
+    if (!registration?.registrationId) return;
+    const unsub = onSnapshot(doc(db, 'registrations', registration.registrationId), (snap) => {
+      if (snap.exists()) {
+        const fresh = { registrationId: snap.id, ...snap.data() } as EventRegistration;
+        setLiveRegistration(prev => {
+          if (prev.status !== 'Attended' && fresh.status === 'Attended') {
+            try {
+              fireConfetti(2200);
+            } catch (_) {}
+          }
+          return fresh;
+        });
+      }
+    }, (err) => {
+      console.warn("Realtime ticket listener warning:", err);
+    });
+    return () => unsub();
+  }, [registration?.registrationId]);
+
+  const isCheckedIn = liveRegistration.status === 'Attended';
+  const isAbsent = liveRegistration.status === 'Absent';
 
   return (
     <div 
-      className="fixed inset-0 bg-black/85 z-[150] flex flex-col items-center justify-center p-4 overflow-y-auto backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/80 z-[150] flex flex-col items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -74,72 +103,74 @@ export default function EventTicketModal({
       <button 
         onClick={onClose} 
         aria-label="Close Ticket"
-        className="absolute top-4 right-4 w-10 h-10 bg-[var(--nb-surface)] text-[var(--nb-content)] rounded-md flex items-center justify-center cursor-pointer transition-transform active:scale-95 z-20 hover:bg-[var(--nb-surface-accent)]"
+        className="absolute top-4 right-4 w-9 h-9 bg-[var(--nb-surface)] text-[var(--nb-content)] rounded flex items-center justify-center cursor-pointer transition-transform active:translate-x-0.5 active:translate-y-0.5 z-20 hover:bg-[var(--nb-surface-accent)]"
         style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
       >
-        <X className="w-5 h-5 stroke-[2.5]" />
+        <X className="w-4 h-4 stroke-[2.5]" />
       </button>
 
       <div className="relative w-full max-w-[340px] my-auto">
         {/* Pass Ticket Container */}
         <div 
-          className="w-full flex flex-col bg-[var(--nb-surface)] rounded-2xl overflow-hidden relative"
-          style={{ border: '3px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+          className="w-full flex flex-col bg-[var(--nb-surface)] rounded-lg overflow-hidden relative"
+          style={{ border: '2.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-lg)' }}
         >
           {/* Lanyard Hole Graphical Notch */}
-          <div className="pt-2 pb-1 flex justify-center bg-[var(--nb-surface-accent)] border-b border-[var(--nb-ink)]/15">
+          <div className="pt-2 pb-1.5 flex justify-center bg-[var(--nb-surface-accent)] border-b border-[var(--nb-ink)]">
             <div 
               className="w-14 h-2.5 rounded-full bg-[var(--nb-ink)] mx-auto flex items-center justify-center"
-              style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.6)' }}
             >
-              <div className="w-8 h-0.5 rounded-full bg-white/20" />
+              <div className="w-8 h-0.5 rounded-full bg-white/30" />
             </div>
           </div>
 
           {/* Header Strip */}
-          <div className="bg-[var(--nb-yellow)] text-black px-4 py-2.5 flex justify-between items-center border-b-2 border-[var(--nb-ink)]">
+          <div className="bg-[var(--nb-yellow)] text-black px-4 py-2 flex justify-between items-center border-b-2 border-[var(--nb-ink)]">
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 fill-black text-black" />
-              <span className="font-mono font-black text-xs tracking-wider uppercase">
+              <span className="font-display font-black text-sm tracking-wider uppercase">
                 {branding?.appName || 'NOTX'} OFFICIAL PASS
               </span>
             </div>
-            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-black text-[#FFE600] border border-black">
+            <span 
+              className="text-[9px] font-mono font-black px-2 py-0.5 rounded-none bg-black text-[#FFE600]"
+              style={{ border: '1px solid black' }}
+            >
               ADMIT ONE
             </span>
           </div>
 
           {/* Status Banner */}
-          <div className={`px-4 py-1.5 flex items-center justify-between border-b text-[10px] font-mono font-bold ${
+          <div className={`px-4 py-2 flex items-center justify-between border-b-2 text-[10px] font-mono font-black uppercase ${
             isCheckedIn 
-              ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-600/30'
+              ? 'bg-emerald-400 text-black border-[var(--nb-ink)]'
               : isAbsent
-              ? 'bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-600/30'
-              : 'bg-[var(--nb-surface-accent)] text-[var(--nb-secondary)] border-[var(--nb-ink)]/20'
+              ? 'bg-rose-500 text-white border-[var(--nb-ink)]'
+              : 'bg-[var(--nb-surface-accent)] text-[var(--nb-content)] border-[var(--nb-ink)]'
           }`}>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               {isCheckedIn ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>CHECKED IN & VERIFIED</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>CHECKED IN & ADMITTED</span>
                 </>
               ) : isAbsent ? (
                 <span>ABSENT FROM EVENT</span>
               ) : (
                 <>
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span>ACTIVE PASS • READY FOR SCAN</span>
+                  <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5] text-[var(--nb-accent)]" />
+                  <span>VALID PASS • READY FOR SCAN</span>
                 </>
               )}
             </span>
-            <span className="font-bold opacity-80">#{regCode}</span>
+            <span className="font-mono text-[10px] bg-black/10 px-1.5 py-0.5 rounded">#{regCode}</span>
           </div>
           
           {/* Event Content & Poster */}
           <div className="p-4 space-y-3">
             <div className="flex gap-3">
               <div 
-                className="w-[72px] h-[96px] flex-shrink-0 bg-[var(--nb-surface-accent)] rounded-lg overflow-hidden relative"
+                className="w-[74px] h-[96px] flex-shrink-0 bg-[var(--nb-surface-accent)] rounded overflow-hidden relative"
                 style={{ border: '2px solid var(--nb-ink)' }}
               >
                 <img 
@@ -158,14 +189,14 @@ export default function EventTicketModal({
                   </h2>
                 </div>
                 
-                <div className="space-y-1 text-xs pt-1 border-t border-[var(--nb-ink)]/10">
+                <div className="space-y-1 text-xs pt-1 border-t border-[var(--nb-ink)]/15">
                   <div className="flex items-center gap-1.5 text-[10.5px]">
                     <Calendar className="w-3 h-3 text-[var(--nb-accent)] shrink-0" />
                     <span className="font-mono font-bold text-[var(--nb-content)]">{event.date}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[10.5px]">
                     <Clock className="w-3 h-3 text-[var(--nb-accent)] shrink-0" />
-                    <span className="font-mono text-[var(--nb-content)] truncate">
+                    <span className="font-mono font-medium text-[var(--nb-content)] truncate">
                       {event.startTime}{event.endTime && event.endTime !== 'N/A' ? ` – ${event.endTime}` : ''}
                     </span>
                   </div>
@@ -181,7 +212,7 @@ export default function EventTicketModal({
 
             {/* Attendee Info Card */}
             <div 
-              className="p-2.5 bg-[var(--nb-surface-accent)] rounded-lg text-xs flex justify-between items-center"
+              className="p-2.5 bg-[var(--nb-surface-accent)] rounded text-xs flex justify-between items-center"
               style={{ border: '1.5px solid var(--nb-ink)' }}
             >
               <div className="min-w-0">
@@ -189,14 +220,14 @@ export default function EventTicketModal({
                 <span className="font-bold text-[var(--nb-content)] text-xs truncate block">{user.name}</span>
                 <span className="font-mono text-[9.5px] text-[var(--nb-secondary)]">{roll} • {user.year || '3rd Year'}</span>
               </div>
-              {registration.isTeam && (
+              {liveRegistration.isTeam && (
                 <div className="text-right flex-shrink-0 pl-2 border-l border-[var(--nb-ink)]/20">
                   <span className="nb-label text-[8.5px] text-[var(--nb-secondary)] block">TEAM</span>
                   <span className="font-bold text-[10.5px] text-[var(--nb-content)] truncate max-w-[100px] block">
-                    {registration.teamName || 'Solo'}
+                    {liveRegistration.teamName || 'Solo'}
                   </span>
                   <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                    {(registration.teamMembers?.length || 0) + 1} Members
+                    {(liveRegistration.teamMembers?.length || 0) + 1} Members
                   </span>
                 </div>
               )}
@@ -207,21 +238,21 @@ export default function EventTicketModal({
           <div className="relative py-2 bg-[var(--nb-surface)] border-y-2 border-dashed border-[var(--nb-ink)] flex items-center justify-between px-6">
             {/* Left circular cutout notch */}
             <div 
-              className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/85" 
+              className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/80" 
               style={{ borderRight: '2px solid var(--nb-ink)' }}
             />
             {/* Right circular cutout notch */}
             <div 
-              className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/85" 
+              className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/80" 
               style={{ borderLeft: '2px solid var(--nb-ink)' }}
             />
 
-            <span className="font-mono text-[9px] font-bold text-[var(--nb-secondary)] uppercase tracking-wider">
+            <span className="font-mono text-[9px] font-black text-[var(--nb-secondary)] uppercase tracking-wider">
               OFFICIAL ENTRY CODE
             </span>
             <button
               onClick={handleCopyTicket}
-              className="flex items-center gap-1 font-mono text-[9px] font-bold text-[var(--nb-accent)] hover:underline cursor-pointer"
+              className="flex items-center gap-1 font-mono text-[9px] font-black text-[var(--nb-accent)] hover:underline cursor-pointer"
             >
               {copied ? (
                 <>
@@ -240,8 +271,8 @@ export default function EventTicketModal({
           {/* QR Code Section */}
           <div className="p-4 flex items-center gap-4 bg-[var(--nb-surface)]">
             <div 
-              className="w-24 h-24 bg-white p-1 rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden"
-              style={{ border: '2px solid var(--nb-ink)', boxShadow: '2px 2px 0 var(--nb-ink)' }}
+              className="w-24 h-24 bg-white p-1 rounded shrink-0 flex items-center justify-center relative overflow-hidden"
+              style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
             >
               <img 
                 src={qrUrl} 
@@ -250,8 +281,13 @@ export default function EventTicketModal({
                 referrerPolicy="no-referrer"
               />
               {isCheckedIn && (
-                <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center backdrop-blur-[0.5px]">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600 drop-shadow" />
+                <div 
+                  className="absolute inset-0 bg-emerald-400 flex flex-col items-center justify-center p-1 text-center select-none rotate-[-8deg]"
+                  style={{ border: '2px solid black' }}
+                >
+                  <CheckCircle2 className="w-7 h-7 text-black stroke-[3]" />
+                  <span className="font-display font-black text-[11px] text-black tracking-wider leading-none mt-0.5">ADMITTED</span>
+                  <span className="font-mono text-[7px] font-black text-black">ENTRY CONFIRMED</span>
                 </div>
               )}
             </div>
@@ -265,13 +301,13 @@ export default function EventTicketModal({
                   Show at Venue Gate
                 </span>
               </div>
-              <p className="text-[10px] text-[var(--nb-secondary)] leading-tight">
+              <p className="text-[10px] text-[var(--nb-secondary)] leading-tight font-sans">
                 Scan with coordinator camera for instant attendance check-in.
               </p>
               
               {/* Decorative mini barcode */}
               <div className="pt-1 opacity-70">
-                <div className="flex items-center gap-[1.5px] h-4">
+                <div className="flex items-center gap-[1.5px] h-3.5">
                   {[2, 4, 1, 3, 2, 5, 1, 4, 2, 3, 1, 4, 2, 3, 5, 2, 1, 3].map((w, idx) => (
                     <div key={idx} className="h-full bg-[var(--nb-ink)]" style={{ width: `${w}px` }} />
                   ))}

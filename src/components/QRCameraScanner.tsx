@@ -216,8 +216,8 @@ export default function QRCameraScanner({ onScan, onError }: QRCameraScannerProp
     <div className="w-full max-w-sm mx-auto space-y-3">
       {/* Scanner Viewport with Neo-Brutalist Frame */}
       <div 
-        className="relative w-full aspect-square bg-black rounded-xl overflow-hidden flex items-center justify-center"
-        style={{ border: '3px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
+        className="relative w-full aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center"
+        style={{ border: '2.5px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard)' }}
       >
         <div id="qr-reader-viewport" className="w-full h-full object-cover"></div>
 
@@ -225,40 +225,40 @@ export default function QRCameraScanner({ onScan, onError }: QRCameraScannerProp
         {isScanning && !cameraError && (
           <>
             {/* Top Telemetry Floating Badge */}
-            <div className="pointer-events-none absolute top-3 left-3 right-3 flex items-center justify-between z-10 font-mono text-[9px] font-bold uppercase bg-black/90 text-white px-3 py-1.5 rounded-lg border-2 border-white/20 backdrop-blur-sm">
+            <div className="pointer-events-none absolute top-3 left-3 right-3 flex items-center justify-between z-10 font-mono text-[9px] font-black uppercase bg-black text-white px-3 py-1.5 rounded border-2 border-white">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="tracking-wider">LIVE OPTICAL SCANNER</span>
+                <span className="tracking-wider">LIVE OPTICAL SENSOR</span>
               </span>
-              <span className="text-[var(--nb-yellow)] font-mono text-[9px] font-bold">READY</span>
+              <span className="text-[var(--nb-yellow)] font-mono text-[9px] font-black">SYS//READY</span>
             </div>
 
             {/* Viewfinder Target Reticle */}
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div 
-                className="w-52 h-52 sm:w-60 sm:h-60 relative border-2 border-dashed border-white/30 bg-black/5 rounded-xl overflow-hidden"
+                className="w-52 h-52 sm:w-60 sm:h-60 relative border-2 border-dashed border-white/50 bg-black/10 rounded overflow-hidden"
               >
                 {/* 4 Heavy Neo-Brutalist Corner Brackets */}
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[var(--nb-yellow)] rounded-tl" />
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[var(--nb-yellow)] rounded-tr" />
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[var(--nb-yellow)] rounded-bl" />
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[var(--nb-yellow)] rounded-br" />
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[var(--nb-yellow)]" />
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[var(--nb-yellow)]" />
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[var(--nb-yellow)]" />
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[var(--nb-yellow)]" />
 
                 {/* Center Target Crosshairs */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-35">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
                   <div className="w-8 h-[2px] bg-white" />
                   <div className="w-[2px] h-8 bg-white absolute" />
                 </div>
 
-                {/* Smooth Laser Sweep Line */}
-                <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[var(--nb-yellow)] to-transparent nb-laser-sweep" />
+                {/* Neo-Brutalist Laser Sweep Line (Flat solid bar, no gradients) */}
+                <div className="absolute left-0 right-0 h-1 bg-[var(--nb-yellow)] border-y border-black nb-laser-sweep" />
               </div>
 
               {/* Bottom Alignment Instruction */}
               <span 
-                className="absolute bottom-3 font-mono text-[9px] font-bold text-black bg-[var(--nb-yellow)] px-3 py-1 rounded-md border-2 border-black uppercase tracking-wider shadow-[2px_2px_0_#000]"
+                className="absolute bottom-3 font-mono text-[9px] font-black text-black bg-[var(--nb-yellow)] px-3 py-1 rounded border-2 border-black uppercase tracking-wider shadow-[2px_2px_0_#000]"
               >
-                Align QR Pass Within Reticle
+                ALIGN QR TICKET IN RETICLE
               </span>
             </div>
           </>
@@ -266,9 +266,9 @@ export default function QRCameraScanner({ onScan, onError }: QRCameraScannerProp
 
         {/* Scan Success Confirmation Flash */}
         {isFlashActive && (
-          <div className="absolute inset-0 bg-emerald-500/30 backdrop-brightness-110 z-20 pointer-events-none transition-all duration-300 flex items-center justify-center">
-            <div className="nb-pill-green text-black font-mono font-black text-xs px-4 py-2 rounded-lg border-2 border-black shadow-[3px_3px_0_#000] animate-bounce">
-              ✓ CODE CAPTURED
+          <div className="absolute inset-0 bg-emerald-500/40 z-20 pointer-events-none transition-all duration-200 flex items-center justify-center">
+            <div className="bg-[var(--nb-green)] text-black font-mono font-black text-xs px-4 py-2 rounded border-2 border-black shadow-[3px_3px_0_#000] animate-bounce">
+              ✓ CODE VERIFIED & ADMITTED
             </div>
           </div>
         )}

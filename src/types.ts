@@ -89,6 +89,8 @@ export interface EventRegistration {
   eventId: string;
   status: 'Registered' | 'Attended' | 'Absent';
   appliedAt: string;
+  attendedAt?: string;
+  verifiedBy?: string;
   studentName: string;
   rollNumber: string;
   phone: string;
@@ -215,14 +217,40 @@ export const DEFAULT_CERTIFICATE_TEMPLATE: CertificateTemplate = {
   footerNote: "Verified Academic Credential • NOTX Connect"
 };
 
+export type ThemePresetKey = 
+  | 'cobalt-tech' 
+  | 'cyber-gold' 
+  | 'emerald-forge' 
+  | 'royal-violet' 
+  | 'crimson-riot' 
+  | 'aqua-nexus' 
+  | 'mono-slate' 
+  | 'custom';
+
+export interface TenantThemeConfig {
+  presetKey: ThemePresetKey;
+  name: string;
+  description: string;
+  heroBg: string;         // Background for Welcome Card & Login Hero Strip
+  heroFg: string;         // Foreground text color (#FFFFFF or #111111)
+  accent: string;         // Primary CTA buttons & active highlights
+  accentFg: string;       // Text color on accent buttons
+  subtleBg: string;       // Pill / tag background
+  borderInk?: string;     // Border color (default: #1A1A1A)
+  previewBadgeClass: string;
+}
+
 export interface AppBranding {
   appName: string; // e.g. "NOTX", "THINKBOTZ", "NEXUS"
   tagline?: string; // e.g. "Connect", "Portal", "Hub"
   subtitle?: string; // e.g. "AI & ML", "CSE", "IT"
+  institution?: string; // e.g. "Department of CSE, College of Engineering"
+  loginHeroText?: string; // Custom welcome notice on login page
   logoType: 'preset' | 'custom';
   logoIcon?: string; // e.g. "Cpu", "Bot", "Sparkles", "Terminal", "Zap", "Rocket", "Atom", "Code2"
   logoImageUrl?: string; // custom image URL or data URL
   accentColor?: string; // e.g. "indigo", "violet", "emerald", "cyan", "amber", "rose"
+  theme?: TenantThemeConfig;
   updatedAt?: string;
 }
 
@@ -230,6 +258,8 @@ export const DEFAULT_BRANDING: AppBranding = {
   appName: "NOTX",
   tagline: "Connect",
   subtitle: "AI & ML",
+  institution: "Academic SaaS Ecosystem",
+  loginHeroText: "Universal department pass verification, live notifications, and digital credentials.",
   logoType: "preset",
   logoIcon: "Cpu",
   logoImageUrl: "",
