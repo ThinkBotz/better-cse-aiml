@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   ShieldAlert, 
   Users, 
@@ -43,7 +43,9 @@ import {
   FolderArchive,
   AlertTriangle,
   Clock,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { 
   UserProfile, 
@@ -172,8 +174,10 @@ export default function AdminPanelView({
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [feedbackErr, setFeedbackErr] = useState('');
   
-  // Student search
+  // Student search & categorized filters
   const [studentSearch, setStudentSearch] = useState('');
+  const [studentYearFilter, setStudentYearFilter] = useState('All');
+  const [studentSectionFilter, setStudentSectionFilter] = useState('All');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
   // QR Check-in scanner states
@@ -203,9 +207,10 @@ export default function AdminPanelView({
   const [coordRollFocused, setCoordRollFocused] = useState(false);
   const [coordAssignedEvents, setCoordAssignedEvents] = useState<string[]>([]);
 
-  // Editing state for event assignments
   const [activeEditingCoordId, setActiveEditingCoordId] = useState<string | null>(null);
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
+  const [expandedGroupKeys, setExpandedGroupKeys] = useState<string[]>([]);
+  const masterCheckboxRef = useRef<HTMLInputElement>(null);
 
   // Reset Association & Data Export modal state
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -472,6 +477,83 @@ export default function AdminPanelView({
   // Filters
   const associates = allUsers.filter(u => u.role === 'associate' || (u.role === 'president' && u.uid !== 'admin_master'));
   const coordinators = allUsers.filter(u => u.role === 'coordinator');
+
+  // Dynamic years and sections for student database filtering
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    allUsers.forEach(u => {
+      if (u.uid !== 'admin_master' && u.year?.trim()) {
+        years.add(u.year.trim());
+      }
+    });
+    ['1st Year', '2nd Year', '3rd Year', '4th Year'].forEach(y => years.add(y));
+    return Array.from(years).sort();
+  }, [allUsers]);
+
+  const availableSections = useMemo(() => {
+    const sections = new Set<string>();
+    allUsers.forEach(u => {
+      if (u.uid !== 'admin_master' && u.section?.trim()) {
+        sections.add(u.section.trim().toUpperCase());
+      }
+    });
+    ['A', 'B', 'C', 'D'].forEach(s => sections.add(s));
+    return Array.from(sections).sort();
+  }, [allUsers]);
+
+  // Filtered students for Students Database tab
+  const filteredStudents = useMemo(() => {
+    return allUsers
+      .filter(u => u.uid !== 'admin_master')
+      .filter(u => {
+        const matchesSearch = !studentSearch.trim() || 
+          u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+          u.name.toLowerCase().includes(studentSearch.toLowerCase());
+
+        const matchesYear = studentYearFilter === 'All' || 
+          (u.year && u.year.trim().toLowerCase() === studentYearFilter.trim().toLowerCase());
+
+        const matchesSection = studentSectionFilter === 'All' || 
+          ((u.section || 'A').trim().toUpperCase() === studentSectionFilter.trim().toUpperCase());
+
+        return matchesSearch && matchesYear && matchesSection;
+      });
+  }, [allUsers, studentSearch, studentYearFilter, studentSectionFilter]);
+
+  const groupedStudents = useMemo(() => {
+    return filteredStudents.reduce((acc, student) => {
+      const key = `${student.year || 'Unknown Year'} - ${student.branch || 'Unknown Branch'} (Sec ${student.section || 'A'})`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(student);
+      return acc;
+    }, {} as Record<string, typeof filteredStudents>);
+  }, [filteredStudents]);
+
+  // Sync indeterminate state for master student selection checkbox
+  useEffect(() => {
+    if (masterCheckboxRef.current) {
+      const allSelected = filteredStudents.length > 0 && filteredStudents.every(s => selectedStudentIds.includes(s.uid));
+      const someSelected = filteredStudents.some(s => selectedStudentIds.includes(s.uid));
+      masterCheckboxRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [filteredStudents, selectedStudentIds]);
+
+  const allGroupKeys = useMemo(() => Object.keys(groupedStudents), [groupedStudents]);
+  const isAllGroupsExpanded = allGroupKeys.length > 0 && allGroupKeys.every(k => expandedGroupKeys.includes(k));
+
+  const toggleGroupExpansion = (groupKey: string) => {
+    setExpandedGroupKeys(prev => 
+      prev.includes(groupKey) ? prev.filter(k => k !== groupKey) : [...prev, groupKey]
+    );
+  };
+
+  // Auto-expand all matching sections when a search query is active
+  useEffect(() => {
+    if (studentSearch.trim()) {
+      setExpandedGroupKeys(allGroupKeys);
+    }
+  }, [studentSearch, allGroupKeys]);
+
 
   // Filter events that coordinator can manage
   const manageableEvents = events.filter(ev => {
@@ -1519,20 +1601,6 @@ export default function AdminPanelView({
                               Revoke Role
                             </button>
                           )}
-                          <HoldButton
-                            size="sm"
-                            holdTime={1600}
-                            radius={4}
-                            backgroundColor="rgba(244, 63, 94, 0.1)"
-                            fillColor="#e11d48"
-                            textColor="#fda4af"
-                            fillTextColor="#ffffff"
-                            doneLabel="Deleted"
-                            onHold={() => handleDeleteUser(assoc.uid)}
-                            className="border border-rose-500/20 text-[10px] font-bold uppercase !h-6 !px-2"
-                          >
-                            Hold to Delete
-                          </HoldButton>
                         </div>
                       </div>
                     </div>
@@ -1785,20 +1853,6 @@ export default function AdminPanelView({
                               Revoke
                             </button>
                           )}
-                          <HoldButton
-                            size="sm"
-                            holdTime={1600}
-                            radius={4}
-                            backgroundColor="rgba(244, 63, 94, 0.1)"
-                            fillColor="#e11d48"
-                            textColor="#fda4af"
-                            fillTextColor="#ffffff"
-                            doneLabel="Deleted"
-                            onHold={() => handleDeleteUser(coord.uid)}
-                            className="flex-1 border border-rose-500/20 text-[11px] font-bold uppercase !h-6 !px-2"
-                          >
-                            Hold to Delete
-                          </HoldButton>
                         </div>
                       </div>
                     </div>
@@ -2419,14 +2473,15 @@ export default function AdminPanelView({
                 </div>
               )}
 
-              {/* STUDENT LIST WITH GROUPING AND SEARCH */}
-              <div className="flex flex-col gap-2">
-                <div 
-                  className="flex justify-between items-center bg-[var(--nb-surface)] rounded-lg px-3 py-2"
-                  style={{ border: '1.5px solid var(--nb-ink)' }}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <Search className="w-4 h-4 text-[var(--nb-secondary)] flex-shrink-0" />
+              {/* STUDENT LIST WITH GROUPING, SEARCH & YEAR/SECTION CATEGORIZATION */}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                  {/* Search Bar with Hard Shadow & High Contrast */}
+                  <div 
+                    className="flex-1 flex items-center gap-2 bg-white px-3 py-2 min-h-[42px] transition-all"
+                    style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0px 0px var(--nb-ink)' }}
+                  >
+                    <Search className="w-4 h-4 text-black stroke-[2.5] flex-shrink-0" />
                     <input
                       type="text"
                       placeholder="Search students by roll number or name..."
@@ -2434,179 +2489,358 @@ export default function AdminPanelView({
                       onChange={(e) => setStudentSearch(e.target.value)}
                       className="bg-transparent border-none text-xs text-[var(--nb-content)] placeholder:text-[var(--nb-secondary)] outline-none w-full font-bold"
                     />
+                    {studentSearch && (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setStudentSearch('');
+                          setSelectedStudentIds([]);
+                        }} 
+                        className="text-black hover:text-rose-600 cursor-pointer font-bold"
+                        title="Clear search"
+                      >
+                        <X className="w-4 h-4 stroke-[2.5]" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Categorized Class Year & Section Dropdowns */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Class Year Dropdown */}
+                    <div className="relative">
+                      <select
+                        value={studentYearFilter}
+                        onChange={(e) => {
+                          setStudentYearFilter(e.target.value);
+                          setSelectedStudentIds([]);
+                        }}
+                        className="!py-2 !pl-3 !pr-8 text-xs font-black uppercase bg-white text-black cursor-pointer appearance-none min-h-[42px] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0px 0px var(--nb-ink)' }}
+                        title="Filter by Class Year"
+                      >
+                        <option value="All">All Years</option>
+                        {availableYears.map(yr => (
+                          <option key={yr} value={yr}>{yr}</option>
+                        ))}
+                      </select>
+                      <Filter className="w-3.5 h-3.5 text-black stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+
+                    {/* Section Dropdown */}
+                    <div className="relative">
+                      <select
+                        value={studentSectionFilter}
+                        onChange={(e) => {
+                          setStudentSectionFilter(e.target.value);
+                          setSelectedStudentIds([]);
+                        }}
+                        className="!py-2 !pl-3 !pr-8 text-xs font-black uppercase bg-white text-black cursor-pointer appearance-none min-h-[42px] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0px 0px var(--nb-ink)' }}
+                        title="Filter by Section"
+                      >
+                        <option value="All">All Sections</option>
+                        {availableSections.map(sec => (
+                          <option key={sec} value={sec}>Sec {sec}</option>
+                        ))}
+                      </select>
+                      <Filter className="w-3.5 h-3.5 text-black stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+
+                    {/* Reset Filters button */}
+                    {(studentSearch || studentYearFilter !== 'All' || studentSectionFilter !== 'All') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStudentSearch('');
+                          setStudentYearFilter('All');
+                          setStudentSectionFilter('All');
+                          setSelectedStudentIds([]);
+                        }}
+                        className="!min-h-[42px] px-3.5 py-1 text-xs font-black uppercase bg-amber-300 text-black cursor-pointer hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0px 0px var(--nb-ink)' }}
+                        title="Reset all filters"
+                      >
+                        Reset
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center px-1">
-                  <div className="flex items-center gap-2">
+                {/* Selection & Bulk Actions Row with Neo-Brutalism */}
+                <div 
+                  className="flex flex-wrap justify-between items-center gap-2 p-2.5 bg-white"
+                  style={{ border: '2px solid var(--nb-ink)', boxShadow: '2px 2px 0px 0px var(--nb-ink)' }}
+                >
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <input 
                       type="checkbox" 
                       id="selectAll"
-                      className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
+                      ref={masterCheckboxRef}
+                      className="w-4 h-4 cursor-pointer accent-amber-400 rounded-none border-2 border-[var(--nb-ink)]"
                       checked={
-                        allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
-                          u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
-                          u.name.toLowerCase().includes(studentSearch.toLowerCase())
-                        ).length > 0 && 
-                        selectedStudentIds.length === allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
-                          u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
-                          u.name.toLowerCase().includes(studentSearch.toLowerCase())
-                        ).length
+                        filteredStudents.length > 0 && 
+                        filteredStudents.every(s => selectedStudentIds.includes(s.uid))
                       }
                       onChange={(e) => {
-                        const filtered = allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
-                          u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
-                          u.name.toLowerCase().includes(studentSearch.toLowerCase())
-                        );
                         if (e.target.checked) {
-                          setSelectedStudentIds(filtered.map(s => s.uid));
+                          const visibleIds = filteredStudents.map(s => s.uid);
+                          setSelectedStudentIds(prev => Array.from(new Set([...prev, ...visibleIds])));
                         } else {
-                          setSelectedStudentIds([]);
+                          const visibleIds = new Set(filteredStudents.map(s => s.uid));
+                          setSelectedStudentIds(prev => prev.filter(id => !visibleIds.has(id)));
                         }
                       }}
                     />
-                    <label htmlFor="selectAll" className="nb-label text-[10px] text-[var(--nb-secondary)] cursor-pointer">
-                      SELECT ALL VISIBLE
+                    <label htmlFor="selectAll" className="text-xs font-black uppercase tracking-wider text-[var(--nb-ink)] cursor-pointer select-none">
+                      SELECT ALL VISIBLE ({filteredStudents.length})
                     </label>
+
+                    {selectedStudentIds.length > 0 && (
+                      <div className="flex items-center gap-2 ml-1">
+                        <span className="px-2 py-0.5 text-[10px] font-black font-mono uppercase bg-amber-300 text-black border-2 border-[var(--nb-ink)] shadow-[2px_2px_0px_0px_var(--nb-ink)]">
+                          {selectedStudentIds.length} SELECTED
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStudentIds([])}
+                          className="text-[10px] font-bold underline uppercase text-[var(--nb-secondary)] hover:text-rose-600 cursor-pointer"
+                        >
+                          Deselect All
+                        </button>
+                      </div>
+                    )}
                   </div>
                   
-                  {selectedStudentIds.length > 0 && (
-                    <HoldButton 
-                      size="sm"
-                      holdTime={2000}
-                      radius={4}
-                      backgroundColor="rgba(244, 63, 94, 0.15)"
-                      fillColor="#e11d48"
-                      textColor="#fda4af"
-                      fillTextColor="#ffffff"
-                      doneLabel="Deleted Selected"
-                      onHold={handleBulkDeleteStudents}
-                      icon={<Trash2 className="w-3.5 h-3.5" />}
-                      className="border border-rose-500 text-[10px] font-bold uppercase !h-8 !px-3 cursor-pointer"
-                      style={{ border: '1.5px solid var(--nb-ink)' }}
-                    >
-                      Hold to Delete ({selectedStudentIds.length})
-                    </HoldButton>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {allGroupKeys.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isAllGroupsExpanded) {
+                            setExpandedGroupKeys([]);
+                          } else {
+                            setExpandedGroupKeys(allGroupKeys);
+                          }
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-black uppercase bg-white text-black border-2 border-[var(--nb-ink)] shadow-[2px_2px_0px_0px_var(--nb-ink)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all cursor-pointer"
+                        title={isAllGroupsExpanded ? "Collapse all sections" : "Expand all sections"}
+                      >
+                        {isAllGroupsExpanded ? "Collapse All" : "Expand All"}
+                      </button>
+                    )}
+
+                    {selectedStudentIds.length > 0 && (
+                      <HoldButton 
+                        size="sm"
+                        holdTime={2000}
+                        radius={0}
+                        backgroundColor="#ffe4e6"
+                        fillColor="#e11d48"
+                        textColor="#9f1239"
+                        fillTextColor="#ffffff"
+                        doneLabel="Deleted Selected"
+                        onHold={handleBulkDeleteStudents}
+                        icon={<Trash2 className="w-3.5 h-3.5 stroke-[2.5]" />}
+                        className="!h-8 !px-3 font-black uppercase text-xs cursor-pointer hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                        style={{ border: '2px solid var(--nb-ink)', boxShadow: '3px 3px 0px 0px var(--nb-ink)' }}
+                      >
+                        Hold to Delete ({selectedStudentIds.length})
+                      </HoldButton>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
                 {(() => {
-                  const filteredStudents = allUsers.filter(u => u.uid !== 'admin_master').filter(u => 
-                    u.rollNumber?.toLowerCase().includes(studentSearch.toLowerCase()) ||
-                    u.name.toLowerCase().includes(studentSearch.toLowerCase())
-                  );
-
                   if (filteredStudents.length === 0) {
                     return (
-                      <div className="text-center py-6 text-xs text-[var(--nb-secondary)]">
-                        No students found. Use the bulk importer above to populate the database!
+                      <div className="text-center py-8 text-xs text-[var(--nb-secondary)] space-y-2">
+                        <p className="font-bold">No students found matching your criteria.</p>
+                        {(studentSearch || studentYearFilter !== 'All' || studentSectionFilter !== 'All') ? (
+                          <p className="text-[11px]">
+                            Try adjusting or{' '}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStudentSearch('');
+                                setStudentYearFilter('All');
+                                setStudentSectionFilter('All');
+                                setSelectedStudentIds([]);
+                              }}
+                              className="underline font-bold text-[var(--nb-accent)] cursor-pointer"
+                            >
+                              clearing your filters
+                            </button>
+                            .
+                          </p>
+                        ) : (
+                          <p className="text-[11px]">Use the bulk importer above to populate the database!</p>
+                        )}
                       </div>
                     );
                   }
 
-                  const groupedStudents = filteredStudents.reduce((acc, student) => {
-                    const key = `${student.year || 'Unknown Year'} - ${student.branch || 'Unknown Branch'} (Sec ${student.section || 'A'})`;
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(student);
-                    return acc;
-                  }, {} as Record<string, typeof filteredStudents>);
+                  return Object.entries(groupedStudents).map(([groupKey, studentsInGroup]) => {
+                    const groupUids = studentsInGroup.map(s => s.uid);
+                    const isAllGroupSelected = groupUids.length > 0 && groupUids.every(id => selectedStudentIds.includes(id));
+                    const isSomeGroupSelected = groupUids.some(id => selectedStudentIds.includes(id));
+                    const isGroupExpanded = expandedGroupKeys.includes(groupKey);
 
-                  return Object.entries(groupedStudents).map(([groupKey, studentsInGroup]) => (
-                    <div 
-                      key={groupKey} 
-                      className="bg-[var(--nb-surface)] rounded-lg p-4 space-y-2.5"
-                      style={{ border: '2px solid var(--nb-ink)', boxShadow: 'var(--shadow-hard-sm)' }}
-                    >
-                      <div className="nb-label text-[10px] text-[var(--nb-content)] uppercase tracking-wider mb-2 border-b-2 border-[var(--nb-ink)] pb-2 flex justify-between items-center">
-                        <span>{groupKey}</span>
-                        <span className="nb-tag text-[11px] font-mono font-bold">{studentsInGroup.length} Students</span>
-                      </div>
-                      <div className="space-y-2">
-                        {studentsInGroup.map((student) => {
-                          const isExpanded = expandedStudentId === student.uid;
-                          return (
-                          <div 
-                            key={student.uid} 
-                            onClick={() => setExpandedStudentId(isExpanded ? null : student.uid)}
-                            className="bg-[var(--nb-surface-accent)] rounded p-3 flex flex-col gap-2.5 cursor-pointer transition-all"
-                            style={{ border: '1.5px solid var(--nb-ink)' }}
-                          >
-                            <div className="flex justify-between items-center w-full">
-                              <div className="flex items-center gap-2">
-                                <div className="flex items-center justify-center mr-1" onClick={(e) => e.stopPropagation()}>
-                                  <input 
-                                    type="checkbox" 
-                                    className="accent-[var(--nb-accent)] w-3.5 h-3.5 cursor-pointer"
-                                    checked={selectedStudentIds.includes(student.uid)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedStudentIds(prev => [...prev, student.uid]);
-                                      } else {
-                                        setSelectedStudentIds(prev => prev.filter(id => id !== student.uid));
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <span 
-                                  className="nb-tag font-mono text-[10px] font-bold"
-                                  style={{ border: '1px solid var(--nb-ink)' }}
-                                >
-                                  {student.rollNumber || 'NO ROLL'}
-                                </span>
-                                <h5 className="nb-headline text-xs text-[var(--nb-content)] truncate">{student.name}</h5>
-                              </div>
-                              <span className="nb-tag text-[10px] font-mono font-bold">{isExpanded ? '[-]' : '[+]'}</span>
+                    return (
+                      <div 
+                        key={groupKey} 
+                        className="bg-[var(--nb-surface)] p-3.5 space-y-3 transition-all"
+                        style={{ border: '2.5px solid var(--nb-ink)', boxShadow: '4px 4px 0px 0px var(--nb-ink)' }}
+                      >
+                        {/* Section Header: Click to Expand / Collapse */}
+                        <div 
+                          onClick={() => toggleGroupExpansion(groupKey)}
+                          className={`flex justify-between items-center cursor-pointer select-none flex-wrap gap-2 ${
+                            isGroupExpanded ? 'border-b-2 border-[var(--nb-ink)] pb-3' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <input 
+                                type="checkbox"
+                                checked={isAllGroupSelected}
+                                ref={el => { if (el) el.indeterminate = isSomeGroupSelected && !isAllGroupSelected; }}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedStudentIds(prev => Array.from(new Set([...prev, ...groupUids])));
+                                  } else {
+                                    const groupSet = new Set(groupUids);
+                                    setSelectedStudentIds(prev => prev.filter(id => !groupSet.has(id)));
+                                  }
+                                }}
+                                className="w-4 h-4 cursor-pointer accent-amber-400 rounded-none border-2 border-[var(--nb-ink)]"
+                                title={`Select all in ${groupKey}`}
+                              />
                             </div>
-                            
-                            {isExpanded && (
-                              <div className="pt-2 border-t border-[var(--nb-ink)]/15 flex justify-between gap-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px] text-[var(--nb-secondary)] flex-1">
-                                  <span className="truncate">Email: <strong className="text-[var(--nb-content)] font-mono">{student.email}</strong></span>
-                                  {student.googleEmail && (<span className="truncate">Google: <strong className="text-[var(--nb-content)] font-mono">{student.googleEmail}</strong></span>)}
-                                  <span>Phone: <strong className="text-[var(--nb-content)]">{student.phone || 'N/A'}</strong></span>
-                                  <span>Password: <strong className="font-mono bg-[var(--nb-surface)] px-1 py-0.2 rounded border border-[var(--nb-ink)]/20">••••••••</strong></span>
-                                  <span>Role: <strong className="uppercase text-[var(--nb-content)]">{student.role}</strong></span>
-                                </div>
-                                
-                                <div className="flex flex-col gap-1.5 flex-shrink-0 w-24">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); student.rollNumber && handleResetPassword(student.uid, student.rollNumber); }}
-                                    className="nb-btn-ghost text-[11px] font-bold uppercase py-1 px-2 rounded cursor-pointer w-full text-center"
-                                    style={{ border: '1px solid var(--nb-ink)' }}
-                                  >
-                                    Reset Pass
-                                  </button>
-                                  <div onClick={(e) => e.stopPropagation()}>
-                                    <HoldButton
-                                      size="sm"
-                                      holdTime={1600}
-                                      radius={4}
-                                      backgroundColor="rgba(244, 63, 94, 0.1)"
-                                      fillColor="#e11d48"
-                                      textColor="#fda4af"
-                                      fillTextColor="#ffffff"
-                                      doneLabel="Deleted"
-                                      onHold={() => handleDeleteUser(student.uid)}
-                                      className="border border-rose-500/20 text-[10px] font-bold uppercase !h-7 w-full !px-1"
-                                      style={{ border: '1px solid var(--nb-ink)', fontSize: '10px' }}
-                                    >
-                                      Hold to Delete
-                                    </HoldButton>
+                            <span className="font-black text-xs sm:text-sm uppercase tracking-tight text-[var(--nb-content)]">
+                              {groupKey}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="nb-tag text-[11px] font-mono font-black border-2 border-[var(--nb-ink)] bg-white shadow-[2px_2px_0px_0px_var(--nb-ink)]">
+                              {studentsInGroup.length} Students
+                            </span>
+                            <span 
+                              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase font-mono bg-white text-black border border-[var(--nb-ink)] shadow-[1.5px_1.5px_0px_0px_var(--nb-ink)] hover:bg-yellow-200 transition-all"
+                            >
+                              {isGroupExpanded ? (
+                                <>
+                                  <ChevronUp className="w-3.5 h-3.5 stroke-[2.5]" />
+                                  <span>HIDE</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-3.5 h-3.5 stroke-[2.5]" />
+                                  <span>SHOW</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Collapsible Student Cards */}
+                        {isGroupExpanded && (
+                          <div className="space-y-2.5 pt-0.5">
+                            {studentsInGroup.map((student) => {
+                              const isExpanded = expandedStudentId === student.uid;
+                              const isSelected = selectedStudentIds.includes(student.uid);
+                              return (
+                                <div 
+                                  key={student.uid} 
+                                  onClick={() => setExpandedStudentId(isExpanded ? null : student.uid)}
+                                  className={`p-3 flex flex-col gap-2.5 cursor-pointer transition-all ${
+                                    isSelected ? 'bg-amber-50' : 'bg-[var(--nb-surface-accent)]'
+                                  }`}
+                                  style={{ 
+                                    border: isSelected ? '2px solid var(--nb-ink)' : '1.5px solid var(--nb-ink)',
+                                    boxShadow: isSelected ? '2.5px 2.5px 0px 0px var(--nb-ink)' : '1.5px 1.5px 0px 0px var(--nb-ink)'
+                                  }}
+                                >
+                                  <div className="flex justify-between items-center w-full">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center justify-center mr-1" onClick={(e) => e.stopPropagation()}>
+                                        <input 
+                                          type="checkbox" 
+                                          className="w-4 h-4 cursor-pointer accent-amber-400 rounded-none border-2 border-[var(--nb-ink)]"
+                                          checked={isSelected}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setSelectedStudentIds(prev => [...prev, student.uid]);
+                                            } else {
+                                              setSelectedStudentIds(prev => prev.filter(id => id !== student.uid));
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                      <span 
+                                        className="font-mono text-[10px] font-black px-2 py-0.5 bg-white text-black border border-[var(--nb-ink)] shadow-[1px_1px_0px_0px_var(--nb-ink)]"
+                                      >
+                                        {student.rollNumber || 'NO ROLL'}
+                                      </span>
+                                      <h5 className="nb-headline text-xs font-bold text-[var(--nb-content)] truncate">{student.name}</h5>
+                                    </div>
+                                    <span className="font-mono text-[11px] font-black border border-[var(--nb-ink)] px-1.5 py-0.5 bg-white shadow-[1px_1px_0px_0px_var(--nb-ink)]">
+                                      {isExpanded ? '[-]' : '[+]'}
+                                    </span>
                                   </div>
                                   
+                                  {isExpanded && (
+                                    <div className="pt-2 border-t border-[var(--nb-ink)]/20 flex justify-between gap-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px] text-[var(--nb-secondary)] flex-1">
+                                        <span className="truncate">Email: <strong className="text-[var(--nb-content)] font-mono">{student.email}</strong></span>
+                                        {student.googleEmail && (<span className="truncate">Google: <strong className="text-[var(--nb-content)] font-mono">{student.googleEmail}</strong></span>)}
+                                        <span>Phone: <strong className="text-[var(--nb-content)]">{student.phone || 'N/A'}</strong></span>
+                                        <span>Password: <strong className="font-mono bg-[var(--nb-surface)] px-1 py-0.2 border border-[var(--nb-ink)]/20">••••••••</strong></span>
+                                        <span>Role: <strong className="uppercase text-[var(--nb-content)]">{student.role}</strong></span>
+                                      </div>
+                                      
+                                      <div className="flex flex-col gap-1.5 flex-shrink-0 w-24">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); student.rollNumber && handleResetPassword(student.uid, student.rollNumber); }}
+                                          className="bg-white text-[10px] font-black uppercase py-1 px-2 cursor-pointer w-full text-center hover:bg-yellow-200 hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                                          style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '2px 2px 0px 0px var(--nb-ink)' }}
+                                        >
+                                          Reset Pass
+                                        </button>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                          <HoldButton
+                                            size="sm"
+                                            holdTime={1600}
+                                            radius={0}
+                                            backgroundColor="#ffe4e6"
+                                            fillColor="#e11d48"
+                                            textColor="#9f1239"
+                                            fillTextColor="#ffffff"
+                                            doneLabel="Deleted"
+                                            onHold={() => handleDeleteUser(student.uid)}
+                                            className="text-[10px] font-black uppercase !h-7 w-full !px-1 hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                                            style={{ border: '1.5px solid var(--nb-ink)', boxShadow: '2px 2px 0px 0px var(--nb-ink)' }}
+                                          >
+                                            Hold to Delete
+                                          </HoldButton>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            )}
+                              );
+                            })}
                           </div>
-                        );})}
+                        )}
                       </div>
-                    </div>
-                  ));
+                    );
+                  });
                 })()}
               </div>
             </div>
+
           )}
 
           {activeTab === 'certificates' && canManageRoles && (

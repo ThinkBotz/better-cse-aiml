@@ -5,7 +5,6 @@ import HoldButton from './HoldButton';
 import { UserProfile, Announcement } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Bold, Italic, List, ListOrdered, Link, Heading1, Heading2, Quote, Code } from 'lucide-react';
 import { createAnnouncement, deleteAnnouncement } from '../firebase';
 
 interface AnnouncementsViewProps {
@@ -31,23 +30,6 @@ export default function AnnouncementsView({
   
   const [activeImage, setActiveImage] = useState<{urls: string[], index: number} | null>(null);
 
-  const insertFormatting = (prefix: string, suffix: string = '') => {
-    const textarea = document.getElementById('bulletin-content-textarea') as HTMLTextAreaElement;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = content;
-    const selectedText = text.substring(start, end);
-    
-    const newText = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end);
-    setContent(newText);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
-    }, 0);
-  };
 
   const categories = ['All', 'Notice', 'Exam', 'Workshop', 'Result', 'News'];
 
@@ -391,25 +373,6 @@ export default function AnnouncementsView({
               <div>
                 <label className="nb-label text-[10px] block mb-1">Notice Description / Content *</label>
                 
-                {/* Markdown Formatting Toolbar */}
-                <div 
-                  className="flex flex-wrap items-center gap-1 p-1.5 rounded-t-md bg-[var(--nb-surface-accent)]"
-                  style={{ border: '1.5px solid var(--nb-ink)', borderBottom: 'none' }}
-                >
-                  <button type="button" onClick={() => insertFormatting('**', '**')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Bold"><Bold className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('*', '*')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Italic"><Italic className="w-3.5 h-3.5" /></button>
-                  <div className="w-px h-4 bg-[var(--nb-divider)] mx-1" />
-                  <button type="button" onClick={() => insertFormatting('# ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Heading 1"><Heading1 className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('## ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Heading 2"><Heading2 className="w-3.5 h-3.5" /></button>
-                  <div className="w-px h-4 bg-[var(--nb-divider)] mx-1" />
-                  <button type="button" onClick={() => insertFormatting('- ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Bullet List"><List className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('1. ', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Numbered List"><ListOrdered className="w-3.5 h-3.5" /></button>
-                  <div className="w-px h-4 bg-[var(--nb-divider)] mx-1" />
-                  <button type="button" onClick={() => insertFormatting('>', '')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Quote"><Quote className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('`', '`')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Code"><Code className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={() => insertFormatting('[', '](url)')} className="p-1.5 hover:bg-[var(--nb-surface)] rounded text-[var(--nb-content)] cursor-pointer" title="Link"><Link className="w-3.5 h-3.5" /></button>
-                </div>
-                
                 <textarea 
                   id="bulletin-content-textarea"
                   required
@@ -417,8 +380,7 @@ export default function AnnouncementsView({
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Draft clear directions, instructions, dates, or contact person details..."
-                  className="nb-input text-xs rounded-t-none"
-                  style={{ borderTop: '1px solid var(--nb-divider)' }}
+                  className="nb-input text-xs"
                 />
               </div>
 
