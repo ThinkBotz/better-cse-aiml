@@ -1,0 +1,1012 @@
+/* ─────────────────────────────────────────────────────────────
+   NOTX Connect — Global Design System
+   Neo-Brutalist "Loud Editorial" aesthetic
+   NO gradients · NO backdrop-blur · NO glow blobs
+   Depth = flat colour blocks + 1.5–2 px solid outlines
+   Hard offset shadow (3px 3px 0 ink) on primary CTAs only
+   ───────────────────────────────────────────────────────────── */
+
+/* 1. FONTS
+   Anton  → display/headline (all-caps, condensed)
+   Plus Jakarta Sans → body
+   JetBrains Mono    → mono/labels
+   ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 2. TAILWIND THEME TOKENS
+   Wire CSS custom properties into Tailwind utility namespace
+   ─────────────────────────────────────────────────────────── */
+@theme {
+  /* Semantic surface tokens — kept for backward compat with Tailwind classes */
+  --color-background:     var(--nb-bg);
+  --color-surface:        var(--nb-surface);
+  --color-surface-accent: var(--nb-surface-accent);
+  --color-divider:        var(--nb-divider);
+  --color-divider-light:  var(--nb-divider-light);
+  --color-content:        var(--nb-content);
+  --color-primary:        var(--nb-content);
+  --color-secondary:      var(--nb-secondary);
+  --color-tertiary:       var(--nb-tertiary);
+  --color-accent:         var(--nb-accent);
+
+  /* Typography */
+  --font-sans:    "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Anton", "Plus Jakarta Sans", sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Radius scale — tight neo-brutalist */
+  --radius-none: 0px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-pill: 9999px;
+}
+
+/* 3. COLOUR TOKENS — Light mode (warm off-white paper) */
+:root {
+  /* Surfaces */
+  --expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --expo-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --nb-bg:             #F5F0EB;
+  --nb-surface:        #FFFFFF;
+  --nb-surface-accent: #EDE7DF;
+
+  /* Outlines & dividers */
+  --nb-ink:            #1A1A1A;
+  --nb-divider:        rgba(26, 26, 26, 0.14);
+  --nb-divider-light:  rgba(26, 26, 26, 0.06);
+
+  /* Text */
+  --nb-content:   #111111;
+  --nb-secondary: #333333;
+  --nb-tertiary:  #52525B;
+
+  /* Accent — overridden per-brand via JS: style.setProperty('--nb-accent', …) */
+  --nb-accent:    #E63946;
+  --nb-accent-fg: #FFFFFF;
+
+  /* Hard-offset shadow using ink */
+  --shadow-hard-sm: 2px 2px 0 #1A1A1A;
+  --shadow-hard:    3px 3px 0 #1A1A1A;
+  --shadow-hard-lg: 4px 4px 0 #1A1A1A;
+
+  /* Neo-Brutalist Bold Saturated Accent Palette */
+  --nb-yellow:        #FFE600;
+  --nb-yellow-fg:     #111111;
+  --nb-yellow-subtle: #FFF9C4;
+
+  --nb-blue:          #2563EB;
+  --nb-blue-fg:       #FFFFFF;
+  --nb-blue-subtle:   #DBEAFE;
+
+  --nb-green:         #059669;
+  --nb-green-fg:      #FFFFFF;
+  --nb-green-subtle:  #D1FAE5;
+
+  --nb-coral:         #FF5722;
+  --nb-coral-fg:      #FFFFFF;
+  --nb-coral-subtle:  #FFEDD5;
+
+  --nb-purple:        #7C3AED;
+  --nb-purple-fg:     #FFFFFF;
+  --nb-purple-subtle: #EDE9FE;
+
+  --nb-pink:          #FF2A85;
+  --nb-pink-fg:       #FFFFFF;
+  --nb-pink-subtle:   #FCE7F3;
+
+  --nb-cyan:          #00B4D8;
+  --nb-cyan-fg:       #111111;
+  --nb-cyan-subtle:   #E0F2FE;
+
+  /* Legacy aliases kept so old Tailwind token refs still work */
+  --background:     oklch(1 0 0);
+  --surface:        var(--nb-surface);
+  --surface-accent: var(--nb-surface-accent);
+  --divider:        var(--nb-divider);
+  --divider-light:  var(--nb-divider-light);
+  --content:        var(--nb-content);
+  --primary:        var(--nb-content);
+  --secondary:      var(--nb-secondary);
+  --tertiary:       var(--nb-tertiary);
+  --foreground:     var(--nb-content);
+  --card:           var(--nb-surface);
+  --card-foreground: var(--nb-content);
+  --popover:        var(--nb-surface);
+  --popover-foreground: var(--nb-content);
+  --primary-foreground: #FFFFFF;
+  --secondary-foreground: var(--nb-content);
+  --muted:          var(--nb-surface-accent);
+  --muted-foreground: var(--nb-secondary);
+  --accent:     oklch(0.97 0 0);
+  --accent-foreground:     oklch(0.205 0 0);
+  --destructive:     oklch(0.577 0.245 27.325);
+  --border:     oklch(0.922 0 0);
+  --input:     oklch(0.922 0 0);
+  --ring:     oklch(0.708 0 0);
+  --chart-1:     oklch(0.87 0 0);
+  --chart-2:     oklch(0.556 0 0);
+  --chart-3:     oklch(0.439 0 0);
+  --chart-4:     oklch(0.371 0 0);
+  --chart-5:     oklch(0.269 0 0);
+  --radius:     0.625rem;
+  --sidebar:     oklch(0.985 0 0);
+  --sidebar-foreground:     oklch(0.145 0 0);
+  --sidebar-primary:     oklch(0.205 0 0);
+  --sidebar-primary-foreground:     oklch(0.985 0 0);
+  --sidebar-accent:     oklch(0.97 0 0);
+  --sidebar-accent-foreground:     oklch(0.205 0 0);
+  --sidebar-border:     oklch(0.922 0 0);
+  --sidebar-ring:     oklch(0.708 0 0);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   5. RESET & BASE
+   ───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--nb-bg);
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  background-color: var(--nb-bg);
+  color: var(--nb-content);
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
+  overscroll-behavior-y: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: var(--nb-bg);
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* Remove old ambient glow pseudo-elements */
+#root::before,
+#root::after {
+  display: none;
+}
+
+input, textarea, select {
+  -webkit-user-select: auto;
+  user-select: auto;
+  font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+}
+
+/* ─────────────────────────────────────────────────────────────
+   6. SCROLLBARS — thin, ink-coloured, square
+   ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--nb-divider);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--nb-secondary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   7. TYPOGRAPHY UTILITIES
+   ───────────────────────────────────────────────────────────── */
+
+/* Display headline — Anton, all-caps, reserved for big hero headlines and stat numbers */
+.nb-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+/* General headline — clean, crisp, legible Plus Jakarta Sans font-bold for cards, names, and subtitles */
+.nb-headline {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+/* Large display sizes automatically adopt bold display font if desired */
+.nb-headline.text-2xl,
+.nb-headline.text-3xl,
+.nb-headline.text-4xl,
+.nb-headline.text-5xl,
+.nb-headline.text-6xl {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+/* Overline label — mono, high-contrast, clean tracking */
+.nb-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--nb-secondary);
+}
+
+/* Body copy */
+.nb-body {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--nb-content);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   8. CARD PRIMITIVES — flat fill + 1.5–2px solid ink outline
+   ───────────────────────────────────────────────────────────── */
+
+.nb-card {
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  position: relative;
+  color: var(--nb-content);
+}
+
+.nb-card-hero {
+  background: var(--nb-surface);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  position: relative;
+  box-shadow: var(--shadow-hard);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  color: var(--nb-content);
+}
+
+.nb-card-hero:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.nb-card-accent {
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  position: relative;
+  box-shadow: var(--shadow-hard);
+}
+
+.nb-card-tinted {
+  background: var(--nb-surface-accent);
+  border: 1.5px solid var(--nb-divider);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  color: var(--nb-content);
+}
+
+/* Saturated Color Blocks & Cards - guaranteed contrast */
+.nb-card-yellow {
+  background: var(--nb-yellow);
+  color: var(--nb-yellow-fg) !important;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+.nb-card-yellow,
+.nb-card-yellow *:not([class*="nb-pill"], [class*="nb-btn"], [class*="nb-tag"]) {
+  color: var(--nb-yellow-fg) !important;
+}
+
+.nb-card-blue {
+  background: var(--nb-blue);
+  color: var(--nb-blue-fg) !important;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+.nb-card-blue,
+.nb-card-blue *:not([class*="nb-pill"], [class*="nb-btn"], [class*="nb-tag"]) {
+  color: var(--nb-blue-fg) !important;
+}
+
+.nb-card-green {
+  background: var(--nb-green);
+  color: var(--nb-green-fg) !important;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+.nb-card-green,
+.nb-card-green *:not([class*="nb-pill"], [class*="nb-btn"], [class*="nb-tag"]) {
+  color: var(--nb-green-fg) !important;
+}
+
+.nb-card-coral {
+  background: var(--nb-coral);
+  color: var(--nb-coral-fg) !important;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+.nb-card-coral,
+.nb-card-coral *:not([class*="nb-pill"], [class*="nb-btn"], [class*="nb-tag"]) {
+  color: var(--nb-coral-fg) !important;
+}
+
+.nb-card-purple {
+  background: var(--nb-purple);
+  color: var(--nb-purple-fg) !important;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+.nb-card-purple,
+.nb-card-purple *:not([class*="nb-pill"], [class*="nb-btn"], [class*="nb-tag"]) {
+  color: var(--nb-purple-fg) !important;
+}
+
+.nb-card-pink {
+  background: var(--nb-pink);
+  color: var(--nb-pink-fg) !important;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+.nb-card-pink,
+.nb-card-pink *:not([class*="nb-pill"], [class*="nb-btn"], [class*="nb-tag"]) {
+  color: var(--nb-pink-fg) !important;
+}
+
+.nb-card-cyan {
+  background: var(--nb-cyan);
+  color: var(--nb-cyan-fg) !important;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+}
+.nb-card-cyan,
+.nb-card-cyan *:not([class*="nb-pill"], [class*="nb-btn"], [class*="nb-tag"]) {
+  color: var(--nb-cyan-fg) !important;
+}
+
+/* Saturated Pill Badges - guaranteed contrast */
+.nb-pill-yellow,
+.nb-pill-yellow * {
+  background: var(--nb-yellow);
+  color: var(--nb-yellow-fg) !important;
+  border-color: var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.nb-pill-blue,
+.nb-pill-blue * {
+  background: var(--nb-blue);
+  color: var(--nb-blue-fg) !important;
+  border-color: var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.nb-pill-green,
+.nb-pill-green * {
+  background: var(--nb-green);
+  color: var(--nb-green-fg) !important;
+  border-color: var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.nb-pill-coral,
+.nb-pill-coral * {
+  background: var(--nb-coral);
+  color: var(--nb-coral-fg) !important;
+  border-color: var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.nb-pill-purple,
+.nb-pill-purple * {
+  background: var(--nb-purple);
+  color: var(--nb-purple-fg) !important;
+  border-color: var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.nb-pill-pink,
+.nb-pill-pink * {
+  background: var(--nb-pink);
+  color: var(--nb-pink-fg) !important;
+  border-color: var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.nb-pill-cyan,
+.nb-pill-cyan * {
+  background: var(--nb-cyan);
+  color: var(--nb-cyan-fg) !important;
+  border-color: var(--nb-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   9. SHEET / MODAL PRIMITIVES
+   ───────────────────────────────────────────────────────────── */
+.nb-sheet {
+  background: var(--nb-surface);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.nb-modal {
+  background: var(--nb-surface);
+  border: 2px solid var(--nb-ink);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-hard-lg);
+}
+
+.nb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 40;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   10. BUTTON PRIMITIVES — min 44px touch targets
+   ───────────────────────────────────────────────────────────── */
+.nb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--nb-ink);
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-hard-sm);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nb-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.nb-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--nb-ink);
+  background: transparent;
+  color: var(--nb-content);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.nb-btn-ghost:hover {
+  background: var(--nb-surface-accent);
+}
+
+.nb-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--nb-ink);
+  background: transparent;
+  color: var(--nb-content);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.nb-btn-icon:hover {
+  background: var(--nb-surface-accent);
+}
+
+.nb-btn-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1.5px solid var(--nb-ink);
+  background: var(--nb-surface);
+  color: var(--nb-content);
+  box-shadow: 2px 2px 0 var(--nb-ink);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.nb-btn-close:hover {
+  background: #E11D48;
+  color: #FFFFFF;
+  border-color: var(--nb-ink);
+}
+
+.nb-btn-close:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--nb-ink);
+}
+
+.nb-icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1.5px solid var(--nb-ink);
+  background: var(--nb-yellow);
+  color: #111111;
+  box-shadow: 2px 2px 0 var(--nb-ink);
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   11. PILL TAG PRIMITIVES — outlined, no fill by default
+   ───────────────────────────────────────────────────────────── */
+.nb-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--nb-ink);
+  background: transparent;
+  color: var(--nb-content);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.nb-tag-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--nb-ink);
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.nb-tag-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--nb-divider);
+  background: var(--nb-surface-accent);
+  color: var(--nb-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   12. DIVIDER
+   ───────────────────────────────────────────────────────────── */
+.nb-divider {
+  width: 100%;
+  height: 1.5px;
+  background: var(--nb-divider);
+  border: none;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   13. INPUT PRIMITIVES
+   ───────────────────────────────────────────────────────────── */
+.nb-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--nb-ink);
+  background: var(--nb-surface);
+  color: var(--nb-content);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+
+.nb-input:focus {
+  border-color: var(--nb-accent);
+}
+
+.nb-input::placeholder {
+  color: #A8A29E;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* Ensure inputs with icon padding classes preserve clearance */
+.nb-input.has-icon-left,
+.nb-input[class*="pl-"] {
+  padding-left: 2.625rem !important;
+}
+
+.nb-input.has-icon-right,
+.nb-input[class*="pr-"] {
+  padding-right: 2.75rem !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   14. ANIMATIONS — mechanical, not floaty
+   ───────────────────────────────────────────────────────────── */
+@keyframes nb-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.nb-slide-up {
+  animation: nb-slide-up 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes nb-fade-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.nb-fade-in {
+  animation: nb-fade-in 0.18s ease both;
+}
+
+@keyframes nb-stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nb-stagger-in {
+  animation: nb-stagger-in 0.2s ease both;
+}
+
+@keyframes nb-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+.nb-blink {
+  animation: nb-blink 1s step-end infinite;
+}
+
+@keyframes nb-laser-sweep {
+  0% { top: 8%; opacity: 0.8; }
+  50% { top: 90%; opacity: 1; }
+  100% { top: 8%; opacity: 0.8; }
+}
+.nb-laser-sweep {
+  animation: nb-laser-sweep 2.4s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   15. NAVIGATION DOCK — flat bar, no blur, border-top only
+   ───────────────────────────────────────────────────────────── */
+.nb-dock {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  background: var(--nb-surface);
+  border-top: 2px solid var(--nb-ink);
+  padding: 0 0.5rem;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  min-height: 60px;
+  flex-shrink: 0;
+}
+
+.nb-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--nb-tertiary);
+  transition: color 0.1s ease, background 0.1s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.nb-dock-item.active {
+  color: var(--nb-accent);
+}
+
+.nb-dock-item:active {
+  background: var(--nb-surface-accent);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   16. STAT NUMBERS — big editorial
+   ───────────────────────────────────────────────────────────── */
+.nb-stat {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.nb-stat-sm {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   17. SECTION HEADER — overline + headline pairing
+   ───────────────────────────────────────────────────────────── */
+.nb-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.5rem;
+  border-bottom: 1.5px solid var(--nb-divider);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   18. TOAST / BANNER
+   ───────────────────────────────────────────────────────────── */
+.nb-toast {
+  background: var(--nb-ink);
+  color: var(--nb-bg);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-hard);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   19. OFFLINE INDICATOR
+   ───────────────────────────────────────────────────────────── */
+.nb-offline-bar {
+  background: #F59E0B;
+  color: #1A1A1A;
+  border-bottom: 2px solid #1A1A1A;
+  padding: 0.375rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   20. HOLD-BUTTON PROGRESS RING
+   ───────────────────────────────────────────────────────────── */
+@keyframes nb-ring-fill {
+  from { stroke-dashoffset: 251; }
+  to   { stroke-dashoffset: 0; }
+}
+.nb-ring-fill {
+  animation: nb-ring-fill linear both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   21. LEGACY ALIASES — flat equivalents so existing components
+   don't break immediately during gradual migration
+   ───────────────────────────────────────────────────────────── */
+.ref-card {
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-ink);
+  border-radius: var(--radius-lg);
+}
+
+.glass-panel {
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-divider);
+}
+
+.glass-card {
+  background: var(--nb-surface);
+  border: 1.5px solid var(--nb-divider);
+  border-radius: var(--radius-lg);
+}
+
+.glass-pill {
+  background: var(--nb-surface-accent);
+  border: 1.5px solid var(--nb-divider);
+  border-radius: var(--radius-pill);
+}
+
+.ref-pill-button {
+  border-radius: var(--radius-pill);
+  background: var(--nb-accent);
+  color: var(--nb-accent-fg);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  min-height: 44px;
+  border: 2px solid var(--nb-ink);
+  box-shadow: var(--shadow-hard-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.ref-pill-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.ref-pill-secondary {
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--nb-content);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  min-height: 44px;
+  border: 1.5px solid var(--nb-ink);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.ref-pill-secondary:hover {
+  background: var(--nb-surface-accent);
+}
+
+.ref-icon-bubble {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+/* Remove old focus-mode nth-of-type hack */
+
+@theme inline {
+  --font-heading:     var(--font-sans);
+  --font-sans:     'Geist Variable', sans-serif;
+  --color-sidebar-ring:     var(--sidebar-ring);
+  --color-sidebar-border:     var(--sidebar-border);
+  --color-sidebar-accent-foreground:     var(--sidebar-accent-foreground);
+  --color-sidebar-accent:     var(--sidebar-accent);
+  --color-sidebar-primary-foreground:     var(--sidebar-primary-foreground);
+  --color-sidebar-primary:     var(--sidebar-primary);
+  --color-sidebar-foreground:     var(--sidebar-foreground);
+  --color-sidebar:     var(--sidebar);
+  --color-chart-5:     var(--chart-5);
+  --color-chart-4:     var(--chart-4);
+  --color-chart-3:     var(--chart-3);
+  --color-chart-2:     var(--chart-2);
+  --color-chart-1:     var(--chart-1);
+  --color-ring:     var(--ring);
+  --color-input:     var(--input);
+  --color-border:     var(--border);
+  --color-destructive:     var(--destructive);
+  --color-accent-foreground:     var(--accent-foreground);
+  --color-accent:     var(--accent);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-muted:     var(--muted);
+  --color-secondary-foreground:     var(--secondary-foreground);
+  --color-secondary:     var(--secondary);
+  --color-primary-foreground:     var(--primary-foreground);
+  --color-primary:     var(--primary);
+  --color-popover-foreground:     var(--popover-foreground);
+  --color-popover:     var(--popover);
+  --color-card-foreground:     var(--card-foreground);
+  --color-card:     var(--card);
+  --color-foreground:     var(--foreground);
+  --color-background:     var(--background);
+  --radius-sm:     calc(var(--radius) * 0.6);
+  --radius-md:     calc(var(--radius) * 0.8);
+  --radius-lg:     var(--radius);
+  --radius-xl:     calc(var(--radius) * 1.4);
+  --radius-2xl:     calc(var(--radius) * 1.8);
+  --radius-3xl:     calc(var(--radius) * 2.2);
+  --radius-4xl:     calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
